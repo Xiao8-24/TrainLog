@@ -72,6 +72,7 @@ for target, folder, product, product_type in [
                 values.update({"BUNDLE_LOADER": "$(TEST_HOST)", "TEST_HOST": "$(BUILT_PRODUCTS_DIR)/TrainLog.app/TrainLog"})
             else:
                 values.update({"TEST_TARGET_NAME": "TrainLog"})
+        values["ONLY_ACTIVE_ARCH"] = "YES" if name == "Debug" else "NO"
         config_ids.append(put(f"config:{target}:{name}", "XCBuildConfiguration", f"buildSettings = {settings(values)}; name = {name};"))
     config_list = put("configs:" + target, "XCConfigurationList", f"buildConfigurations = {refs(config_ids)}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;")
     target_ids.append(put("target:" + target, "PBXNativeTarget", f"buildConfigurationList = {config_list}; buildPhases = {refs(phases)}; buildRules = (); dependencies = {refs(dependencies)}; name = {target}; packageProductDependencies = {refs(packages)}; productName = {target}; productReference = {product_ref}; productType = {quote(product_type)};"))

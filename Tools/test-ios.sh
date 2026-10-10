@@ -5,10 +5,11 @@ mkdir -p artifacts
 swift test --package-path Packages/TrainLogCore 2>&1 | tee artifacts/core-tests.log
 destination="${TRAINLOG_SIMULATOR_ID:-}"
 if [ -z "$destination" ]; then
-  destination=$(xcrun simctl list devices available -j | python3 -c 'import json,sys,re; d=json.load(sys.stdin)["devices"]; candidates=[(tuple(map(int,re.search(r"iOS-([0-9-]+)",runtime).group(1).split("-"))),x["udid"]) for runtime,items in d.items() if re.search(r"iOS-([0-9-]+)",runtime) for x in items if x.get("isAvailable") and "iPhone" in x["name"]]; candidates=sorted([x for x in candidates if x[0]>=(18,)],reverse=True); print(candidates[0][1] if candidates else "")')
+  sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
+  destination=$(xcrun simctl list devices available -j | python3 Tools/select_simulator.py "$sdk_version")
 fi
 if [ -z "$destination" ]; then
-  echo "No available iPhone simulator. Install an iOS 18 or newer simulator in Xcode." >&2
+  echo "No matching iPhone simulator. Install an iOS 18+ runtime supported by the selected Xcode SDK." >&2
   exit 1
 fi
 printf '%s\n' "$destination" > artifacts/simulator-id.txt
