@@ -1,0 +1,78 @@
+name: TrainLog build and release
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a prerelease after all tests and builds pass
+        type: boolean
+        default: false
+      version:
+        description: New release tag (vMAJOR.MINOR.PATCH)
+        type: string
+        default: v0.1.0
+
+permissions:
+  contents: read
+
+jobs:
+  native-tests:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release version
+        if: inputs.publish
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: '[[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]'
+      - name: Record build environment
+        run: |
+          mkdir -p artifacts
+          { git rev-parse HEAD; xcodebuild -version; swift --version; xcrun simctl list runtimes; } | tee artifacts/environment.txt
+      - name: Check project and resources
+        run: python3 Tools/check_source.py
+      - name: Run core, persistence and UI tests
+        run: bash Tools/test-ios.sh
+      - name: Build unsigned iPhone archive and package delivery
+        run: bash Tools/package-ios.sh
+      - name: Preserve test results and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrainLog-diagnostics-${{ github.run_number }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload verified build packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrainLog-delivery-${{ github.sha }}
+          path: Delivery/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    needs: native-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: TrainLog-delivery-${{ github.sha }}
+          path: Delivery
+      - name: Publish tested commit as a prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh release create "$RELEASE_VERSION" Delivery/* \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "TrainLog $RELEASE_VERSION Preview" --prerelease \
+            --notes-file Documentation/RELEASE_NOTES.md
+

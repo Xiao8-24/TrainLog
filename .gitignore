@@ -1,0 +1,13 @@
+.DS_Store
+DerivedData/
+.build/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+*.ipa
+*.dSYM/
+.tools/
+artifacts/
+Delivery/
+__pycache__/
+

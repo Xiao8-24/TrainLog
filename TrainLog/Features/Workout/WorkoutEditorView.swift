@@ -1,0 +1,181 @@
+import SwiftUI
+import TrainLogCore
+
+struct WorkoutEditorView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var session: Session
+    @State private var restTimer: RestTimer
+    private let editingHistory: Bool
+    var onFinished: (UUID) -> Void
+    @State private var bodyView = BodyView.front
+    @State private var showingLibrary = false
+    @State private var discardConfirmation = false
+    @State private var errorMessage: String?
+    @State private var draftStatus = "草稿保存在本机"
+    @State private var saving = false
+    init(session: Session, onFinished: @escaping (UUID) -> Void) {
+        _session = State(initialValue: session); _restTimer = State(initialValue: RestTimer(sessionID: session.id))
+        editingHistory = session.status == .completed; self.onFinished = onFinished
+    }
+    private var selection: Binding<Set<MuscleGroup>> {
+        Binding(get: { Set(session.quickEntries.map(\.muscle)) }, set: { values in
+            session.quickEntries = values.sorted { $0.rawValue < $1.rawValue }.map { muscle in session.quickEntries.first { $0.muscle == muscle } ?? QuickEntry(muscle: muscle) }
+        })
+    }
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                if !editingHistory && session.mode == .detailed { sessionTimer }
+                AppCard {
+                    DatePicker("训练日期", selection: $session.date, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
+                    if editingHistory { Text("历史修改只有在点击保存后才生效；返回会保留原记录。").font(.caption).foregroundStyle(.secondary) }
+                    else { Text(draftStatus).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("draftStatus") }
+                }
+                if session.mode == .quick { quickSelection } else { detailedExercises }
+                AppCard {
+                    SectionHeader(title: "训练感受", subtitle: "可选 · 缺失信息不会被推算")
+                    Picker("主观强度", selection: $session.intensity) {
+                        Text("未填写").tag(Optional<Intensity>.none)
+                        ForEach(Intensity.allCases) { Text($0.name).tag(Optional($0)) }
+                    }
+                    HStack { Text("整次训练 RPE"); Spacer(); OptionalNumberField(title: "1–10，可留空", value: $session.sessionRPE).frame(maxWidth: 150) }
+                    HStack { Text("手动时长（分钟）"); Spacer(); OptionalNumberField(title: "使用计时", value: durationMinutes).frame(maxWidth: 140) }
+                    TextField("训练备注", text: $session.notes, axis: .vertical).lineLimit(2...5)
+                }
+                if !editingHistory {
+                    Button("放弃这份草稿", role: .destructive) { discardConfirmation = true }.frame(minHeight: 44)
+                }
+                Text("仅已完成正式组计入组数、容量与力量统计。递减组只参与肌群覆盖，热身与失败组不参与统计。").font(.caption).foregroundStyle(.secondary)
+            }.padding(20)
+        }
+        .background(AppTheme.background)
+        .navigationTitle(editingHistory ? "编辑训练" : session.mode == .quick ? "快速记录" : "正在训练")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) { Button(editingHistory ? "取消" : "稍后继续") { close() }.disabled(saving) }
+            ToolbarItem(placement: .topBarTrailing) { Button(editingHistory ? "保存" : "完成") { finish() }.fontWeight(.semibold).disabled(saving).accessibilityIdentifier("finishWorkout") }
+            ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("收起键盘") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if restTimer.deadline != nil { RestTimerBanner(timer: restTimer).padding(.horizontal).padding(.bottom, 8) }
+        }
+        .sheet(isPresented: $showingLibrary) {
+            NavigationStack { ExerciseLibraryView { exercise in
+                var set = TrainingSet(); set.restSeconds = store.settings.restSeconds
+                session.exercises.append(ExerciseEntry(exercise: exercise, sets: [set])); showingLibrary = false
+            } }
+        }
+        .confirmationDialog("放弃草稿？已填写但未保存为完成训练的数据将删除。", isPresented: $discardConfirmation, titleVisibility: .visible) {
+            Button("放弃草稿", role: .destructive) {
+                saving = true
+                do { try store.deleteSession(session.id); restTimer.cancel(); dismiss() } catch { errorMessage = error.localizedDescription; saving = false }
+            }
+        }
+        .errorAlert($errorMessage)
+        .task(id: session) {
+            guard !editingHistory, !saving else { return }
+            do { try await Task.sleep(for: .milliseconds(500)); try Task.checkCancellation() } catch { return }
+            persistDraft(showError: false)
+        }
+        .onChange(of: scenePhase) { _, phase in if phase != .active && !editingHistory && !saving { persistDraft(showError: false) } }
+        .onChange(of: session.intensity) { _, value in
+            // The global picker explicitly replaces older per-muscle quick intensities when edited.
+            for index in session.quickEntries.indices { session.quickEntries[index].intensity = value }
+        }
+    }
+    private var durationMinutes: Binding<Double?> {
+        Binding(get: { session.manualDurationSeconds.map { Double($0) / 60 } }, set: { v in
+            session.manualDurationSeconds = v.map { $0.isFinite && (0...10080).contains($0) ? Int(($0 * 60).rounded()) : -1 }
+        })
+    }
+    private var sessionTimer: some View {
+        AppCard {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(session.timerStartedAt == nil ? "训练计时 · 已暂停" : "训练计时").font(.caption).foregroundStyle(.secondary)
+                        Text(Duration.seconds(session.elapsed(at: context.date)).formatted(.time(pattern: .hourMinuteSecond))).font(.title2.weight(.semibold)).monospacedDigit()
+                    }
+                    Spacer()
+                    Button {
+                        if session.timerStartedAt == nil { session.manualDurationSeconds = nil; session.timerStartedAt = Date() }
+                        else { session.pause() }
+                    } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时")
+                }
+            }
+            HStack {
+                Text("组间休息").font(.subheadline)
+                Spacer()
+                Menu {
+                    ForEach([60, 90, 120, 180], id: \.self) { seconds in Button("\(seconds) 秒") { restTimer.start(seconds: seconds, notify: store.settings.notifyRest) } }
+                    Button("使用自定义 \(store.settings.restSeconds) 秒") { restTimer.start(seconds: store.settings.restSeconds, notify: store.settings.notifyRest) }
+                } label: { Label("开始计时", systemImage: "timer") }
+            }
+            if let warning = restTimer.notificationError { Text("提醒未能安排：\(warning)。屏幕计时仍可使用。").font(.caption).foregroundStyle(.orange) }
+        }
+    }
+    private var quickSelection: some View {
+        AppCard {
+            SectionHeader(title: "今天练了哪里？", subtitle: "点击人体或下方标签，可多选")
+            Picker("人体视角", selection: $bodyView) { ForEach(BodyView.allCases) { Text($0.name).tag($0) } }.pickerStyle(.segmented)
+            BodyMuscleMapView(view: bodyView, levels: Dictionary(uniqueKeysWithValues: selection.wrappedValue.map { ($0, 3) }), selected: selection.wrappedValue) { muscle in
+                var value = selection.wrappedValue
+                if value.contains(muscle) { value.remove(muscle) } else { value.insert(muscle) }; selection.wrappedValue = value
+            }.frame(height: 340).frame(maxWidth: .infinity)
+            MuscleSelectionList(selection: selection)
+        }
+    }
+    private var detailedExercises: some View {
+        VStack(spacing: 18) {
+            ForEach($session.exercises) { $entry in
+                ExerciseEditorCard(entry: $entry, history: store.completed.filter { $0.id != session.id }, unit: store.settings.unit, onComplete: { seconds in
+                    if !editingHistory { restTimer.start(seconds: seconds, notify: store.settings.notifyRest) }
+                }, onDelete: { let id = entry.id; session.exercises.removeAll { $0.id == id } })
+            }
+            if session.exercises.isEmpty { AppCard { EmptyStateView(title: "选择第一个动作", message: "从动作库添加，也可以创建你的专属动作。", symbol: "dumbbell") } }
+            Button { showingLibrary = true } label: { Label("添加动作", systemImage: "plus.circle.fill").font(.headline).frame(maxWidth: .infinity, minHeight: 52) }.buttonStyle(.bordered).accessibilityIdentifier("addExercise")
+        }
+    }
+    private func persistDraft(showError: Bool) {
+        guard !editingHistory, !saving, session.status == .draft else { return }
+        do {
+            var value = session; value.updatedAt = Date(); try store.save(value); draftStatus = "草稿已保存 · \(Date().formatted(date: .omitted, time: .shortened))"
+        } catch {
+            draftStatus = "当前修改尚未保存：\(error.localizedDescription)"
+            if showError { errorMessage = error.localizedDescription }
+        }
+    }
+    private func close() {
+        if editingHistory { dismiss(); return }
+        do { var value = session; value.updatedAt = Date(); try store.save(value); dismiss() }
+        catch { errorMessage = error.localizedDescription }
+    }
+    private func finish() {
+        saving = true
+        do {
+            var value = session
+            if !editingHistory { value.finish() } else { value.updatedAt = Date() }
+            try store.save(value); session = value; restTimer.cancel()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            if editingHistory { dismiss() } else { onFinished(value.id) }
+        } catch { errorMessage = error.localizedDescription; saving = false }
+    }
+}
+struct RestTimerBanner: View {
+    var timer: RestTimer
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            HStack {
+                Image(systemName: "timer").foregroundStyle(.blue)
+                Text("组间休息").font(.subheadline)
+                Spacer()
+                Text("\(timer.remaining(at: context.date)) 秒").font(.headline).monospacedDigit()
+                Button("结束") { timer.cancel() }.frame(minHeight: 44)
+            }.padding(.horizontal, 16).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+                .onChange(of: context.date) { _, now in timer.tick(at: now) }
+        }
+    }
+}
+
