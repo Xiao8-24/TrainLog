@@ -4,8 +4,8 @@
 
 面向个人力量训练的离线 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols**；最低部署版本 **iOS 18.0**。无服务器、无账号、无第三方运行时依赖。
 
-> **交付状态：原生项目与功能源码已实现，尚未完成 Apple 平台构建验收。**
-> 本次开发环境为 Windows，没有 Swift 编译器、Xcode、Apple SDK 或 iOS 模拟器。已执行源文件语法解析、工程引用与资源格式检查；这些检查不能证明 Swift 类型检查、SwiftData 宏展开、链接或运行成功。不要将此交付视为已经通过真机验证的发行版。
+> **交付状态：已通过 GitHub macOS 云端编译、31 个自动化测试及 Release 设备归档。**
+> [首次全部通过的构建](https://github.com/Xiao8-24/TrainLog/actions/runs/38047555570) 使用 Xcode 16.4、Swift 6.1.2 编译器（Swift 5 语言模式）及 iOS 18.5 SDK。源码从 Windows 开发，由云端 Xcode 验证。生成的 IPA 未签名，尚未完成真机、TestFlight 或 App Store 验收。
 
 ## 没有 Mac：使用 GitHub 云端构建
 
@@ -60,7 +60,7 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 | 数据 | 版本化 JSON、校验与预览、合并/确认替换、导入前恢复副本、CSV、系统文件导出与分享 |
 | 设置 | kg/lb、每周目标、训练目标、主题、体重历史、统计说明、隐私说明 |
 
-以上表示**代码路径已经实现**，并不表示相应功能已在 iOS 上运行验收。
+以上功能已实现，自动化测试覆盖业务规则、持久化与三个 UI 流程；其余交互和真机体验仍需按验收清单逐项检查。
 
 ### 未实现及需后续验证的部分
 
@@ -164,14 +164,16 @@ Documentation/                 验证状态、手工验收、矢量几何审查�
 
 ## 本次实际检查结果
 
-检查日期：**2026-10-09（Asia/Shanghai）**。
+检查日期：**2026-10-10（Asia/Shanghai）**。
 
 - **35 个 Swift 文件：Tree-sitter Swift 语法解析通过，0 个解析错误。** 不是 Swift 编译器类型检查。
-- **101 个 Xcode 工程对象：ID 唯一、内部引用完整，所有 app/test 源文件已加入 target。** 尚未由 Xcode 加载确认。
+- **101 个 Xcode 工程对象：ID 唯一、内部引用完整，所有 app/test 源文件已加入 target。** 已由云端 Xcode 加载并构建成功。
 - Info.plist、PrivacyInfo.xcprivacy、共享 Scheme、workspace XML、资产 Contents.json 格式检查通过。
 - 从真实矢量点位生成并目视检查前后视图、胸部选择测试状态及中性状态。该结果只覆盖路径几何，不覆盖 SwiftUI 真机渲染。
-- **31 个 XCTest 测试方法已编写：22 个业务测试、6 个持久化/肌群集成测试、3 个 UI 测试。均未运行。**
-- Xcode 构建、模拟器、真机、通知后台交付、VoiceOver、动态字号、性能、签名安装：**未验证**。
+- **31 个 XCTest 测试全部通过：22 个业务测试、6 个持久化/肌群集成测试、3 个 UI 测试。**
+- iOS 模拟器构建/测试、Release 设备归档、源码打包与未签名 IPA 生成：**通过**。
+- 真机、通知后台交付、VoiceOver、动态字号、性能、签名安装：**未验证**。
+- Xcode 16.4 的 Predicate 宏有 Sendable 迁移警告；当前 Swift 5 语言模式构建成功，尚未承诺 Swift 6 严格语言模式兼容。
 
 详见 [`Documentation/VALIDATION.md`](Documentation/VALIDATION.md) 与 [`Documentation/ACCEPTANCE.md`](Documentation/ACCEPTANCE.md)。
 

@@ -1,8 +1,12 @@
 # 验证记录
 
-日期：2026-10-09（Asia/Shanghai）。执行环境：Windows / PowerShell。
+日期：2026-10-10（Asia/Shanghai）。执行环境：Windows 静态检查 + GitHub macOS 云端 Xcode。
 
-2026-10-10 更新：创建 Xiao8-24/TrainLog 仓库，补充 macOS Actions 测试、日志与 xcresult 附件、未签名设备归档、源码/IPA 校验及测试通过后的预览版 Release 流程。本地重新通过 35 文件语法/工程检查、Bash 脚本语法检查和工作流 YAML 解析。初次上传时云端任务尚未实际执行，不计入下方“已执行”测试；真实结果以对应提交的 Actions 记录为准。
+云端验证提交：`9adbd773fa5dab6f47a46ae2c7383c47411016af`。
+
+[GitHub Actions #2：全部成功](https://github.com/Xiao8-24/TrainLog/actions/runs/38047555570)。环境：macOS 15 arm64、Xcode 16.4、Swift 6.1.2 编译器、Swift 5 语言模式、iOS 18.5 SDK/模拟器。22 个核心测试、6 个持久化/肌群集成测试、3 个 UI 测试均为 0 失败；日志包含 `TEST SUCCEEDED` 与 `ARCHIVE SUCCEEDED`。
+
+第一次运行暴露了 App 与 Swift 包 Debug 架构不一致的问题；已在工程生成器和生成工程中统一 ONLY_ACTIVE_ARCH，并限制默认模拟器不高于当前 SDK。第二次运行验证修复有效。Bash 脚本语法、工作流 YAML 解析及模拟器选择也通过本地检查。
 
 ## 已执行
 
@@ -19,9 +23,9 @@
 
 语法解析不能验证类型推导、泛型约束、SDK 方法可用性、SwiftData 宏、链接、签名或 UI 运行。
 
-机器可读的本次结果保存在 `static-check-results.json`。可运行 `python3 Tools/check_source.py --write-report` 重新生成；Swift 语法解析需要安装 `tree-sitter` 与 `tree-sitter-swift`，这些只用于开发检查，不是 iPhone 应用依赖。
+机器可读的静态检查结果保存在 `static-check-results.json`。其中 NOT RUN 只表示静态检查脚本不执行 Apple 构建；云端结果见本页链接。可运行 `python3 Tools/check_source.py --write-report` 重新生成；语法解析依赖只用于开发检查，不是 iPhone 应用依赖。
 
-## 已编写但没有运行
+## 已运行，全部通过
 
 | 测试集 | 数量 | 覆盖 |
 |---|---:|---|
@@ -31,14 +35,12 @@
 
 ## 未执行
 
-- Swift 编译器类型检查、`swift test`。
-- `xcodebuild build/test/archive`。
-- iOS 模拟器、真机、通知授权和后台提醒。
+- iPhone 真机、通知授权和后台提醒。
 - 真机 VoiceOver、Reduce Motion、最大辅助字号、横屏。
 - Instruments 内存、帧率与大档案性能评估。
 - 多版本 SwiftData 数据库迁移与 App Store 校验。
 
-当前环境没有 Swift、Xcode 或 Apple SDK，WSL 也没有可用 Linux 发行版。没有以另一语言复刻算法并把其结果宣称为 Swift 测试结果。项目没有生成可安装 IPA。
+本地 Windows 没有 Apple SDK，编译和测试在 GitHub 的 macOS runner 完成。已生成未签名设备 IPA，不能直接安装；没有签名证书和 provisioning profile。Xcode 16.4 的 Predicate 宏产生 Sendable 迁移警告，目前使用 Swift 5 语言模式，尚未验证切换至 Swift 6 严格语言模式。
 
 ## 在 Mac 上继续验收
 
