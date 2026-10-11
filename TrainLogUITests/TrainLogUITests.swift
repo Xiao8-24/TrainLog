@@ -11,10 +11,21 @@ final class TrainLogUITests: XCTestCase {
         let app = launch()
         app.tabBars.buttons["训练"].tap()
         app.buttons["quickWorkout"].tap()
+        XCTAssertTrue(app.navigationBars["快速记录"].waitForExistence(timeout: 10))
         let chest = app.buttons["muscle.chest"]
-        for _ in 0..<6 where !chest.isHittable { app.swipeUp() }
-        XCTAssertTrue(chest.isHittable)
+        // Materialize the lazy grid, then let XCTest scroll the specific button
+        // into view. Full-screen swipes can overshoot it on a slower runner.
+        for _ in 0..<6 {
+            if chest.waitForExistence(timeout: 1) { break }
+            app.scrollViews.firstMatch.swipeUp(velocity: .slow)
+        }
+        XCTAssertTrue(chest.exists)
         chest.tap()
+        XCTAssertTrue(chest.isSelected)
+        let selection = XCTAttachment(screenshot: app.screenshot())
+        selection.name = "Quick record - chest selected (test data)"
+        selection.lifetime = .keepAlways
+        add(selection)
         app.buttons["finishWorkout"].tap()
         let done = app.buttons["closeSummary"]
         XCTAssertTrue(done.waitForExistence(timeout: 5))
