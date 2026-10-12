@@ -3,17 +3,18 @@ import TrainLogCore
 
 struct OverviewView: View {
     @Environment(AppStore.self) private var store
+    @Environment(AppClock.self) private var clock
     @Environment(AppRouter.self) private var router
     var showSettings: () -> Void
     @State private var selectedMuscle: MuscleGroup?
-    private var week: DateInterval { TrainingCalendar.week(containing: Date()) }
+    private var week: DateInterval { TrainingCalendar.week(containing: clock.now, calendar: clock.calendar) }
     private var weekTotals: WorkoutTotals { WorkoutStatisticsService.totals(store.sessions, interval: week) }
-    private var today: [Session] { store.completed.filter { Calendar.current.isDateInToday($0.date) } }
+    private var today: [Session] { store.completed.filter { clock.calendar.isDate($0.date, inSameDayAs: clock.now) } }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTheme.spacing) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(Date().formatted(.dateTime.month().day().weekday(.wide))).font(.subheadline).foregroundStyle(.secondary)
+                    Text(clock.now.formatted(.dateTime.month().day().weekday(.wide))).font(.subheadline).foregroundStyle(.secondary)
                     Text(today.isEmpty ? "今天准备练什么？" : "每一次记录，都在积累。")
                         .font(.title2.weight(.bold))
                     Text(today.isEmpty ? "专注当下，让进步慢慢清晰。" : "今天已完成 \(today.count) 次训练。")
@@ -35,9 +36,9 @@ struct OverviewView: View {
                         Spacer()
                         miniMetric("正式组数", value: "\(weekTotals.workingSets)", unit: "组")
                     }
-                    let month = Calendar.current.dateInterval(of: .month, for: Date()) ?? TimeRange.month.interval()
+                    let month = clock.calendar.dateInterval(of: .month, for: clock.now) ?? TimeRange.month.interval(now: clock.now, calendar: clock.calendar)
                     let monthly = WorkoutStatisticsService.totals(store.sessions, interval: month)
-                    let recent = WorkoutStatisticsService.totals(store.sessions, interval: TimeRange.month.interval())
+                    let recent = WorkoutStatisticsService.totals(store.sessions, interval: TimeRange.month.interval(now: clock.now, calendar: clock.calendar))
                     Text("本月 \(monthly.sessions) 次训练 · 近 30 天训练 \(recent.trainingDays) 天").font(.caption).foregroundStyle(.secondary)
                 }
                 MuscleMapCard(title: "本周肌群分布", model: MuscleHeatmapViewModel(sessions: store.sessions, interval: week, metric: .days)) { selectedMuscle = $0 }
@@ -57,7 +58,7 @@ struct OverviewView: View {
                     AppCard {
                         SectionHeader(title: "最近训练")
                         ForEach(store.completed.prefix(3)) { session in
-                            NavigationLink { SessionDetailView(sessionID: session.id) } label: { SessionRow(session: session) }.buttonStyle(.plain)
+                            NavigationLink { SessionDetailView(sessionID: session.id) } label: { SessionRow(session: session, showsChevron: true) }.buttonStyle(.plain)
                         }
                     }
                 }
@@ -92,17 +93,18 @@ struct OverviewView: View {
     }
 }
 struct SevenDayStrip: View {
+    @Environment(AppClock.self) private var clock
     var sessions: [Session]
-    private var days: [Date] { (0..<7).compactMap { Calendar.current.date(byAdding: .day, value: $0 - 6, to: Calendar.current.startOfDay(for: Date())) } }
+    private var days: [Date] { (0..<7).compactMap { clock.calendar.date(byAdding: .day, value: $0 - 6, to: clock.calendar.startOfDay(for: clock.now)) } }
     var body: some View {
         HStack(spacing: 2) {
             ForEach(days, id: \.self) { date in
-                let count = sessions.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }.count
+                let count = sessions.filter { clock.calendar.isDate($0.date, inSameDayAs: date) }.count
                 NavigationLink { DayHistoryView(date: date) } label: {
                     VStack(spacing: 10) {
                         Text(date.formatted(.dateTime.weekday(.narrow))).font(.caption).foregroundStyle(.secondary)
                         Text(date.formatted(.dateTime.day())).font(.subheadline.weight(.medium))
-                            .frame(minWidth: 32, minHeight: 32).background(Calendar.current.isDateInToday(date) ? Color.blue.opacity(0.12) : .clear, in: Circle())
+                            .frame(minWidth: 32, minHeight: 32).background(clock.calendar.isDate(date, inSameDayAs: clock.now) ? Color.blue.opacity(0.12) : .clear, in: Circle())
                         Circle().fill(count > 0 ? Color.blue : Color(uiColor: .systemGray5)).frame(width: 5, height: 5)
                     }.frame(maxWidth: .infinity, minHeight: 70)
                 }.buttonStyle(.plain).accessibilityLabel("\(date.formatted(date: .complete, time: .omitted))，\(count) 次训练")

@@ -15,7 +15,6 @@ struct BodyMuscleMapView: View {
     var selected: Set<MuscleGroup> = []
     var onSelect: (MuscleGroup) -> Void
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         GeometryReader { proxy in
             let rect = CGRect(origin: .zero, size: proxy.size)
@@ -52,7 +51,8 @@ struct BodyMuscleMapView: View {
             }
         }
         .aspectRatio(200.0 / 440, contentMode: .fit)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.28), value: levels)
+        .nativeMotion(value: levels)
+        .nativeMotion(value: view)
     }
 }
 private extension Shape {
@@ -113,6 +113,7 @@ struct MuscleSelectionList: View {
                     .accessibilityIdentifier("muscle.\(muscle.rawValue)")
             }
         }
+        .nativeMotion(value: selection)
     }
 }
 

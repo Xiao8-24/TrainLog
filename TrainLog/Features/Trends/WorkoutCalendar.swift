@@ -3,35 +3,17 @@ import TrainLogCore
 
 struct WorkoutMonthCalendar: View {
     var sessions: [Session]
-    @State private var month = Date()
-    private var cal: Calendar { var value = Calendar.current; value.firstWeekday = 2; return value }
-    private var first: Date { cal.dateInterval(of: .month, for: month)?.start ?? month }
-    private var days: Int { cal.range(of: .day, in: .month, for: month)?.count ?? 30 }
-    private var offset: Int { (cal.component(.weekday, from: first) + 5) % 7 }
+    @Environment(AppClock.self) private var clock
+    @State private var selectedDate = Date()
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Button { month = cal.date(byAdding: .month, value: -1, to: first) ?? month } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }.accessibilityLabel("上个月")
-                Spacer()
-                Text(month.formatted(.dateTime.year().month(.wide))).font(.headline)
-                Spacer()
-                Button { month = cal.date(byAdding: .month, value: 1, to: first) ?? month } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }.accessibilityLabel("下个月")
-            }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 7), spacing: 4) {
-                ForEach(Array(["一", "二", "三", "四", "五", "六", "日"].enumerated()), id: \.offset) { _, text in Text(text).font(.caption).foregroundStyle(.secondary) }
-                ForEach(0..<(days + offset), id: \.self) { index in
-                    if index < offset { Color.clear.frame(height: 46) }
-                    else if let day = cal.date(byAdding: .day, value: index - offset, to: first) {
-                        let count = sessions.filter { $0.status == .completed && cal.isDate($0.date, inSameDayAs: day) }.count
-                        NavigationLink { DayHistoryView(date: day) } label: {
-                            VStack(spacing: 5) {
-                                Text("\(index - offset + 1)").font(.subheadline).monospacedDigit()
-                                Circle().fill(count > 0 ? Color.blue : .clear).frame(width: 5, height: 5)
-                            }.frame(maxWidth: .infinity, minHeight: 46).background(cal.isDateInToday(day) ? Color.blue.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 10))
-                        }.buttonStyle(.plain).accessibilityLabel("\(day.formatted(date: .complete, time: .omitted))，\(count) 次训练")
-                    }
-                }
-            }
+        let index = WorkoutCalendarIndex(sessions: sessions, calendar: clock.calendar)
+        NativeWorkoutCalendar(selectedDate: $selectedDate, index: index)
+            .id(String(describing: clock.calendar.identifier) + clock.calendar.timeZone.identifier)
+        NavigationLink {
+            DayHistoryView(date: selectedDate)
+        } label: {
+            Label("查看 \(selectedDate.formatted(date: .abbreviated, time: .omitted)) · \(index.count(on: selectedDate)) 次训练", systemImage: "list.bullet")
+                .frame(minHeight: 44)
         }
     }
 }
@@ -51,23 +33,24 @@ enum CalendarHeatMetric: String, CaseIterable, Identifiable {
     }
 }
 struct AnnualHeatmap: View {
+    @Environment(AppClock.self) private var clock
     var sessions: [Session]
     @Environment(\.colorScheme) private var scheme
     @State private var year = Calendar.current.component(.year, from: Date())
     @State private var metric = CalendarHeatMetric.coverage
     @State private var selectedDate = Date()
-    private var cal: Calendar { Calendar.current }
+    private var cal: Calendar { clock.calendar }
     private var first: Date { cal.date(from: DateComponents(year: year, month: 1, day: 1)) ?? Date() }
     private var end: Date { cal.date(byAdding: .year, value: 1, to: first) ?? Date() }
     private var days: Int { cal.dateComponents([.day], from: first, to: end).day ?? 365 }
     private var offset: Int { (cal.component(.weekday, from: first) + 5) % 7 }
-    private var data: [Date: DailyStatistic] { Dictionary(uniqueKeysWithValues: TrendAnalysisService.daily(sessions, interval: DateInterval(start: first, end: end)).map { ($0.date, $0) }) }
+    private var data: [Date: DailyStatistic] { Dictionary(uniqueKeysWithValues: TrendAnalysisService.daily(sessions, interval: DateInterval(start: first, end: end), calendar: cal).map { ($0.date, $0) }) }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 SectionHeader(title: "年度活动", subtitle: "按设备当前时区统计")
                 Spacer()
-                Stepper("\(String(year)) 年", value: $year, in: 2000...max(2030, cal.component(.year, from: Date()))).font(.caption)
+                Stepper("\(String(year)) 年", value: $year).font(.caption)
             }
             Picker("年度热力指标", selection: $metric) { ForEach(CalendarHeatMetric.allCases) { Text($0.name).tag($0) } }.pickerStyle(.menu)
             let daily = data

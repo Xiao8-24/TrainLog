@@ -95,6 +95,7 @@ extension Session {
 }
 struct SessionRow: View {
     var session: Session
+    var showsChevron = false
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: session.mode == .quick ? "figure.strengthtraining.functional" : "dumbbell.fill").foregroundStyle(.blue).frame(width: 36, height: 36).background(.blue.opacity(0.08), in: Circle())
@@ -105,7 +106,7 @@ struct SessionRow: View {
                 Text(session.mode == .quick ? "快速记录 · 不计入组数与容量" : "\(session.exercises.count) 个动作 · \(total.workingSets) 个正式组").font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            if showsChevron { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary).accessibilityHidden(true) }
         }.padding(.vertical, 6).accessibilityElement(children: .combine)
     }
 }

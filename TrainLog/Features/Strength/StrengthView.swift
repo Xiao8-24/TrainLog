@@ -4,6 +4,7 @@ import TrainLogCore
 
 struct StrengthView: View {
     @Environment(AppStore.self) private var store
+    @Environment(AppClock.self) private var clock
     @State private var selectedKey = ""
     @State private var range = TimeRange.quarter
     @State private var choosingPattern: MovementPattern?
@@ -66,7 +67,7 @@ struct StrengthView: View {
                     }
                 } else { AppCard { EmptyStateView(title: "还没有负重动作", message: "在动作库创建动作后，可开始积累力量记录。") } }
                 representatives
-                MuscleMapCard(title: "长期训练结构", model: MuscleHeatmapViewModel(sessions: store.completed, interval: TimeRange.quarter.interval(), metric: .weightedSets)) { selectedMuscle = $0 }
+                MuscleMapCard(title: "长期训练结构", model: MuscleHeatmapViewModel(sessions: store.completed, interval: TimeRange.quarter.interval(now: clock.now, calendar: clock.calendar), metric: .weightedSets)) { selectedMuscle = $0 }
                 AppCard {
                     SectionHeader(title: "训练洞察", subtitle: "本地规则分析 · 只描述已有记录")
                     ForEach(TrainingInsightService.insights(store.sessions), id: \.self) { insight in Label { Text(insight).font(.subheadline) } icon: { Image(systemName: "sparkle").foregroundStyle(.blue) } }
@@ -75,10 +76,10 @@ struct StrengthView: View {
             }.padding(20)
         }.background(AppTheme.background).navigationTitle("我的力量")
             .sheet(item: $choosingPattern) { pattern in NavigationStack { RepresentativePicker(pattern: pattern) } }
-            .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: TimeRange.quarter.interval()) } }
+            .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: TimeRange.quarter.interval(now: clock.now, calendar: clock.calendar)) } }
     }
     private func strengthChart(_ exercise: Exercise, performances: [Performance]) -> some View {
-        let values = StrengthAnalysisService.dailyBest(performances).filter { range.interval().includes($0.date) }
+        let values = StrengthAnalysisService.dailyBest(performances).filter { range.interval(now: clock.now, calendar: clock.calendar).includes($0.date) }
         return ChartContainer(title: "力量发展趋势", subtitle: "每日最佳估算 1RM · \(store.settings.unit.rawValue)") {
             Picker("力量趋势时间", selection: $range) { ForEach(TimeRange.allCases.filter { $0 != .today }) { Text($0.name).tag($0) } }.pickerStyle(.menu)
             if values.isEmpty { EmptyStateView(title: "暂无适用估算", message: exercise.allowsEstimate ? "只采用有效正式组：1–10 次，RPE ≥8 或 RIR ≤2。缺失努力程度时不估算。" : "此动作未启用 e1RM。你仍可以记录训练并查看实际重量与次数纪录。", symbol: "chart.xyaxis.line") }
@@ -120,6 +121,7 @@ struct StrengthView: View {
 }
 struct RepresentativePicker: View {
     @Environment(AppStore.self) private var store
+    @Environment(AppClock.self) private var clock
     @Environment(\.dismiss) private var dismiss
     var pattern: MovementPattern
     var body: some View {

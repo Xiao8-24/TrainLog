@@ -4,11 +4,12 @@ import TrainLogCore
 
 struct TrendsView: View {
     @Environment(AppStore.self) private var store
+    @Environment(AppClock.self) private var clock
     @State private var range = TimeRange.month
     @State private var metric = HeatMetric.weightedSets
     @State private var bodyView = BodyView.front
     @State private var selectedMuscle: MuscleGroup?
-    private var interval: DateInterval { range.interval() }
+    private var interval: DateInterval { range.interval(now: clock.now, calendar: clock.calendar) }
     private var model: MuscleHeatmapViewModel { MuscleHeatmapViewModel(sessions: store.sessions, interval: interval, metric: metric) }
     private var daily: [DailyStatistic] { TrendAnalysisService.daily(store.sessions, interval: interval) }
     var body: some View {
@@ -64,7 +65,7 @@ struct TrendsView: View {
     }
     private var summaryCards: some View {
         let totals = WorkoutStatisticsService.totals(store.sessions, interval: interval)
-        let effectiveStart = range == .all ? (store.completed.map(\.date).min() ?? Date()) : interval.start
+        let effectiveStart = range == .all ? (store.completed.map(\.date).min() ?? clock.now) : interval.start
         let dayCount = max(1, Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: effectiveStart), to: interval.end).day ?? 1)
         return LazyVGrid(columns: [GridItem(.adaptive(minimum: 145))], spacing: 12) {
             MetricCard(title: "训练次数", value: "\(totals.sessions)", unit: "次", symbol: "dumbbell")

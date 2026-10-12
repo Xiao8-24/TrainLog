@@ -33,7 +33,7 @@ struct WorkoutSummaryView: View {
                 .toolbar { Button("关闭") { dismiss() } }
                 .task {
                     if !reduceMotion { try? await Task.sleep(for: .milliseconds(180)) }
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.6)) { reveal = true }
+                    withAnimation(reduceMotion ? nil : .smooth(duration: 0.35)) { reveal = true }
                 }
                 .sheet(item: $muscle) { value in NavigationStack { MuscleDetailSheet(muscle: value, interval: TimeRange.today.interval(now: session.date), sessionScope: [sessionID]) } }
         } else { ContentUnavailableView("训练不存在", systemImage: "tray").toolbar { Button("关闭") { dismiss() } } }

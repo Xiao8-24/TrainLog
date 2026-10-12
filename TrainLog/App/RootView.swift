@@ -20,15 +20,17 @@ struct SessionRoute: Identifiable { var id: UUID }
 struct RootView: View {
     @Environment(AppStore.self) private var store
     @State private var router = AppRouter()
+    @State private var clock = AppClock()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var settingsPresented = false
     var body: some View {
         @Bindable var store = store
         @Bindable var router = router
         TabView(selection: $router.tab) {
-            NavigationStack { OverviewView { settingsPresented = true } }.tabItem { Label("概览", systemImage: "square.grid.2x2.fill") }.tag(AppTab.overview)
-            NavigationStack { WorkoutHomeView() }.tabItem { Label("训练", systemImage: "dumbbell.fill") }.tag(AppTab.workout)
-            NavigationStack { TrendsView() }.tabItem { Label("趋势", systemImage: "chart.xyaxis.line") }.tag(AppTab.trends)
-            NavigationStack { StrengthView() }.tabItem { Label("能力", systemImage: "trophy.fill") }.tag(AppTab.strength)
+            NavigationStack { OverviewView { settingsPresented = true }.fitnessCalendarAccess() }.tabItem { Label("概览", systemImage: "square.grid.2x2.fill") }.tag(AppTab.overview)
+            NavigationStack { WorkoutHomeView().fitnessCalendarAccess() }.tabItem { Label("训练", systemImage: "dumbbell.fill") }.tag(AppTab.workout)
+            NavigationStack { TrendsView().fitnessCalendarAccess() }.tabItem { Label("趋势", systemImage: "chart.xyaxis.line") }.tag(AppTab.trends)
+            NavigationStack { StrengthView().fitnessCalendarAccess() }.tabItem { Label("能力", systemImage: "trophy.fill") }.tag(AppTab.strength)
         }
         .environment(router)
         .sheet(isPresented: $settingsPresented) { NavigationStack { SettingsView() } }
@@ -42,6 +44,18 @@ struct RootView: View {
         .sheet(item: $router.summary) { route in NavigationStack { WorkoutSummaryView(sessionID: route.id) } }
         .fullScreenCover(isPresented: Binding(get: { !store.settings.hasOnboarded }, set: { _ in })) { OnboardingView() }
         .errorAlert($store.errorMessage)
+        .environment(clock)
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            clock.refresh()
+            while !Task.isCancelled {
+                do { try await Task.sleep(for: .seconds(30)); try Task.checkCancellation() } catch { return }
+                clock.refresh()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in clock.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in clock.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in clock.refresh() }
     }
 }
 

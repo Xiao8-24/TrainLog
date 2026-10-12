@@ -24,7 +24,7 @@ struct HistoryView: View {
                 Toggle("限定日期", isOn: $useDates)
                 if useDates {
                     DatePicker("开始", selection: $startDate, in: ...endDate, displayedComponents: .date)
-                    DatePicker("结束", selection: $endDate, in: startDate...Date(), displayedComponents: .date)
+                    DatePicker("结束", selection: $endDate, in: startDate..., displayedComponents: .date)
                 }
                 Picker("肌群", selection: $muscle) { Text("全部").tag(Optional<MuscleGroup>.none); ForEach(MuscleGroup.allCases) { Text($0.name).tag(Optional($0)) } }
                 Picker("动作", selection: $exerciseID) { Text("全部").tag(Optional<UUID>.none); ForEach(store.exercises) { Text($0.name).tag(Optional($0.id)) } }
@@ -32,7 +32,7 @@ struct HistoryView: View {
             Section("\(results.count) 次训练") {
                 ForEach(results) { session in
                     NavigationLink { SessionDetailView(sessionID: session.id) } label: { SessionRow(session: session) }
-                        .swipeActions { Button("删除", role: .destructive) { deleting = session } }
+                        .swipeActions(allowsFullSwipe: false) { Button("删除", role: .destructive) { deleting = session } }
                 }
                 if results.isEmpty { EmptyStateView(title: "暂无对应训练", message: "调整筛选条件，或记录一次新的训练。", symbol: "calendar") }
             }
@@ -44,13 +44,14 @@ struct HistoryView: View {
 }
 struct DayHistoryView: View {
     @Environment(AppStore.self) private var store
+    @Environment(AppClock.self) private var clock
     var date: Date
-    private var records: [Session] { store.completed.filter { Calendar.current.isDate($0.date, inSameDayAs: date) } }
+    private var records: [Session] { WorkoutCalendarIndex(sessions: store.sessions, calendar: clock.calendar).records(on: date) }
     var body: some View {
         List {
             if records.isEmpty { EmptyStateView(title: "这一天没有训练记录", message: "可在训练页新建记录，并将训练日期设为这一天。", symbol: "calendar") }
             ForEach(records) { session in NavigationLink { SessionDetailView(sessionID: session.id) } label: { SessionRow(session: session) } }
-        }.navigationTitle(date.formatted(.dateTime.month().day())).navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle(date.formatted(date: .abbreviated, time: .omitted)).navigationBarTitleDisplayMode(.inline)
     }
 }
 struct SessionDetailView: View {
@@ -108,7 +109,7 @@ struct SessionDetailView: View {
                     .toolbar { Button("编辑") { editing = session }.accessibilityIdentifier("editWorkout") }
             } else { ContentUnavailableView("训练记录已删除", systemImage: "tray") }
         }.navigationTitle("训练详情").navigationBarTitleDisplayMode(.inline)
-            .sheet(item: $editing) { session in NavigationStack { WorkoutEditorView(session: session) { _ in editing = nil } } }
+            .sheet(item: $editing) { session in NavigationStack { WorkoutEditorView(session: session) { _ in editing = nil } }.interactiveDismissDisabled() }
             .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: TimeRange.all.interval()) } }
             .confirmationDialog("删除训练？此操作会同步更新所有统计。", isPresented: $deleting, titleVisibility: .visible) {
                 Button("删除训练", role: .destructive) { do { try store.deleteSession(sessionID); dismiss() } catch { store.errorMessage = error.localizedDescription } }

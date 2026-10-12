@@ -44,6 +44,7 @@ struct ExerciseEditorCard: View {
             TextField("动作备注（可选）", text: $entry.notes).font(.subheadline)
         }
         .confirmationDialog("删除动作及其所有组？", isPresented: $confirmDelete, titleVisibility: .visible) { Button("删除动作", role: .destructive, action: onDelete) }
+        .nativeMotion(value: entry.sets.map(\.id))
         .confirmationDialog("用上次配置替换当前所有组？完成状态会清除。", isPresented: $confirmReuse, titleVisibility: .visible) {
             Button("替换配置") { if let previous { entry.sets = previous.sets.map { $0.copied() } } }
         }
@@ -74,7 +75,7 @@ struct WorkoutSetRow: View {
                 Button {
                     if set.isCompleted { set.isCompleted = false }
                     else {
-                        do { try RecordValidator.trainingSet(set, exercise: exercise, requireComplete: true); set.isCompleted = true; UINotificationFeedbackGenerator().notificationOccurred(.success); onComplete(set.restSeconds) }
+                        do { try RecordValidator.trainingSet(set, exercise: exercise, requireComplete: true); set.isCompleted = true; onComplete(set.restSeconds) }
                         catch { errorMessage = error.localizedDescription }
                     }
                 } label: { Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle").font(.title2).foregroundStyle(set.isCompleted ? .green : .secondary).frame(width: 44, height: 44) }
@@ -110,6 +111,9 @@ struct WorkoutSetRow: View {
             }
         }
         .padding(10).background(set.isCompleted ? Color.green.opacity(0.045) : .clear, in: RoundedRectangle(cornerRadius: 12))
+        .nativeMotion(value: expanded)
+        .nativeMotion(value: set.isCompleted)
+        .sensoryFeedback(.success, trigger: set.isCompleted) { _, completed in completed }
         .confirmationDialog("删除第 \(index) 组？", isPresented: $deleteConfirmation, titleVisibility: .visible) { Button("删除本组", role: .destructive, action: onDelete) }
         .errorAlert($errorMessage)
     }

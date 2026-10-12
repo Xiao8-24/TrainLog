@@ -3,21 +3,24 @@ import TrainLogCore
 
 struct WorkoutEditorView: View {
     @Environment(AppStore.self) private var store
+    @Environment(AppClock.self) private var clock
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var session: Session
     @State private var restTimer: RestTimer
     private let editingHistory: Bool
+    private let originalSession: Session
     var onFinished: (UUID) -> Void
     @State private var bodyView = BodyView.front
     @State private var showingLibrary = false
     @State private var discardConfirmation = false
+    @State private var discardEditsConfirmation = false
     @State private var errorMessage: String?
     @State private var draftStatus = "草稿保存在本机"
     @State private var saving = false
     init(session: Session, onFinished: @escaping (UUID) -> Void) {
         _session = State(initialValue: session); _restTimer = State(initialValue: RestTimer(sessionID: session.id))
-        editingHistory = session.status == .completed; self.onFinished = onFinished
+        editingHistory = session.status == .completed; originalSession = session; self.onFinished = onFinished
     }
     private var selection: Binding<Set<MuscleGroup>> {
         Binding(get: { Set(session.quickEntries.map(\.muscle)) }, set: { values in
@@ -29,7 +32,7 @@ struct WorkoutEditorView: View {
             VStack(spacing: 18) {
                 if !editingHistory && session.mode == .detailed { sessionTimer }
                 AppCard {
-                    DatePicker("训练日期", selection: $session.date, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("训练日期", selection: $session.date, in: ...max(clock.now, session.date), displayedComponents: [.date, .hourAndMinute])
                     if editingHistory { Text("历史修改只有在点击保存后才生效；返回会保留原记录。").font(.caption).foregroundStyle(.secondary) }
                     else { Text(draftStatus).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("draftStatus") }
                 }
@@ -51,6 +54,9 @@ struct WorkoutEditorView: View {
             }.padding(20)
         }
         .background(AppTheme.background)
+        .scrollDismissesKeyboard(.interactively)
+        .nativeMotion(value: session.exercises.map(\.id))
+        .nativeMotion(value: restTimer.deadline != nil)
         .navigationTitle(editingHistory ? "编辑训练" : session.mode == .quick ? "快速记录" : "正在训练")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -74,6 +80,9 @@ struct WorkoutEditorView: View {
             }
         }
         .errorAlert($errorMessage)
+        .confirmationDialog("放弃本次修改？原训练记录会保留。", isPresented: $discardEditsConfirmation, titleVisibility: .visible) {
+            Button("放弃修改", role: .destructive) { dismiss() }
+        }
         .task(id: session) {
             guard !editingHistory, !saving else { return }
             do { try await Task.sleep(for: .milliseconds(500)); try Task.checkCancellation() } catch { return }
@@ -118,7 +127,7 @@ struct WorkoutEditorView: View {
     }
     private var quickSelection: some View {
         AppCard {
-            SectionHeader(title: "今天练了哪里？", subtitle: "点击人体或下方标签，可多选")
+            SectionHeader(title: "这次练了哪里？", subtitle: "点击人体或下方标签，可多选")
             Picker("人体视角", selection: $bodyView) { ForEach(BodyView.allCases) { Text($0.name).tag($0) } }.pickerStyle(.segmented)
             BodyMuscleMapView(view: bodyView, levels: Dictionary(uniqueKeysWithValues: selection.wrappedValue.map { ($0, 3) }), selected: selection.wrappedValue) { muscle in
                 var value = selection.wrappedValue
@@ -126,6 +135,7 @@ struct WorkoutEditorView: View {
             }.frame(height: 340).frame(maxWidth: .infinity)
             MuscleSelectionList(selection: selection)
         }
+        .sensoryFeedback(.selection, trigger: selection.wrappedValue)
     }
     private var detailedExercises: some View {
         VStack(spacing: 18) {
@@ -148,7 +158,10 @@ struct WorkoutEditorView: View {
         }
     }
     private func close() {
-        if editingHistory { dismiss(); return }
+        if editingHistory {
+            if session != originalSession { discardEditsConfirmation = true } else { dismiss() }
+            return
+        }
         do { var value = session; value.updatedAt = Date(); try store.save(value); dismiss() }
         catch { errorMessage = error.localizedDescription }
     }
