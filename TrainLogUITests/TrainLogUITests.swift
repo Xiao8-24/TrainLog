@@ -92,11 +92,15 @@ final class TrainLogUITests: XCTestCase {
         XCTAssertTrue(day.waitForExistence(timeout: 5))
         XCTAssertEqual(day.label, tomorrow)
         app.buttons["calendar.today"].tap()
-        XCTAssertEqual(day.label, today)
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "Native fitness calendar - date navigation"
         screenshot.lifetime = .keepAlways
         add(screenshot)
+        for _ in 0..<3 {
+            if day.exists { break }
+            app.swipeUp(velocity: .slow)
+        }
+        XCTAssertEqual(day.label, today)
     }
 }
 

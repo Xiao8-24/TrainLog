@@ -1,5 +1,11 @@
 # 验证记录
 
+## 0.2.0 原生日历更新
+
+2026-10-12，[Actions #5](https://github.com/Xiao8-24/TrainLog/actions/runs/38211655655) 已通过：28 个核心测试、7 个集成测试、4 个 UI 测试，共 39 项，均为 0 失败；iOS 模拟器测试和 Release 设备归档成功。验证提交 `f7f22dff864cc27c8b8162bd81ffe72552ead3b4`。40 个 Swift 文件、107 个工程对象通过静态检查。
+
+2026-10-13，已下载校验并检查 iPhone SE（第 3 代）模拟器的原生日历截图，确认日期圆点和已完成训练列表显示。补充“今天”按钮强制返回当前月并滚回顶部，最终复测见 0.2.0 发布工作流。新功能和仍待真机验收的范围见 [NATIVE_EXPERIENCE.md](NATIVE_EXPERIENCE.md)。以下保留 0.1.0 的历史验证记录。
+
 日期：2026-10-10（Asia/Shanghai）。执行环境：Windows 静态检查 + GitHub macOS 云端 Xcode。
 
 云端验证提交：`9adbd773fa5dab6f47a46ae2c7383c47411016af`。

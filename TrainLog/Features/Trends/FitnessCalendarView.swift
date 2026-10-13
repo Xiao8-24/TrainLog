@@ -6,6 +6,8 @@ struct FitnessCalendarView: View {
     @Environment(AppStore.self) private var store
     @Environment(AppClock.self) private var clock
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealRequest = 0
     @SceneStorage("fitnessCalendar.selectedDate") private var selectedTimestamp = Date().timeIntervalSince1970
     private var selectedDate: Binding<Date> {
         Binding(get: { Date(timeIntervalSince1970: selectedTimestamp) }, set: { selectedTimestamp = $0.timeIntervalSince1970 })
@@ -15,11 +17,13 @@ struct FitnessCalendarView: View {
         let index = WorkoutCalendarIndex(sessions: store.sessions, calendar: calendar)
         let date = selectedDate.wrappedValue
         let records = index.records(on: date)
+        ScrollViewReader { scroll in
         List {
             Section {
-                NativeWorkoutCalendar(selectedDate: selectedDate, index: index)
+                NativeWorkoutCalendar(selectedDate: selectedDate, index: index, revealRequest: revealRequest)
                     .id(String(describing: calendar.identifier) + calendar.timeZone.identifier)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .id("calendar.top")
                 DatePicker("跳转日期", selection: selectedDate, displayedComponents: .date)
                     .accessibilityIdentifier("calendar.datePicker")
             } footer: {
@@ -54,8 +58,13 @@ struct FitnessCalendarView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("calendar.close") }
             ToolbarItem(placement: .primaryAction) {
-                Button("今天") { selectedDate.wrappedValue = clock.now }.accessibilityIdentifier("calendar.today")
+                Button("今天") {
+                    selectedDate.wrappedValue = clock.now
+                    revealRequest += 1
+                    withAnimation(reduceMotion ? nil : .smooth) { scroll.scrollTo("calendar.top", anchor: .top) }
+                }.accessibilityIdentifier("calendar.today")
             }
+        }
         }
     }
 }
@@ -64,6 +73,7 @@ struct FitnessCalendarView: View {
 struct NativeWorkoutCalendar: UIViewRepresentable {
     @Binding var selectedDate: Date
     var index: WorkoutCalendarIndex
+    var revealRequest = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -85,9 +95,10 @@ struct NativeWorkoutCalendar: UIViewRepresentable {
         coordinator.parent = self
         if view.calendar != index.calendar { view.calendar = index.calendar }
         let day = index.calendar.startOfDay(for: selectedDate)
-        if coordinator.selection != day {
+        if coordinator.selection != day || coordinator.revealRequest != revealRequest {
             let animated = coordinator.selection != nil && !reduceMotion
             coordinator.selection = day
+            coordinator.revealRequest = revealRequest
             let components = index.calendar.dateComponents([.era, .year, .month, .day], from: day)
             (view.selectionBehavior as? UICalendarSelectionSingleDate)?.setSelected(components, animated: animated)
             view.setVisibleDateComponents(components, animated: animated)
@@ -106,6 +117,7 @@ struct NativeWorkoutCalendar: UIViewRepresentable {
     final class Coordinator: NSObject, UICalendarViewDelegate, UICalendarSelectionSingleDateDelegate {
         var parent: NativeWorkoutCalendar
         var selection: Date?
+        var revealRequest = 0
         var decoratedDays: Set<Date> = []
         init(_ parent: NativeWorkoutCalendar) { self.parent = parent }
         func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {

@@ -4,8 +4,12 @@
 
 面向个人力量训练的离线 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols**；最低部署版本 **iOS 18.0**。无服务器、无账号、无第三方运行时依赖。
 
-> **交付状态：已通过 GitHub macOS 云端编译、31 个自动化测试及 Release 设备归档。**
-> [首次全部通过的构建](https://github.com/Xiao8-24/TrainLog/actions/runs/38047555570) 使用 Xcode 16.4、Swift 6.1.2 编译器（Swift 5 语言模式）及 iOS 18.5 SDK。源码从 Windows 开发，由云端 Xcode 验证。生成的 IPA 未签名，尚未完成真机、TestFlight 或 App Store 验收。
+> **交付状态：已通过 GitHub macOS 云端编译、39 个自动化测试及 Release 设备归档。**
+> [原生日历更新通过的构建](https://github.com/Xiao8-24/TrainLog/actions/runs/38211655655) 使用 Xcode 16.4、Swift 6.1.2 编译器（Swift 5 语言模式）及 iOS 18.5 SDK。源码从 Windows 开发，由云端 Xcode 验证。生成的 IPA 未签名，尚未完成真机、TestFlight 或 App Store 验收。
+
+## 0.2.0 原生日历与交互
+
+四个主页面右上角均可打开原生健身日历，支持月份/年份切换、日期跳转、返回今天和选中日期恢复。日历查看不受趋势统计范围限制，跨午夜或时区变更后刷新；新增系统动画、触感、减少动态效果支持及历史编辑取消确认。详见 [原生体验改进](Documentation/NATIVE_EXPERIENCE.md)。
 
 ## 没有 Mac：使用 GitHub 云端构建
 
