@@ -23,7 +23,7 @@ final class TrainLogUITests: XCTestCase {
             capture(app, name: "Native overview - \(appearance)")
             app.buttons["startWorkout"].tap()
             app.buttons["startRestTimer"].tap()
-            app.buttons["60 秒"].tap()
+            app.buttons["180 秒"].tap()
             let end = app.buttons["restTimer.end"]
             XCTAssertTrue(end.waitForExistence(timeout: 5))
             XCTAssertTrue(end.isHittable)
@@ -39,16 +39,17 @@ final class TrainLogUITests: XCTestCase {
         app.buttons["startWorkout"].tap()
         let timer = app.buttons["startRestTimer"]
         for _ in 0..<4 where !timer.isHittable { app.swipeUp(velocity: .slow) }
-        timer.tap(); app.buttons["60 秒"].tap()
+        timer.tap(); app.buttons["180 秒"].tap()
         let end = app.buttons["restTimer.end"]
         XCTAssertTrue(end.waitForExistence(timeout: 5))
         XCTAssertTrue(end.isHittable)
-        let surface = app.descendants(matching: .any)["restTimer.surface"].firstMatch
-        XCTAssertTrue(surface.exists)
-        XCTAssertGreaterThanOrEqual(surface.frame.minX, app.frame.minX)
-        XCTAssertLessThanOrEqual(surface.frame.maxX, app.frame.maxX)
-        XCTAssertGreaterThanOrEqual(end.frame.minX, app.frame.minX)
-        XCTAssertLessThanOrEqual(end.frame.maxX, app.frame.maxX)
+        // Inspect the actual controls without introducing an accessibility
+        // container around a glass surface that updates every second.
+        for control in [app.staticTexts["restTimer.label"], app.staticTexts["restTimer.remaining"], end] {
+            XCTAssertTrue(control.exists)
+            XCTAssertGreaterThanOrEqual(control.frame.minX, app.frame.minX)
+            XCTAssertLessThanOrEqual(control.frame.maxX, app.frame.maxX)
+        }
         capture(app, name: "Native floating rest controls - accessibility text")
         end.tap()
         XCTAssertTrue(end.waitForNonExistence(timeout: 5))

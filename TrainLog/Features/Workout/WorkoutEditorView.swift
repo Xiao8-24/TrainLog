@@ -196,6 +196,7 @@ struct RestTimerBanner: View {
             let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
             layout {
                 Label("组间休息", systemImage: "timer").font(.subheadline)
+                    .accessibilityIdentifier("restTimer.label")
                 if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
                 Text("\(timer.remaining(at: context.date)) 秒").font(.headline).monospacedDigit()
                     .accessibilityIdentifier("restTimer.remaining")
@@ -203,8 +204,6 @@ struct RestTimerBanner: View {
                     .accessibilityIdentifier("restTimer.end")
             }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
                 .modifier(NativeFloatingSurface())
-                .accessibilityElement(children: .contain)
-                .accessibilityIdentifier("restTimer.surface")
                 .onChange(of: context.date) { _, now in timer.tick(at: now) }
         }
     }
