@@ -36,7 +36,7 @@ struct SettingsView: View {
                 Picker("重量单位", selection: binding(\.unit)) { ForEach(WeightUnit.allCases) { Text($0.rawValue).tag($0) } }
                 Stepper("每周目标 \(store.settings.weeklyGoal) 次", value: binding(\.weeklyGoal), in: 1...14)
                 Picker("训练目标", selection: binding(\.trainingGoal)) { ForEach(["保持规律", "提升力量", "增加肌肉", "记录与观察"], id: \.self) { Text($0).tag($0) } }
-                Picker("外观", selection: binding(\.theme)) { ForEach(ThemePreference.allCases) { Text($0.name).tag($0) } }
+                Picker("外观", selection: binding(\.theme)) { ForEach(ThemePreference.allCases) { Text($0.name).tag($0) } }.accessibilityIdentifier("settings.appearance")
                 NavigationLink("体重与历史") { BodyWeightHistoryView() }
             }
             Section("组间休息") {
@@ -59,7 +59,7 @@ struct SettingsView: View {
             Section("关于") {
                 NavigationLink("数据统计说明") { DataRulesView() }
                 NavigationLink("隐私说明") { PrivacyView() }
-                LabeledContent("TrainLog", value: "1.0 · 本地优先")
+                LabeledContent("TrainLog", value: "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—") · 本地优先")
                 Text("记录每一次训练，看见每一点进步。").font(.caption).foregroundStyle(.secondary)
             }
         }.navigationTitle("设置").navigationBarTitleDisplayMode(.inline)

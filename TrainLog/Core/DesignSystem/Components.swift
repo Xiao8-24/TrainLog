@@ -67,7 +67,7 @@ struct PrimaryActionButton: View {
     var title: String
     var symbol: String = "plus"
     var action: () -> Void
-    var body: some View { Button(action: action) { Label(title, systemImage: symbol).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 9) }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 16)).controlSize(.large) }
+    var body: some View { Button(action: action) { Label(title, systemImage: symbol).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 9) }.modifier(NativePrimaryActionStyle()).controlSize(.large) }
 }
 struct ExerciseRow: View {
     var exercise: Exercise

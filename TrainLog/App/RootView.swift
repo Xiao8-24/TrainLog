@@ -27,10 +27,18 @@ struct RootView: View {
         @Bindable var store = store
         @Bindable var router = router
         TabView(selection: $router.tab) {
-            NavigationStack { OverviewView { settingsPresented = true }.fitnessCalendarAccess() }.tabItem { Label("概览", systemImage: "square.grid.2x2.fill") }.tag(AppTab.overview)
-            NavigationStack { WorkoutHomeView().fitnessCalendarAccess() }.tabItem { Label("训练", systemImage: "dumbbell.fill") }.tag(AppTab.workout)
-            NavigationStack { TrendsView().fitnessCalendarAccess() }.tabItem { Label("趋势", systemImage: "chart.xyaxis.line") }.tag(AppTab.trends)
-            NavigationStack { StrengthView().fitnessCalendarAccess() }.tabItem { Label("能力", systemImage: "trophy.fill") }.tag(AppTab.strength)
+            Tab("概览", systemImage: "square.grid.2x2.fill", value: AppTab.overview) {
+                NavigationStack { OverviewView { settingsPresented = true }.fitnessCalendarAccess() }
+            }
+            Tab("训练", systemImage: "dumbbell.fill", value: AppTab.workout) {
+                NavigationStack { WorkoutHomeView().fitnessCalendarAccess() }
+            }
+            Tab("趋势", systemImage: "chart.xyaxis.line", value: AppTab.trends) {
+                NavigationStack { TrendsView().fitnessCalendarAccess() }
+            }
+            Tab("能力", systemImage: "trophy.fill", value: AppTab.strength) {
+                NavigationStack { StrengthView().fitnessCalendarAccess() }
+            }
         }
         .environment(router)
         .sheet(isPresented: $settingsPresented) { NavigationStack { SettingsView() } }

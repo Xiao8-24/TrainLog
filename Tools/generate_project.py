@@ -65,7 +65,7 @@ for target, folder, product, product_type in [
     for name in ["Debug", "Release"]:
         values = {"PRODUCT_BUNDLE_IDENTIFIER": "com.trainlog.personal" + ("" if target == "TrainLog" else "." + target), "PRODUCT_NAME": "$(TARGET_NAME)", "SWIFT_VERSION": "5.0", "IPHONEOS_DEPLOYMENT_TARGET": "18.0", "TARGETED_DEVICE_FAMILY": "1", "CODE_SIGN_STYLE": "Automatic", "DEVELOPMENT_TEAM": "", "SWIFT_STRICT_CONCURRENCY": "targeted", "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks"}
         if target == "TrainLog":
-            values.update({"INFOPLIST_FILE": "TrainLog/Resources/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor", "MARKETING_VERSION": "0.2.0", "CURRENT_PROJECT_VERSION": "2", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO", "ENABLE_PREVIEWS": "YES"})
+            values.update({"INFOPLIST_FILE": "TrainLog/Resources/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor", "MARKETING_VERSION": "0.3.0", "CURRENT_PROJECT_VERSION": "3", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO", "ENABLE_PREVIEWS": "YES"})
         else:
             values.update({"GENERATE_INFOPLIST_FILE": "YES"})
             if target == "TrainLogTests":

@@ -61,10 +61,10 @@ struct WorkoutEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { Button(editingHistory ? "取消" : "稍后继续") { close() }.disabled(saving) }
-            ToolbarItem(placement: .topBarTrailing) { Button(editingHistory ? "保存" : "完成") { finish() }.fontWeight(.semibold).disabled(saving).accessibilityIdentifier("finishWorkout") }
+            ToolbarItem(placement: .confirmationAction) { Button(editingHistory ? "保存" : "完成") { finish() }.disabled(saving).accessibilityIdentifier("finishWorkout") }
             ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("收起键盘") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
         }
-        .safeAreaInset(edge: .bottom) {
+        .nativeBottomBar {
             if restTimer.deadline != nil { RestTimerBanner(timer: restTimer).padding(.horizontal).padding(.bottom, 8) }
         }
         .sheet(isPresented: $showingLibrary) {
@@ -120,7 +120,7 @@ struct WorkoutEditorView: View {
                 Menu {
                     ForEach([60, 90, 120, 180], id: \.self) { seconds in Button("\(seconds) 秒") { restTimer.start(seconds: seconds, notify: store.settings.notifyRest) } }
                     Button("使用自定义 \(store.settings.restSeconds) 秒") { restTimer.start(seconds: store.settings.restSeconds, notify: store.settings.notifyRest) }
-                } label: { Label("开始计时", systemImage: "timer") }
+                } label: { Label("开始计时", systemImage: "timer") }.accessibilityIdentifier("startRestTimer")
             }
             if let warning = restTimer.notificationError { Text("提醒未能安排：\(warning)。屏幕计时仍可使用。").font(.caption).foregroundStyle(.orange) }
         }
@@ -178,15 +178,19 @@ struct WorkoutEditorView: View {
 }
 struct RestTimerBanner: View {
     var timer: RestTimer
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            HStack {
-                Image(systemName: "timer").foregroundStyle(.blue)
-                Text("组间休息").font(.subheadline)
-                Spacer()
+            let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+            layout {
+                Label("组间休息", systemImage: "timer").font(.subheadline)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
                 Text("\(timer.remaining(at: context.date)) 秒").font(.headline).monospacedDigit()
-                Button("结束") { timer.cancel() }.frame(minHeight: 44)
-            }.padding(.horizontal, 16).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+                    .accessibilityIdentifier("restTimer.remaining")
+                Button("结束") { timer.cancel() }.frame(minWidth: 44, minHeight: 44)
+                    .accessibilityIdentifier("restTimer.end")
+            }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
+                .modifier(NativeFloatingSurface())
                 .onChange(of: context.date) { _, now in timer.tick(at: now) }
         }
     }

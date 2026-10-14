@@ -4,8 +4,11 @@
 
 面向个人力量训练的离线 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols**；最低部署版本 **iOS 18.0**。无服务器、无账号、无第三方运行时依赖。
 
-> **交付状态：已通过 GitHub macOS 云端编译、39 个自动化测试及 Release 设备归档。**
-> [原生日历更新通过的构建](https://github.com/Xiao8-24/TrainLog/actions/runs/38211655655) 使用 Xcode 16.4、Swift 6.1.2 编译器（Swift 5 语言模式）及 iOS 18.5 SDK。源码从 Windows 开发，由云端 Xcode 验证。生成的 IPA 未签名，尚未完成真机、TestFlight 或 App Store 验收。
+> **0.3.0：正在验证 iOS 27 原生 Liquid Glass 适配。** 既有 v0.2.0 的 39 项测试结果不作为本次验收证据。新版本由 Xcode 27 构建，并独立回归 iOS 18；构建与视觉证据见 Actions。
+
+## 0.3.0 Liquid Glass
+
+系统导航、标签栏、工具栏和日历跟随新系统；主要按钮采用原生玻璃样式，休息计时浮层支持系统滚动边缘效果、大字体和减少透明度回退。数据卡片保持清晰。详见 [适配说明与官方依据](Documentation/LIQUID_GLASS.md)。
 
 ## 0.2.0 原生日历与交互
 
@@ -20,7 +23,7 @@
 ## 在 Mac 上打开、编译与安装
 
 1. 将整个仓库或 `Delivery/TrainLog-iOS-source.zip` 解压到 Mac，保留 `Packages/TrainLogCore` 与 `TrainLog.xcodeproj` 的相对位置。
-2. 使用支持 iOS 18 或更新正式 SDK 的 Xcode 打开 **`TrainLog.xcodeproj`**。工程不需要 CocoaPods、网络 Swift Package 或额外工程生成器。
+2. 使用 Xcode 27.0 或更新正式版 打开 **`TrainLog.xcodeproj`**。工程不需要 CocoaPods、网络 Swift Package 或额外工程生成器。
 3. 选择共享 Scheme **TrainLog** 和已安装的 iPhone 模拟器。按 **⌘B** 构建、**⌘R** 运行。
 4. 真机安装：在 TrainLog target → Signing & Capabilities 中选择自己的开发团队，修改 Bundle Identifier 为自己的唯一标识。连接并信任 iPhone，按系统提示启用开发者模式，选择该设备并运行。
 5. 使用个人开发团队安装时，签名能力与有效期以 Xcode 当前提示为准。本仓库不包含签名证书、Team ID 或预签名 IPA。

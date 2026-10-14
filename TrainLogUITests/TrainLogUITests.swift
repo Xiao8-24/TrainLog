@@ -1,11 +1,51 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
-    @MainActor private func launch() -> XCUIApplication {
-        let app = XCUIApplication(); app.launchArguments = ["-ui-testing"]; app.launch()
+    @MainActor private func launch(extraArguments: [String] = []) -> XCUIApplication {
+        let app = XCUIApplication(); app.launchArguments = ["-ui-testing"] + extraArguments; app.launch()
         let skip = app.buttons["skipOnboarding"]
         if skip.waitForExistence(timeout: 10) { skip.tap() }
         return app
+    }
+    @MainActor private func capture(_ app: XCUIApplication, name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name; shot.lifetime = .keepAlways; add(shot)
+    }
+    @MainActor func testNativeAppearanceAndFloatingRestControls() {
+        let app = launch()
+        for appearance in ["浅色", "深色"] {
+            app.buttons["设置"].tap()
+            let picker = app.descendants(matching: .any)["settings.appearance"].firstMatch
+            XCTAssertTrue(picker.waitForExistence(timeout: 5)); picker.tap()
+            app.buttons[appearance].tap()
+            app.navigationBars.buttons["完成"].tap()
+            XCTAssertTrue(app.buttons["startWorkout"].waitForExistence(timeout: 5))
+            capture(app, name: "Native overview - \(appearance)")
+            app.buttons["startWorkout"].tap()
+            app.buttons["startRestTimer"].tap()
+            app.buttons["60 秒"].tap()
+            let end = app.buttons["restTimer.end"]
+            XCTAssertTrue(end.waitForExistence(timeout: 5))
+            XCTAssertTrue(end.isHittable)
+            XCTAssertTrue(app.staticTexts["restTimer.remaining"].exists)
+            capture(app, name: "Native floating rest controls - \(appearance)")
+            end.tap()
+            XCTAssertTrue(end.waitForNonExistence(timeout: 5))
+            app.buttons["稍后继续"].tap()
+        }
+    }
+    @MainActor func testRestControlsAtAccessibilityTextSize() {
+        let app = launch(extraArguments: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+        app.buttons["startWorkout"].tap()
+        let timer = app.buttons["startRestTimer"]
+        for _ in 0..<4 where !timer.isHittable { app.swipeUp(velocity: .slow) }
+        timer.tap(); app.buttons["60 秒"].tap()
+        let end = app.buttons["restTimer.end"]
+        XCTAssertTrue(end.waitForExistence(timeout: 5))
+        XCTAssertTrue(end.isHittable)
+        capture(app, name: "Native floating rest controls - accessibility text")
+        end.tap()
+        XCTAssertTrue(end.waitForNonExistence(timeout: 5))
     }
     @MainActor func testQuickChestRecordAppearsInHistoryAndCanBeDeleted() {
         let app = launch()
