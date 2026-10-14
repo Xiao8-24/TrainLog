@@ -43,6 +43,12 @@ final class TrainLogUITests: XCTestCase {
         let end = app.buttons["restTimer.end"]
         XCTAssertTrue(end.waitForExistence(timeout: 5))
         XCTAssertTrue(end.isHittable)
+        let surface = app.descendants(matching: .any)["restTimer.surface"].firstMatch
+        XCTAssertTrue(surface.exists)
+        XCTAssertGreaterThanOrEqual(surface.frame.minX, app.frame.minX)
+        XCTAssertLessThanOrEqual(surface.frame.maxX, app.frame.maxX)
+        XCTAssertGreaterThanOrEqual(end.frame.minX, app.frame.minX)
+        XCTAssertLessThanOrEqual(end.frame.maxX, app.frame.maxX)
         capture(app, name: "Native floating rest controls - accessibility text")
         end.tap()
         XCTAssertTrue(end.waitForNonExistence(timeout: 5))

@@ -6,6 +6,7 @@ struct WorkoutEditorView: View {
     @Environment(AppClock.self) private var clock
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var session: Session
     @State private var restTimer: RestTimer
     private let editingHistory: Bool
@@ -28,11 +29,19 @@ struct WorkoutEditorView: View {
         })
     }
     var body: some View {
+        GeometryReader { geometry in
         ScrollView {
             VStack(spacing: 18) {
                 if !editingHistory && session.mode == .detailed { sessionTimer }
                 AppCard {
-                    DatePicker("训练日期", selection: $session.date, in: ...max(clock.now, session.date), displayedComponents: [.date, .hourAndMinute])
+                    if dynamicTypeSize.isAccessibilitySize {
+                        Text("训练日期").font(.headline)
+                        DatePicker("训练日期", selection: $session.date, in: ...max(clock.now, session.date), displayedComponents: [.date, .hourAndMinute])
+                            .datePickerStyle(.wheel).labelsHidden()
+                            .frame(maxWidth: .infinity).clipped()
+                    } else {
+                        DatePicker("训练日期", selection: $session.date, in: ...max(clock.now, session.date), displayedComponents: [.date, .hourAndMinute])
+                    }
                     if editingHistory { Text("历史修改只有在点击保存后才生效；返回会保留原记录。").font(.caption).foregroundStyle(.secondary) }
                     else { Text(draftStatus).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("draftStatus") }
                 }
@@ -51,7 +60,8 @@ struct WorkoutEditorView: View {
                     Button("放弃这份草稿", role: .destructive) { discardConfirmation = true }.frame(minHeight: 44)
                 }
                 Text("仅已完成正式组计入组数、容量与力量统计。递减组只参与肌群覆盖，热身与失败组不参与统计。").font(.caption).foregroundStyle(.secondary)
-            }.padding(20)
+            }.frame(width: max(0, geometry.size.width - 40)).padding(20)
+        }
         }
         .background(AppTheme.background)
         .scrollDismissesKeyboard(.interactively)
@@ -102,21 +112,23 @@ struct WorkoutEditorView: View {
     private var sessionTimer: some View {
         AppCard {
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                HStack {
+                let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
+                layout {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(session.timerStartedAt == nil ? "训练计时 · 已暂停" : "训练计时").font(.caption).foregroundStyle(.secondary)
                         Text(Duration.seconds(session.elapsed(at: context.date)).formatted(.time(pattern: .hourMinuteSecond))).font(.title2.weight(.semibold)).monospacedDigit()
                     }
-                    Spacer()
+                    if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                     Button {
                         if session.timerStartedAt == nil { session.manualDurationSeconds = nil; session.timerStartedAt = Date() }
                         else { session.pause() }
                     } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时")
                 }
             }
-            HStack {
+            let restLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
+            restLayout {
                 Text("组间休息").font(.subheadline)
-                Spacer()
+                if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 Menu {
                     ForEach([60, 90, 120, 180], id: \.self) { seconds in Button("\(seconds) 秒") { restTimer.start(seconds: seconds, notify: store.settings.notifyRest) } }
                     Button("使用自定义 \(store.settings.restSeconds) 秒") { restTimer.start(seconds: store.settings.restSeconds, notify: store.settings.notifyRest) }
@@ -191,6 +203,8 @@ struct RestTimerBanner: View {
                     .accessibilityIdentifier("restTimer.end")
             }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
                 .modifier(NativeFloatingSurface())
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("restTimer.surface")
                 .onChange(of: context.date) { _, now in timer.tick(at: now) }
         }
     }
