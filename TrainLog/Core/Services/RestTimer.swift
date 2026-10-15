@@ -15,7 +15,11 @@ final class RestNotificationScheduler: @unchecked Sendable {
     private var pending: [(String, Date?, Completion)] = []
     private var running = false
 
-    init(operation: Operation? = nil) { self.operation = operation ?? Self.apply }
+    init(operation: Operation? = nil) {
+        self.operation = operation ?? { identifier, deadline, completion in
+            Self.apply(identifier: identifier, deadline: deadline, completion: completion)
+        }
+    }
 
     func replace(identifier: String, deadline: Date?, completion: @escaping Completion) {
         queue.async {

@@ -6,6 +6,8 @@
 
 Apple 允许通知中心从任意应用线程使用：[UNUserNotificationCenter](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter)。
 
+[Actions #10](https://github.com/Xiao8-24/TrainLog/actions/runs/38680641216) 中，iOS 18 的 42 项测试通过，iOS 27 的 28 项核心与 6 项 UI 测试通过，包括开始休息交互耗时检查；新增集成用例的两次 2 秒异步等待超时，发布被阻止。测试现改为持有服务完成回调来模拟延迟，避免信号量占用工作线程；队列启动等待允许 30 秒，主线程开始/取消仍必须在 1 秒内返回，并检查取消不能先于旧通知完成。尚未把等待超时归因于确定的系统缺陷，最终结果以修订后的双系统复测为准。
+
 ## 0.3.0 Liquid Glass
 
 [Actions #9](https://github.com/Xiao8-24/TrainLog/actions/runs/38566600538) 的提交 `770088ccc5e0acfb3da8a9d9a47138587edffcb3` 在 iOS 27 与 iOS 18 各通过 41 项测试，设备归档及 v0.3.0 预发布成功。2026-10-15 下载并核对全部发布文件 SHA256，70 个源码文件与测试提交逐字节一致。复核最终浅色/深色浮层、概览、训练日历与最大辅助字号截图，横向裁切已修复。不过浅色休息交互仍触发一次系统等待采样，诊断结论及后续修复见 0.3.1。
