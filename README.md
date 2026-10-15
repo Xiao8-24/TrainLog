@@ -4,7 +4,7 @@
 
 面向个人力量训练的离线 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols**；最低部署版本 **iOS 18.0**。无服务器、无账号、无第三方运行时依赖。
 
-> **0.3.0：原生 Liquid Glass 适配。** [首轮验证](https://github.com/Xiao8-24/TrainLog/actions/runs/38527606572) 在 iOS 27 和 iOS 18 各通过 41 项测试，Xcode 27 Release 归档成功。截图复核后补充最大辅助字号布局修复；最终提交的复测与发布以 Actions 为准。IPA 仍需有效 Apple 签名。
+> **[0.3.0 原生 Liquid Glass 预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.3.0)。** [最终验证](https://github.com/Xiao8-24/TrainLog/actions/runs/38566600538) 在 iOS 27 和 iOS 18 各通过 41 项测试，Xcode 27 Release 归档成功。0.3.1 正在修复诊断中发现的通知服务同步等待：屏幕计时立即响应，通知清理与调度在后台依次执行。IPA 仍需有效 Apple 签名。
 
 ## 0.3.0 Liquid Glass
 

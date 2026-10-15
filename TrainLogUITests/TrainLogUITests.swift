@@ -23,7 +23,9 @@ final class TrainLogUITests: XCTestCase {
             capture(app, name: "Native overview - \(appearance)")
             app.buttons["startWorkout"].tap()
             app.buttons["startRestTimer"].tap()
+            let interactionStarted = Date()
             app.buttons["180 秒"].tap()
+            XCTAssertLessThan(Date().timeIntervalSince(interactionStarted), 15, "Starting rest must not wait for the notification service")
             let end = app.buttons["restTimer.end"]
             XCTAssertTrue(end.waitForExistence(timeout: 5))
             XCTAssertTrue(end.isHittable)

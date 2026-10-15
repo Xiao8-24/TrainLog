@@ -1,6 +1,14 @@
 # 验证记录
 
+## 0.3.1 通知服务响应修复
+
+2026-10-15 复核 0.3.0 最终诊断发现，`Spindump` 的主线程在 `RestTimer.start → cancel → UNUserNotificationCenter.removePendingNotificationRequests` 等待同步 XPC 回复，采样时已等待约 60 秒。因此此前辅助功能容器是排查假设，不是已证实的根因。0.3.1 把通知操作迁移到串行后台队列，保留操作顺序，过期截止时间不重新安排通知，旧错误不会覆盖新计时状态。新增慢服务回归测试与 UI 开始休息耗时断言，双系统复测结果以对应 Actions 为准。
+
+Apple 允许通知中心从任意应用线程使用：[UNUserNotificationCenter](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter)。
+
 ## 0.3.0 Liquid Glass
+
+[Actions #9](https://github.com/Xiao8-24/TrainLog/actions/runs/38566600538) 的提交 `770088ccc5e0acfb3da8a9d9a47138587edffcb3` 在 iOS 27 与 iOS 18 各通过 41 项测试，设备归档及 v0.3.0 预发布成功。2026-10-15 下载并核对全部发布文件 SHA256，70 个源码文件与测试提交逐字节一致。复核最终浅色/深色浮层、概览、训练日历与最大辅助字号截图，横向裁切已修复。不过浅色休息交互仍触发一次系统等待采样，诊断结论及后续修复见 0.3.1。
 
 [Actions #8](https://github.com/Xiao8-24/TrainLog/actions/runs/38563233268) 中，提交 `cf72f8b` 的 iOS 18 兼容任务通过全部 41 项测试，大字号截图无横向越界。iOS 27 休息浮层测试出现辅助功能快照查询超时，未满足发布门槛。后续修复移除每秒更新的玻璃浮层上新增的辅助功能容器，改为逐个检查标题、剩余时间和结束按钮的屏幕边界；测试使用 180 秒菜单选项，为云端交互留出时间。该修复须重新通过双系统验证。
 
