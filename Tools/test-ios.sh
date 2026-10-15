@@ -18,7 +18,7 @@ result_path="artifacts/TrainLog-$(date +%Y%m%d-%H%M%S)-$$.xcresult"
 xcodebuild -project TrainLog.xcodeproj -scheme TrainLog \
   -destination "platform=iOS Simulator,id=$destination" \
   -derivedDataPath DerivedData -resultBundlePath "$result_path" \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test 2>&1 | tee artifacts/ios-tests.log
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test 2>&1 | tee artifacts/ios-tests.log
 
 # Keep actual simulator screenshots available for visual review on Windows.
 if ! xcrun xcresulttool export attachments --path "$result_path" --output-path artifacts/screenshots; then

@@ -8,6 +8,8 @@
 
 ## 0.3.0 Liquid Glass
 
+0.4.0 开发：新增桌面小／中号与锁屏矩形训练小组件、详细训练 Live Activities 和灵动岛状态。查看[设计、系统行为与签名配置](Documentation/WIDGETS_AND_LIVE_ACTIVITIES.md)。最终验证结果以 Actions 与发布页为准。
+
 系统导航、标签栏、工具栏和日历跟随新系统；主要按钮采用原生玻璃样式，休息计时浮层支持系统滚动边缘效果、大字体和减少透明度回退。数据卡片保持清晰。详见 [适配说明与官方依据](Documentation/LIQUID_GLASS.md)。
 
 ## 0.2.0 原生日历与交互

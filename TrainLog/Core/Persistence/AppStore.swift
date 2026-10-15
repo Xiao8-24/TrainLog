@@ -10,6 +10,9 @@ import TrainLogCore
     private(set) var bodyWeights: [BodyWeight] = []
     private(set) var settings = Settings()
     var errorMessage: String?
+    private let surfaces = WorkoutSurfacesCoordinator()
+    private let publishesSurfaces: Bool
+    var surfaceIssue: String? { surfaces.issue }
     let container: ModelContainer
     private var context: ModelContext { container.mainContext }
     var completed: [Session] { sessions.filter { $0.status == .completed } }
@@ -17,6 +20,7 @@ import TrainLogCore
     var backup: Backup { Backup(sessions: sessions, exercises: exercises, templates: templates, bodyWeights: bodyWeights, settings: settings) }
 
     init(inMemory: Bool = false, storeURL: URL? = nil) throws {
+        publishesSurfaces = !inMemory && storeURL == nil
         let schema = Schema(versionedSchema: TrainLogSchemaV1.self)
         let config: ModelConfiguration
         if let storeURL { config = ModelConfiguration("TrainLog", schema: schema, url: storeURL, cloudKitDatabase: .none) }
@@ -40,6 +44,7 @@ import TrainLogCore
         let newWeights = try context.fetch(FetchDescriptor<BodyWeightRecord>()).map { $0.value() }.sorted { $0.date > $1.date }
         let newSettings = try context.fetch(FetchDescriptor<UserSettings>()).first?.value() ?? Settings()
         sessions = newSessions; exercises = newExercises; templates = newTemplates; bodyWeights = newWeights; settings = newSettings
+        refreshSurfaces()
     }
     private func transact(refresh: Bool = true, _ operation: () throws -> Void) throws {
         do { try operation(); try context.save() }
@@ -54,6 +59,7 @@ import TrainLogCore
         sessions.removeAll { $0.id == session.id }
         sessions.append(session)
         sessions.sort { $0.date == $1.date ? $0.createdAt > $1.createdAt : $0.date > $1.date }
+        refreshSurfaces()
     }
     private func upsert(_ session: Session) throws {
         let sessionID = session.id
@@ -72,6 +78,7 @@ import TrainLogCore
             for model in try context.fetch(descriptor) { context.delete(model) }
         }
         sessions.removeAll { $0.id == id }
+        refreshSurfaces()
     }
     func saveExercise(_ exercise: Exercise) throws {
         try RecordValidator.exercise(exercise)
@@ -103,6 +110,7 @@ import TrainLogCore
             else { context.insert(try UserSettings(value)) }
         }
         settings = value
+        refreshSurfaces()
     }
     func saveWeight(_ value: BodyWeight) throws {
         try RecordValidator.bodyWeight(value)
@@ -110,6 +118,11 @@ import TrainLogCore
             if let model = try context.fetch(FetchDescriptor<BodyWeightRecord>()).first(where: { $0.id == value.id }) { model.date = value.date; model.weightKg = value.weightKg }
             else { context.insert(BodyWeightRecord(value)) }
         }
+    }
+    func refreshSurfaces() {
+        guard publishesSurfaces else { return }
+        surfaces.publish(sessions: settings.hasOnboarded ? sessions : [], goal: settings.weeklyGoal)
+        surfaces.sync(session: settings.hasOnboarded ? draft : nil)
     }
     func deleteWeight(_ id: UUID) throws {
         try transact { for model in try context.fetch(FetchDescriptor<BodyWeightRecord>()) where model.id == id { context.delete(model) } }

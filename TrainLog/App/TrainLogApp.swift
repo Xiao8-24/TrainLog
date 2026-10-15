@@ -4,11 +4,12 @@ import TrainLogCore
 @main struct TrainLogApp: App {
     @State private var store: AppStore?
     @State private var startupError: String?
+    @State private var pendingURL: URL?
     var body: some Scene {
         WindowGroup {
             Group {
                 if let store {
-                    RootView().environment(store)
+                    RootView(pendingURL: $pendingURL).environment(store)
                         .preferredColorScheme(store.settings.theme == .system ? nil : store.settings.theme == .dark ? .dark : .light)
                 } else if let startupError {
                     ContentUnavailableView {
@@ -18,6 +19,7 @@ import TrainLogCore
                     } actions: { Button("重新尝试", action: load).buttonStyle(.borderedProminent) }
                 } else { LoadingStateView() }
             }.tint(.blue).task { if store == nil && startupError == nil { load() } }
+                .onOpenURL { pendingURL = $0 }
         }
     }
     private func load() {

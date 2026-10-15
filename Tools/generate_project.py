@@ -33,39 +33,56 @@ target_ids = []
 configs = []
 for target, folder, product, product_type in [
     ("TrainLog", "TrainLog", "TrainLog.app", "com.apple.product-type.application"),
+    ("TrainLogWidgets", "TrainLogWidgets", "TrainLogWidgets.appex", "com.apple.product-type.app-extension"),
     ("TrainLogTests", "TrainLogTests", "TrainLogTests.xctest", "com.apple.product-type.bundle.unit-test"),
     ("TrainLogUITests", "TrainLogUITests", "TrainLogUITests.xctest", "com.apple.product-type.bundle.ui-testing"),
 ]:
     children, sources, resources, frameworks = [], [], [], []
-    for path in sorted((ROOT / folder).rglob("*.swift")):
+    paths = list((ROOT / folder).rglob("*.swift"))
+    if target in ["TrainLog", "TrainLogWidgets"]:
+        paths += list((ROOT / "Shared").rglob("*.swift"))
+    for path in sorted(paths):
         relative = path.relative_to(ROOT).as_posix()
         file_id = ref(relative, "sourcecode.swift")
         children.append(file_id)
-        sources.append(put("build:" + relative, "PBXBuildFile", f"fileRef = {file_id};"))
+        sources.append(put("build:" + target + ":" + relative, "PBXBuildFile", f"fileRef = {file_id};"))
     if target == "TrainLog":
         for resource, kind in [("TrainLog/Resources/Assets.xcassets", "folder.assetcatalog"), ("TrainLog/Resources/PrivacyInfo.xcprivacy", "text.xml")]:
             file_id = ref(resource, kind); children.append(file_id)
             resources.append(put("build:" + resource, "PBXBuildFile", f"fileRef = {file_id};"))
         children.append(ref("TrainLog/Resources/Info.plist", "text.plist.xml"))
+        children.append(ref("TrainLog/Resources/TrainLog.entitlements", "text.plist.entitlements"))
+    if target == "TrainLogWidgets":
+        children.append(ref("TrainLogWidgets/Info.plist", "text.plist.xml"))
+        children.append(ref("TrainLogWidgets/TrainLogWidgets.entitlements", "text.plist.entitlements"))
+        privacy = ref("TrainLog/Resources/PrivacyInfo.xcprivacy", "text.xml")
+        resources.append(put("widget-privacy", "PBXBuildFile", f"fileRef = {privacy};"))
     source_groups.append(put("group:" + target, "PBXGroup", f"children = {refs(children)}; name = {target}; sourceTree = \"<group>\";"))
-    product_ref = put("product:" + target, "PBXFileReference", f"explicitFileType = {'wrapper.application' if target == 'TrainLog' else 'wrapper.cfbundle'}; includeInIndex = 0; path = {product}; sourceTree = BUILT_PRODUCTS_DIR;")
+    product_ref = put("product:" + target, "PBXFileReference", f"explicitFileType = {'wrapper.application' if target == 'TrainLog' else 'wrapper.app-extension' if target == 'TrainLogWidgets' else 'wrapper.cfbundle'}; includeInIndex = 0; path = {product}; sourceTree = BUILT_PRODUCTS_DIR;")
     product_refs.append(product_ref)
     dependencies, packages = [], []
     if target != "TrainLogUITests":
         dependency = put("package-product:" + target, "XCSwiftPackageProductDependency", f"package = {package}; productName = TrainLogCore;")
         packages.append(dependency)
         frameworks.append(put("link-core:" + target, "PBXBuildFile", f"productRef = {dependency};"))
-    if target != "TrainLog":
+    if target in ["TrainLogTests", "TrainLogUITests"]:
         proxy = put("proxy:" + target, "PBXContainerItemProxy", f"containerPortal = {ident('project')}; proxyType = 1; remoteGlobalIDString = {ident('target:TrainLog')}; remoteInfo = TrainLog;")
         dependencies.append(put("dependency:" + target, "PBXTargetDependency", f"target = {ident('target:TrainLog')}; targetProxy = {proxy};"))
     phases = []
     for name, isa, files in [("Sources", "PBXSourcesBuildPhase", sources), ("Frameworks", "PBXFrameworksBuildPhase", frameworks), ("Resources", "PBXResourcesBuildPhase", resources)]:
         phases.append(put(f"phase:{target}:{name}", isa, f"buildActionMask = 2147483647; files = {refs(files)}; runOnlyForDeploymentPostprocessing = 0;"))
+    if target == "TrainLog":
+        proxy = put("widget-proxy", "PBXContainerItemProxy", f"containerPortal = {ident('project')}; proxyType = 1; remoteGlobalIDString = {ident('target:TrainLogWidgets')}; remoteInfo = TrainLogWidgets;")
+        dependencies.append(put("widget-dependency", "PBXTargetDependency", f"target = {ident('target:TrainLogWidgets')}; targetProxy = {proxy};"))
+        embedded = put("embed-widget", "PBXBuildFile", f"fileRef = {ident('product:TrainLogWidgets')}; settings = {{ ATTRIBUTES = (RemoveHeadersOnCopy,); }};")
+        phases.append(put("embed-extensions", "PBXCopyFilesBuildPhase", f"buildActionMask = 2147483647; dstPath = \"\"; dstSubfolderSpec = 13; files = ({embedded},); name = \"Embed App Extensions\"; runOnlyForDeploymentPostprocessing = 0;"))
     config_ids = []
     for name in ["Debug", "Release"]:
         values = {"PRODUCT_BUNDLE_IDENTIFIER": "com.trainlog.personal" + ("" if target == "TrainLog" else "." + target), "PRODUCT_NAME": "$(TARGET_NAME)", "SWIFT_VERSION": "5.0", "IPHONEOS_DEPLOYMENT_TARGET": "18.0", "TARGETED_DEVICE_FAMILY": "1", "CODE_SIGN_STYLE": "Automatic", "DEVELOPMENT_TEAM": "", "SWIFT_STRICT_CONCURRENCY": "targeted", "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks"}
         if target == "TrainLog":
-            values.update({"INFOPLIST_FILE": "TrainLog/Resources/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor", "MARKETING_VERSION": "0.3.1", "CURRENT_PROJECT_VERSION": "4", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO", "ENABLE_PREVIEWS": "YES"})
+            values.update({"INFOPLIST_FILE": "TrainLog/Resources/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor", "MARKETING_VERSION": "0.4.0", "CURRENT_PROJECT_VERSION": "5", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO", "ENABLE_PREVIEWS": "YES", "CODE_SIGN_ENTITLEMENTS": "TrainLog/Resources/TrainLog.entitlements"})
+        elif target == "TrainLogWidgets":
+            values.update({"INFOPLIST_FILE": "TrainLogWidgets/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "MARKETING_VERSION": "0.4.0", "CURRENT_PROJECT_VERSION": "5", "SKIP_INSTALL": "YES", "APPLICATION_EXTENSION_API_ONLY": "YES", "CODE_SIGN_ENTITLEMENTS": "TrainLogWidgets/TrainLogWidgets.entitlements", "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"})
         else:
             values.update({"GENERATE_INFOPLIST_FILE": "YES"})
             if target == "TrainLogTests":

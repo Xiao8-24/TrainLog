@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root / ".tools" / "python"))
 failures = []
-swift = sorted(p for folder in ["TrainLog", "TrainLogTests", "TrainLogUITests", "Packages"] for p in (root / folder).rglob("*.swift"))
+swift = sorted(p for folder in ["TrainLog", "TrainLogWidgets", "Shared", "TrainLogTests", "TrainLogUITests", "Packages"] for p in (root / folder).rglob("*.swift"))
 for path in (root / "TrainLog" / "Resources").glob("*.plist"):
     with path.open("rb") as file: plistlib.load(file)
 for path in (root / "TrainLog" / "Resources").glob("*.xcprivacy"):
@@ -19,6 +19,14 @@ for path in (root / "TrainLog.xcodeproj").rglob("*.xcscheme"): ET.parse(path)
 for path in (root / "TrainLog.xcodeproj").rglob("*.xcworkspacedata"): ET.parse(path)
 for path in (root / "TrainLog" / "Resources").rglob("Contents.json"): json.loads(path.read_text())
 project = (root / "TrainLog.xcodeproj" / "project.pbxproj").read_text(encoding="utf-8")
+with (root / "TrainLogWidgets/Info.plist").open("rb") as file:
+    widget_info = plistlib.load(file)
+assert widget_info["NSExtension"]["NSExtensionPointIdentifier"] == "com.apple.widgetkit-extension"
+groups = []
+for name in ["TrainLog/Resources/TrainLog.entitlements", "TrainLogWidgets/TrainLogWidgets.entitlements"]:
+    with (root / name).open("rb") as file: groups.append(plistlib.load(file)["com.apple.security.application-groups"])
+assert groups[0] == groups[1] == ["group.com.trainlog.personal"]
+assert "com.apple.product-type.app-extension" in project and "Embed App Extensions" in project
 definitions = re.findall(r"^\s*([A-F0-9]{24}) = \{", project, re.M)
 if len(definitions) != len(set(definitions)): failures.append("Duplicate project object ID")
 for identifier in set(re.findall(r"\b[A-F0-9]{24}\b", project)):

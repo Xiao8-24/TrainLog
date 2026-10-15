@@ -8,6 +8,18 @@ xcodebuild -project TrainLog.xcodeproj -scheme TrainLog -configuration Release \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive 2>&1 | tee artifacts/archive.log
 app_path="$archive_path/Products/Applications/TrainLog.app"
 test -d "$app_path"
+test -d "$app_path/PlugIns/TrainLogWidgets.appex"
+python3 - "$app_path" <<'PY'
+import pathlib, plistlib, sys
+app = pathlib.Path(sys.argv[1])
+info = plistlib.loads((app / 'Info.plist').read_bytes())
+widget = plistlib.loads((app / 'PlugIns/TrainLogWidgets.appex/Info.plist').read_bytes())
+assert info['NSSupportsLiveActivities'] is True
+assert widget['NSExtension']['NSExtensionPointIdentifier'] == 'com.apple.widgetkit-extension'
+for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
+    assert info[key] == widget[key], key
+print('Verified embedded widget extension, Live Activities declaration and matching versions.')
+PY
 python3 Tools/package_delivery.py
 # Temporary staging is scoped to the workspace and removed only by the trap.
 stage=$(mktemp -d "$(pwd)/Delivery/ipa-stage.XXXXXX")
@@ -24,6 +36,11 @@ TrainLog-unsigned.ipa: Release device build with NO signing certificate or profi
 The IPA cannot be installed directly on an iPhone. It needs a valid Apple signing
 certificate and provisioning profile for the intended distribution method.
 This is not an App Store or TestFlight release and has not passed real-device QA.
+Sign BOTH the app and PlugIns/TrainLogWidgets.appex. Enable the App Group
+group.com.trainlog.personal for both bundle identifiers in your Apple team,
+or replace that identifier in both entitlements and WidgetSnapshotStorage.swift.
+Live Activities require NSSupportsLiveActivities and system permission. Widget
+refresh timing and Live Activity presentation are controlled by iOS.
 
 The GitHub workflow publishes only after the core, persistence and UI tests pass
 and the unsigned device archive succeeds. See the workflow diagnostics artifact

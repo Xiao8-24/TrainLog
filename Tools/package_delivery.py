@@ -6,7 +6,7 @@ import zipfile
 root = Path(__file__).resolve().parents[1]
 delivery = root / "Delivery"
 delivery.mkdir(exist_ok=True)
-folders = ["TrainLog", "TrainLog.xcodeproj", "Packages", "TrainLogTests", "TrainLogUITests", "Tools", "Documentation", ".github"]
+folders = ["TrainLog", "TrainLogWidgets", "Shared", "TrainLog.xcodeproj", "Packages", "TrainLogTests", "TrainLogUITests", "Tools", "Documentation", ".github"]
 files = [root / "README.md", root / ".gitignore", root / ".gitattributes"]
 excluded = {".build", ".swiftpm", "xcuserdata", "__pycache__", ".DS_Store"}
 for folder in folders:

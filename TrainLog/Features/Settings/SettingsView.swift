@@ -24,6 +24,7 @@ struct SettingsView: View {
     @State private var candidate: ImportCandidate?
     @State private var errorMessage: String?
     @State private var notice: String?
+    @AppStorage(WorkoutSurfacesCoordinator.enabledKey) private var liveActivitiesEnabled = true
     private func binding<T>(_ path: WritableKeyPath<Settings, T>) -> Binding<T> {
         Binding(get: { store.settings[keyPath: path] }, set: { value in
             var settings = store.settings; settings[keyPath: path] = value
@@ -46,6 +47,16 @@ struct SettingsView: View {
                 Stepper("自定义 \(store.settings.restSeconds) 秒", value: binding(\.restSeconds), in: 0...3600, step: 15)
                 Toggle("休息结束时通知", isOn: Binding(get: { store.settings.notifyRest }, set: { enabled in setNotification(enabled) }))
                 Text("通知为可选权限。拒绝通知后仍可使用全部记录与计时功能。").font(.caption).foregroundStyle(.secondary)
+            }
+            Section("桌面与锁屏") {
+                Toggle("训练实时活动", isOn: $liveActivitiesEnabled)
+                    .onChange(of: liveActivitiesEnabled) { _, enabled in
+                        if enabled { UserDefaults.standard.removeObject(forKey: "lastLiveActivitySession") }
+                        store.refreshSurfaces()
+                    }
+                Text("详细训练开始后，在锁屏与灵动岛显示训练计时、正式组数和组间休息。点按可继续训练；完成或放弃草稿时结束。可在系统设置中关闭实时活动。").font(.caption).foregroundStyle(.secondary)
+                Text("长按主屏幕，添加 TrainLog「训练日程」小组件。支持小号、中号和锁屏矩形；显示今日记录、本周目标和继续草稿入口。系统决定刷新时机。").font(.caption).foregroundStyle(.secondary)
+                if let issue = store.surfaceIssue { Text(issue).font(.caption).foregroundStyle(.secondary) }
             }
             Section("数据备份") {
                 Button("导出完整 JSON 备份", systemImage: "square.and.arrow.up") { prepareExport(csv: false) }

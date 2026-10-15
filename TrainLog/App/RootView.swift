@@ -18,11 +18,13 @@ struct SessionRoute: Identifiable { var id: UUID }
     }
 }
 struct RootView: View {
+    @Binding var pendingURL: URL?
     @Environment(AppStore.self) private var store
     @State private var router = AppRouter()
     @State private var clock = AppClock()
     @Environment(\.scenePhase) private var scenePhase
     @State private var settingsPresented = false
+    @State private var calendarPresented = false
     var body: some View {
         @Bindable var store = store
         @Bindable var router = router
@@ -42,6 +44,7 @@ struct RootView: View {
         }
         .environment(router)
         .sheet(isPresented: $settingsPresented) { NavigationStack { SettingsView() } }
+        .sheet(isPresented: $calendarPresented) { NavigationStack { FitnessCalendarView() } }
         .sheet(item: $router.editing, onDismiss: {
             if let id = router.pendingSummary { router.pendingSummary = nil; router.summary = SessionRoute(id: id) }
         }) { session in
@@ -56,6 +59,8 @@ struct RootView: View {
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
             clock.refresh()
+            store.refreshSurfaces()
+            routePendingURL()
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(30)); try Task.checkCancellation() } catch { return }
                 clock.refresh()
@@ -64,6 +69,26 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in clock.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in clock.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in clock.refresh() }
+        .onChange(of: pendingURL) { _, _ in routePendingURL() }
+        .onChange(of: store.settings.hasOnboarded) { _, _ in routePendingURL() }
+    }
+    private func routePendingURL() {
+        guard store.settings.hasOnboarded, let url = pendingURL else { return }
+        pendingURL = nil
+        guard let route = WorkoutDeepLink(url: url) else { return }
+        switch route {
+        case .calendar:
+            // Avoid dismissing an editor with unsaved fields to show a calendar.
+            guard router.editing == nil else { return }
+            calendarPresented = true
+        case .workout(let id):
+            router.tab = .workout
+            guard router.editing == nil else { return }
+            if let id {
+                if let draft = store.draft, draft.id == id { router.editing = draft }
+                // A stale widget must never create a replacement workout implicitly.
+            } else { router.start(.detailed, store: store) }
+        }
     }
 }
 

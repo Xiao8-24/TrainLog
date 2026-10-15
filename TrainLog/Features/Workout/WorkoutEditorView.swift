@@ -99,6 +99,9 @@ struct WorkoutEditorView: View {
             persistDraft(showError: false)
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active && !editingHistory && !saving { persistDraft(showError: false) } }
+        .onChange(of: restTimer.deadline) { _, _ in
+            if !editingHistory && !saving { persistDraft(showError: false) }
+        }
         .onChange(of: session.intensity) { _, value in
             // The global picker explicitly replaces older per-muscle quick intensities when edited.
             for index in session.quickEntries.indices { session.quickEntries[index].intensity = value }
