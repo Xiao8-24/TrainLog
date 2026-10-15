@@ -2,6 +2,10 @@
 
 ## 0.3.1 通知服务响应修复
 
+2026-10-15，[Actions #11](https://github.com/Xiao8-24/TrainLog/actions/runs/38727215902) 的提交 `01fb9f0225955d45eb0ff5c11a7477da121277c9` 在 iOS 27 与 iOS 18 各通过 42 项测试（28 核心 + 8 集成 + 6 UI），Release 设备归档成功，19:36（上海时间）发布 [v0.3.1](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.3.1)。慢服务测试分别用时 1.388 / 0.056 秒，开始与取消的一秒返回断言均通过。iOS 27 浅/深色休息交互测试通过，最终日志无此前的等待采样标记，导出附件中无 Spindump。已目视复核浅色、深色、大辅助字号及已完成训练日历截图；这不替代真机性能或通知后台交付验收。
+
+下载并校验构建产物，与 GitHub Release 五个文件的 SHA256 全部一致；源码包 71 个文件与测试提交逐字节匹配。IPA 元数据为 0.3.1 / build 4、最低 iOS 18、iphoneos27.0 SDK、Xcode 27A266a，未包含签名描述文件。源码包 SHA256：`07fba036c90ed1516dc6c8446c696de72ac94d92463c21aa0cbf4675660f8227`；IPA：`8ef9005b63661bbfa98238fc10da051c275c9b5433228a4f0c91157d8b177fba`。通知调度的 Sendable 转换警告已消除；已有的 SwiftData Predicate 宏迁移警告仍在，工程保持 Swift 5 语言模式。
+
 2026-10-15 复核 0.3.0 最终诊断发现，`Spindump` 的主线程在 `RestTimer.start → cancel → UNUserNotificationCenter.removePendingNotificationRequests` 等待同步 XPC 回复，采样时已等待约 60 秒。因此此前辅助功能容器是排查假设，不是已证实的根因。0.3.1 把通知操作迁移到串行后台队列，保留操作顺序，过期截止时间不重新安排通知，旧错误不会覆盖新计时状态。新增慢服务回归测试与 UI 开始休息耗时断言，双系统复测结果以对应 Actions 为准。
 
 Apple 允许通知中心从任意应用线程使用：[UNUserNotificationCenter](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter)。
