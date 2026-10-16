@@ -22,9 +22,7 @@ import TrainLogCore
     init(inMemory: Bool = false, storeURL: URL? = nil) throws {
         publishesSurfaces = !inMemory && storeURL == nil
         let schema = Schema(versionedSchema: TrainLogSchemaV1.self)
-        let config: ModelConfiguration
-        if let storeURL { config = ModelConfiguration("TrainLog", schema: schema, url: storeURL, cloudKitDatabase: .none) }
-        else { config = ModelConfiguration("TrainLog", schema: schema, isStoredInMemoryOnly: inMemory, cloudKitDatabase: .none) }
+        let config = Self.configuration(schema: schema, inMemory: inMemory, storeURL: storeURL)
         container = try ModelContainer(for: schema, migrationPlan: TrainLogMigrationPlan.self, configurations: [config])
         context.autosaveEnabled = false
         try reload()
@@ -35,6 +33,12 @@ import TrainLogCore
                 for template in ExerciseCatalog.templates { context.insert(try WorkoutTemplate(template)) }
             }
         }
+    }
+    static func configuration(schema: Schema, inMemory: Bool = false, storeURL: URL? = nil) -> ModelConfiguration {
+        if let storeURL { return ModelConfiguration("TrainLog", schema: schema, url: storeURL, cloudKitDatabase: .none) }
+        // Keep the pre-widget database in the app sandbox. Only the minimal
+        // widget snapshot belongs in the App Group, never the full database.
+        return ModelConfiguration("TrainLog", schema: schema, isStoredInMemoryOnly: inMemory, groupContainer: .none, cloudKitDatabase: .none)
     }
     private func reload() throws {
         // Decode into temporary values so a corrupt row cannot leave a half-refreshed screen.

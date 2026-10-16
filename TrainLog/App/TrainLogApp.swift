@@ -26,6 +26,13 @@ import TrainLogCore
         do {
             #if DEBUG
             let inMemory = ProcessInfo.processInfo.arguments.contains("-ui-testing")
+            if inMemory, let value = ProcessInfo.processInfo.environment["TRAINLOG_UI_TEST_STORE"], let id = UUID(uuidString: value) {
+                // A unique sandbox file lets URL-launch tests survive process
+                // restarts without touching a real user's database or widgets.
+                let url = FileManager.default.temporaryDirectory.appending(path: "ui-test-\(id.uuidString).store")
+                store = try AppStore(storeURL: url); startupError = nil
+                return
+            }
             #else
             let inMemory = false
             #endif

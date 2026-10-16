@@ -4,6 +4,13 @@ import TrainLogCore
 @testable import TrainLog
 
 @MainActor final class PersistenceTests: XCTestCase {
+    func testWidgetAppGroupDoesNotRelocateExistingDatabase() throws {
+        let schema = Schema(versionedSchema: TrainLogSchemaV1.self)
+        let configuration = AppStore.configuration(schema: schema)
+        let directory = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+        XCTAssertEqual(configuration.url.standardizedFileURL, directory.appending(path: "TrainLog.store").standardizedFileURL)
+        XCTAssertNil(configuration.groupAppContainerIdentifier)
+    }
     func testDiskRoundTripIncludesDraftSettingsAndCompletedSets() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

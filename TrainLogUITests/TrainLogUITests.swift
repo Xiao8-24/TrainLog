@@ -1,8 +1,10 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
-    @MainActor private func launch(extraArguments: [String] = []) -> XCUIApplication {
-        let app = XCUIApplication(); app.launchArguments = ["-ui-testing"] + extraArguments; app.launch()
+    @MainActor private func launch(extraArguments: [String] = [], persistent: Bool = false) -> XCUIApplication {
+        let app = XCUIApplication(); app.launchArguments = ["-ui-testing"] + extraArguments
+        if persistent { app.launchEnvironment["TRAINLOG_UI_TEST_STORE"] = UUID().uuidString }
+        app.launch()
         let skip = app.buttons["skipOnboarding"]
         if skip.waitForExistence(timeout: 10) { skip.tap() }
         return app
@@ -11,12 +13,12 @@ final class TrainLogUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
-    @MainActor func testWidgetDeepLinksDismissSettingsAndResumeDraft() {
-        let app = launch()
+    @MainActor func testWidgetDeepLinksResumePersistedDraftAfterRelaunch() {
+        let app = launch(persistent: true)
         app.buttons["设置"].tap()
         app.open(URL(string: "trainlog://calendar")!)
         XCTAssertTrue(app.navigationBars["健身日历"].waitForExistence(timeout: 10))
-        app.buttons["关闭"].tap()
+        app.buttons["calendar.close"].tap()
         app.buttons["设置"].tap()
         app.open(URL(string: "trainlog://workout")!)
         XCTAssertTrue(app.buttons["startRestTimer"].waitForExistence(timeout: 10))
