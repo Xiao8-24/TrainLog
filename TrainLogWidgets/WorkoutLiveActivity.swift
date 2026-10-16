@@ -9,7 +9,7 @@ struct WorkoutLiveActivity: Widget {
             HStack(spacing: 14) {
                 Image(systemName: symbol(context.state, stale: context.isStale)).font(.title2).foregroundStyle(.blue)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(context.state.label(stale: context.isStale)).font(.headline)
+                    Text(context.state.label(stale: context.isStale)).font(.headline).lineLimit(1).minimumScaleFactor(0.8)
                     Text("已完成 \(context.state.workingSets) 个正式组").font(.caption).foregroundStyle(.secondary)
                     Text("点按继续训练").font(.caption).foregroundStyle(.secondary)
                 }

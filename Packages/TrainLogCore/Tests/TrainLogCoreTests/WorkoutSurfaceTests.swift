@@ -33,7 +33,8 @@ final class WorkoutSurfaceTests: XCTestCase {
         XCTAssertEqual(WorkoutDeepLink(url: WorkoutDeepLink.workout(id).url), .workout(id))
         XCTAssertEqual(WorkoutDeepLink(url: WorkoutDeepLink.workout(nil).url), .workout(nil))
         XCTAssertEqual(WorkoutDeepLink(url: WorkoutDeepLink.calendar.url), .calendar)
-        for value in ["https://workout", "trainlog://workout/invalid", "trainlog://calendar/extra", "trainlog://workout?delete=true", "trainlog://delete"] {
+        XCTAssertEqual(WorkoutDeepLink(url: WorkoutDeepLink.overview.url), .overview)
+        for value in ["https://workout", "trainlog://workout/invalid", "trainlog://calendar/extra", "trainlog://workout?delete=true", "trainlog://delete", "trainlog://workout:123"] {
             XCTAssertNil(WorkoutDeepLink(url: URL(string: value)!))
         }
     }

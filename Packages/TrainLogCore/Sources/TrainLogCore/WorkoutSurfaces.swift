@@ -36,10 +36,10 @@ public struct WorkoutWidgetSnapshot: Codable, Equatable, Sendable {
 }
 
 public enum WorkoutDeepLink: Equatable, Sendable {
-    case workout(UUID?), calendar
+    case workout(UUID?), calendar, overview
     public init?(url: URL) {
         guard url.scheme == "trainlog", url.user == nil, url.password == nil,
-              url.query == nil, url.fragment == nil else { return nil }
+              url.port == nil, url.query == nil, url.fragment == nil else { return nil }
         let parts = url.pathComponents.filter { $0 != "/" }
         switch url.host {
         case "workout":
@@ -47,6 +47,7 @@ public enum WorkoutDeepLink: Equatable, Sendable {
             else if parts.count == 1, let id = UUID(uuidString: parts[0]) { self = .workout(id) }
             else { return nil }
         case "calendar": guard parts.isEmpty else { return nil }; self = .calendar
+        case "overview": guard parts.isEmpty else { return nil }; self = .overview
         default: return nil
         }
     }
@@ -54,6 +55,7 @@ public enum WorkoutDeepLink: Equatable, Sendable {
         switch self {
         case .workout(let id): return URL(string: "trainlog://workout" + (id.map { "/\($0.uuidString)" } ?? ""))!
         case .calendar: return URL(string: "trainlog://calendar")!
+        case .overview: return URL(string: "trainlog://overview")!
         }
     }
 }

@@ -11,6 +11,20 @@ final class TrainLogUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
+    @MainActor func testWidgetDeepLinksDismissSettingsAndResumeDraft() {
+        let app = launch()
+        app.buttons["设置"].tap()
+        app.open(URL(string: "trainlog://calendar")!)
+        XCTAssertTrue(app.navigationBars["健身日历"].waitForExistence(timeout: 10))
+        app.buttons["关闭"].tap()
+        app.buttons["设置"].tap()
+        app.open(URL(string: "trainlog://workout")!)
+        XCTAssertTrue(app.buttons["startRestTimer"].waitForExistence(timeout: 10))
+        app.buttons["稍后继续"].tap()
+        app.open(URL(string: "trainlog://workout")!)
+        XCTAssertTrue(app.buttons["startRestTimer"].waitForExistence(timeout: 10))
+        capture(app, name: "Widget deep link resumes the training draft")
+    }
     @MainActor func testNativeAppearanceAndFloatingRestControls() {
         let app = launch()
         for appearance in ["浅色", "深色"] {

@@ -43,8 +43,8 @@ struct RootView: View {
             }
         }
         .environment(router)
-        .sheet(isPresented: $settingsPresented) { NavigationStack { SettingsView() } }
-        .sheet(isPresented: $calendarPresented) { NavigationStack { FitnessCalendarView() } }
+        .sheet(isPresented: $settingsPresented, onDismiss: routePendingURL) { NavigationStack { SettingsView() } }
+        .sheet(isPresented: $calendarPresented, onDismiss: routePendingURL) { NavigationStack { FitnessCalendarView() } }
         .sheet(item: $router.editing, onDismiss: {
             if let id = router.pendingSummary { router.pendingSummary = nil; router.summary = SessionRoute(id: id) }
         }) { session in
@@ -52,8 +52,8 @@ struct RootView: View {
                 WorkoutEditorView(session: session) { id in router.pendingSummary = id; router.editing = nil }
             }.environment(router).interactiveDismissDisabled()
         }
-        .sheet(item: $router.summary) { route in NavigationStack { WorkoutSummaryView(sessionID: route.id) } }
-        .fullScreenCover(isPresented: Binding(get: { !store.settings.hasOnboarded }, set: { _ in })) { OnboardingView() }
+        .sheet(item: $router.summary, onDismiss: routePendingURL) { route in NavigationStack { WorkoutSummaryView(sessionID: route.id) } }
+        .fullScreenCover(isPresented: Binding(get: { !store.settings.hasOnboarded }, set: { _ in }), onDismiss: routePendingURL) { OnboardingView() }
         .errorAlert($store.errorMessage)
         .environment(clock)
         .task(id: scenePhase) {
@@ -70,13 +70,18 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in clock.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in clock.refresh() }
         .onChange(of: pendingURL) { _, _ in routePendingURL() }
-        .onChange(of: store.settings.hasOnboarded) { _, _ in routePendingURL() }
     }
     private func routePendingURL() {
         guard store.settings.hasOnboarded, let url = pendingURL else { return }
+        guard let route = WorkoutDeepLink(url: url) else { pendingURL = nil; return }
+        guard router.editing == nil else { pendingURL = nil; return }
+        // Wait for modal dismissal before presenting another destination.
+        if settingsPresented { settingsPresented = false; return }
+        if router.summary != nil { router.summary = nil; return }
+        if calendarPresented && route != .calendar { calendarPresented = false; return }
         pendingURL = nil
-        guard let route = WorkoutDeepLink(url: url) else { return }
         switch route {
+        case .overview: router.tab = .overview
         case .calendar:
             // Avoid dismissing an editor with unsaved fields to show a calendar.
             guard router.editing == nil else { return }

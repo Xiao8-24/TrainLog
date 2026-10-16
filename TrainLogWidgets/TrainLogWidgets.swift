@@ -31,7 +31,7 @@ struct TrainingWidget: Widget {
         StaticConfiguration(kind: WidgetSnapshotStorage.kind, provider: TrainingProvider()) { entry in
             TrainingWidgetView(entry: entry)
                 .containerBackground(.background, for: .widget)
-                .widgetURL(WorkoutDeepLink.workout(entry.snapshot?.draftID).url)
+                .widgetURL(entry.snapshot == nil ? WorkoutDeepLink.overview.url : WorkoutDeepLink.workout(entry.snapshot?.draftID).url)
         }
         .configurationDisplayName("训练日程")
         .description("查看今日训练、本周进度，或继续未完成的训练。")
