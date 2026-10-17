@@ -18,6 +18,14 @@
 
 四个主页面右上角均可打开原生健身日历，支持月份/年份切换、日期跳转、返回今天和选中日期恢复。日历查看不受趋势统计范围限制，跨午夜或时区变更后刷新；新增系统动画、触感、减少动态效果支持及历史编辑取消确认。详见 [原生体验改进](Documentation/NATIVE_EXPERIENCE.md)。
 
+## 在 Windows 上体验交互
+
+已提供免安装、可离线运行的 [Windows 交互预览](WindowsPreview/README.md)。在仓库中双击 `WindowsPreview/打开 TrainLog.cmd`，或用 Edge / Chrome 打开同目录的 `index.html`。
+
+预览包含详细／快速训练记录、37 个动作、40 个人体矢量区域、训练暂停与组间休息、草稿恢复、任意日期日历、趋势及小组件／灵动岛状态展示。首次带有可清空的演示记录，修改保存在当前浏览器，与 iPhone 数据相互独立。玻璃效果和动画为浏览器近似呈现，系统组件仍需在 iPhone 验证。
+
+运行 `python Tools/package_windows_preview.py` 可在 `Delivery` 生成独立 HTML、Windows ZIP 和 SHA256 校验文件。独立 HTML 可以单独移动并双击打开，无需启动本地服务。
+
 ## 没有 Mac：使用 GitHub 云端构建
 
 已配置 macOS GitHub Actions：运行业务、持久化和 UI 测试，通过后生成源码 ZIP、未签名 iPhone IPA、校验值，并保留测试日志。手动选择 `publish` 可在全部检查成功后创建 GitHub 预览版 Release。

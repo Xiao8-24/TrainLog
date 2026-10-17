@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>TrainLog · Windows 交互预览</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="catalog.js"></script>
+  <script defer src="core.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="desktop-header"><a class="brand" href="#" aria-label="TrainLog 概览"><span class="app-icon" id="brand-icon"></span><span>TrainLog<small>WINDOWS PREVIEW</small></span></a><div class="desktop-actions"><span class="preview-label">交互预览 · iOS 27 设计</span><div class="segmented appearance" role="group" aria-label="预览外观"><button data-theme="light" aria-label="浅色外观"></button><button data-theme="dark" aria-label="深色外观"></button></div></div></header>
+  <main class="studio">
+    <aside class="rail"><div><p class="eyebrow">每一次训练，都算数。</p><h1>看见你的<br>每一点进步。</h1><p class="rail-description">记录训练，了解肌群，<br>把下一次进步握在手中。</p></div><nav id="desktop-nav" aria-label="页面导航"></nav><div class="rail-bottom"><span class="local-indicator">本机预览数据</span><p>已载入可清空的演示记录。<br>所有修改仅保存在此浏览器。</p><button class="text-button" data-action="settings">预览设置 <span aria-hidden="true">↗</span></button></div></aside>
+    <section class="phone-stage" aria-label="iPhone 交互预览"><div class="phone"><div class="statusbar"><span id="status-time">9:41</span><button id="dynamic-island" class="dynamic-island" data-action="island" aria-label="灵动岛状态预览"></button><div class="status-symbols" aria-label="状态栏装饰"><span class="signal">▂▄▆</span><span class="wifi">⌁</span><span class="battery"></span></div></div><div id="island-expanded"></div><header class="app-header" id="app-header"></header><div class="app-scroll" id="app-content"></div><nav class="tabbar glass" id="tabbar" aria-label="App 标签栏"></nav><div id="modal-root"></div><div id="library-root"></div><div class="home-indicator" aria-hidden="true"></div></div><p class="device-caption">可点击、滚动和输入 · 本机交互预览</p></section>
+    <aside class="surfaces"><div class="surface-heading"><div><p class="eyebrow">GLANCEABLE</p><h2>进度，一眼就好。</h2></div><span class="preview-tag">状态预览</span></div><p class="surface-intro">开始一场详细训练，看看小组件<br>与灵动岛如何随训练变化。</p><section class="surface-section"><div class="section-kicker"><span>桌面小组件</span><span>小号</span></div><button id="widget-small" class="widget widget-small" data-action="start-detailed" aria-label="小组件：开始或继续训练"></button></section><section class="surface-section"><div class="section-kicker"><span>训练日程</span><span>中号</span></div><div id="widget-medium" class="widget widget-medium"></div></section><section class="surface-section"><div class="section-kicker"><span>锁屏实时活动</span><button class="text-button" data-action="live-toggle" id="live-toggle"></button></div><button id="lock-activity" class="lock-activity glass" data-action="start-detailed"></button></section><p class="surface-footnote">这里展示状态与布局逻辑。Apple 原生玻璃、系统小组件与灵动岛需要在 iPhone 上体验。</p></aside>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript>请使用支持 JavaScript 的 Edge、Chrome 或 Firefox 打开本预览。</noscript>
+</body>
+</html>
