@@ -1,4 +1,6 @@
-# Apple 健康与原生体验 · 0.5.0
+# Apple 健康与原生体验 · 0.5.0 历史实现
+
+**0.6.0 已扩展为有氧与原生 Apple Watch 训练。当前权限、传感器数据、备份与签名规则以 [有氧与手表说明](CARDIO_AND_WATCH.md) 为准；下文保留 0.5.x 的手机导出实现背景。**
 
 本版以 iOS 27 / Xcode 27 为部署与验证目标，最低部署版本升为 iOS 27。HealthKit 是系统健康数据库的授权接口，不是「通过 Apple 登录」，也不需要 TrainLog 账号。授权后保存的 HKWorkout 可由系统健康与健身 App 展示；这不是 Fitness+ 内容接入或 Apple Watch App。
 

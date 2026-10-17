@@ -2,7 +2,13 @@
 
 记录每一次训练，看见每一点进步。
 
-面向个人力量训练的本地优先 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit**；0.5.0 起最低部署版本 **iOS 27.0**。无服务器、无账号、无第三方运行时依赖。
+面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
+
+## 0.6.0 有氧与 Apple Watch
+
+128 个力量/核心动作与 38 种有氧及其他运动类型，支持时长、适用距离、平均配速/速度、独立运动趋势与任意日期日历；不会混入力量组数与容量。原生 Watch App 支持主动开始、暂停和保存，采集系统可用的心率、活动能量和距离，离线保留直到手机确认接收，避免重复导入与健康重复写入。
+
+单次训练显示心率采样图与系统能量估算；可单独授权读取健康已有的血氧和 VO₂ max，注明日期与来源。血氧不连续采集，不从单次心率推算有氧适能；缺失数据不补零。详情、签名步骤、备份隐私及真机验收范围见 [有氧与 Apple Watch](Documentation/CARDIO_AND_WATCH.md)。本轮 Apple SDK 验证结果以 Actions 与 [验证记录](Documentation/VALIDATION.md) 为准，下方 0.5.1 是历史发布记录。
 
 ## 0.5.1 Apple 健康与原生体验
 
@@ -43,7 +49,7 @@
 1. 将整个仓库或 `Delivery/TrainLog-iOS-source.zip` 解压到 Mac，保留 `Packages/TrainLogCore` 与 `TrainLog.xcodeproj` 的相对位置。
 2. 使用 Xcode 27.0 或更新正式版 打开 **`TrainLog.xcodeproj`**。工程不需要 CocoaPods、网络 Swift Package 或额外工程生成器。
 3. 选择共享 Scheme **TrainLog** 和已安装的 iPhone 模拟器。按 **⌘B** 构建、**⌘R** 运行。
-4. 真机安装：为 TrainLog 与 TrainLogWidgets 两个 target 选择自己的开发团队和唯一 Bundle Identifier，同时配置相同 App Group；主 App 另外启用 HealthKit 并重新生成签名描述文件。若替换默认 App Group，需要同步修改两个 entitlements 与 `Shared/WidgetSnapshotStorage.swift`，详见[小组件签名配置](Documentation/WIDGETS_AND_LIVE_ACTIVITIES.md)。连接并信任 iPhone，按系统提示启用开发者模式，选择该设备并运行。
+4. 真机安装：为 TrainLog、TrainLogWidgets、TrainLogWatch 分别配置开发团队与有效签名。主 App 与 Watch 启用 HealthKit，主 App 与 Widget 使用相同 App Group；修改主 App Bundle ID 时同步修改 Watch 的 WKCompanionAppBundleIdentifier。详见[手表签名与验收](Documentation/CARDIO_AND_WATCH.md)。连接并信任配对 iPhone / Watch，在设备启用开发者模式后运行。
 5. 使用个人开发团队安装时，签名能力与有效期以 Xcode 当前提示为准。本仓库不包含签名证书、Team ID 或预签名 IPA。
 
 **首次在 Mac 上请先构建和运行测试，再导入重要训练档案。** 不建议通过删除已有数据库来解决构建或迁移问题。
@@ -79,7 +85,10 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 | 小组件 | 桌面小／中号、锁屏矩形、今日统计、本周目标与七天标记、草稿和日历入口 |
 | 实时活动 | 锁屏与灵动岛紧凑／最小／展开、训练计时、暂停、休息倒计时、结束状态、设置开关 |
 | Apple 健康 | 可选体能训练写入授权、完成摘要、单条历史写入、确认状态、持久化重试、编辑更新与管理副本删除 |
-| 动作库 | 37 个内置动作、主次肌群映射、搜索/肌群筛选、收藏、自定义动作与编辑、历史定义快照 |
+| 动作库 | 128 个内置动作、主次肌群映射、搜索/肌群/器械筛选、收藏、自定义与历史定义快照 |
+| 有氧与运动 | 38 种类型、计时/补录、适用距离与配速/速度、运动趋势、日历和历史 |
+| Apple Watch | 原生训练、心率/活动能量/适用距离、离线保存与防重传送、手机分析 |
+| 身体数据参考 | 单独授权读取健康已有血氧与 VO₂ max，注明日期来源，不虚构连续血氧或有氧评分 |
 | 模板 | Push/Pull/Legs、自定义、动作排序、组数、默认重量次数、复用上次配置、删除确认 |
 | 历史 | 日期/肌群/动作筛选、详情、补记日期、编辑、删除确认、关联原始 PR 组 |
 | 趋势 | 今日/7/30/90/365 天/全部、肌群四种指标、月历、可切年份活动图、次数/组数/容量/RPE 图表 |
@@ -96,7 +105,7 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 - Liquid Glass 使用系统导航、TabView 与原生玻璃 API，以 iOS 27 为目标，保留减少透明度与动态效果的辅助功能适配。
 - 当前支持中文界面及 iPhone，未单独设计 iPad 多栏布局和其他语言本地化。
 - 未做 iOS 真机性能测试、VoiceOver 实机走查、超大字号/横屏截图验收、通知后台交付验收。
-- 当前数据库只有 V1；已声明版本化 Schema 和 MigrationPlan，但尚无跨版本升级数据可验证迁移。
+- 数据库 V1→V2 轻量迁移保留原路径，扩展数据与手表收据独立存储；升级验证见集成测试与 Actions。
 - 未运行 App Store 验证与签名归档。
 
 ## 人体图实现
@@ -162,7 +171,7 @@ PR 全部从现存原始记录派生，关联会话、训练组和日期；编�
 - 启用休息提醒时申请通知权限；主动连接 Apple 健康时仅申请体能训练写入权限。核心记录无账号或联网要求，不访问相机与位置。
 - 系统设备备份是否包含沙盒由 iOS 和用户设置决定；本应用没有自己的云同步服务。
 
-JSON schemaVersion 为 1，日期使用 ISO 8601（秒精度）。完整备份含草稿、训练组、历史动作快照、动作库、模板、体重和设置。导入限制 32 MB，校验字段、数值、全局重复 ID、关联与版本。
+JSON 新导出 schemaVersion 为 2，继续读取版本 1，日期使用 ISO 8601（秒精度）。完整备份含草稿、训练组、动作快照、动作库、模板、体重、设置及手表训练的心率/活动能量；不包含血氧与 VO₂ max 参考值。导入限制 32 MB，校验字段、数值、全局重复 ID、关联与版本。
 
 合并保留本机设置，相同 ID 保留本机数据；重复导入不会增加副本。不同草稿冲突会要求先处理其中一份。替换操作必须确认，并在任何数据库修改前把当前档案写入 **Documents/Recovery**；可在“文件”App 的 TrainLog 文件夹中找到并再次导入恢复。
 
@@ -174,7 +183,7 @@ CSV 是分析明细，不用于完整恢复。重量列始终为 kg，包含完�
 TrainLog.xcodeproj/              原生 app、集成测试、UI 测试、共享 Scheme
 TrainLog/
   App/                          启动、四 Tab、路由
-  Core/Persistence/             SwiftData 实体、V1 schema、存储服务
+  Core/Persistence/             SwiftData 实体、V1/V2 schema、存储服务
   Core/DesignSystem/            卡片、数值、输入、空状态
   Core/Services/                休息计时与可选通知
   Features/                     概览、训练、动作库、历史、趋势、能力、肌群、设置

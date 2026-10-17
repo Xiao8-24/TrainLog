@@ -21,6 +21,7 @@ import TrainLogCore
     private(set) var elapsedUpdatedAt = Date()
     private(set) var startedAt: Date?
     private(set) var pendingCount = 0
+    private(set) var hasRecovery = false
     private let health = HKHealthStore()
     private var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
@@ -31,10 +32,12 @@ import TrainLogCore
     private let directory = URL.applicationSupportDirectory.appending(path: "WatchOutbox", directoryHint: .isDirectory)
     private var activeURL: URL { directory.appending(path: "active.json") }
     private var finalizing = false
+    private var recovering = false
     private var endedAt: Date?
 
     override init() {
         super.init()
+        hasRecovery = FileManager.default.fileExists(atPath: activeURL.path)
         if WCSession.isSupported() { WCSession.default.delegate = self; WCSession.default.activate() }
         refreshPending()
     }
@@ -53,6 +56,7 @@ import TrainLogCore
     }
     func start() async {
         guard session == nil, !busy else { return }
+        guard !hasRecovery else { issue = "请先恢复上次训练，或确认放弃未完成的恢复标记。"; recover(); return }
         guard HKHealthStore.isHealthDataAvailable() else { issue = "此设备不支持健康训练。"; return }
         busy = true; issue = nil
         defer { busy = false }
@@ -61,12 +65,12 @@ import TrainLogCore
             let heart = HKQuantityType.quantityType(forIdentifier: .heartRate)!
             let active = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
             var share: Set<HKSampleType> = [workoutType, active]
-            var read: Set<HKObjectType> = [heart, active]
+            var read: Set<HKObjectType> = [workoutType, heart, active]
             if let distanceType { share.insert(distanceType); read.insert(distanceType) }
             try await health.requestAuthorization(toShare: share, read: read)
             guard health.authorizationStatus(for: workoutType) == .sharingAuthorized else { throw ValidationError("请允许 TrainLog 写入体能训练后再开始。") }
             let configuration = selection.workoutConfiguration
-            if selection == .swimming { configuration.poolLength = HKQuantity(unit: .meter(), doubleValue: poolLengthMeters) }
+            if selection == .swimming { configuration.lapLength = HKQuantity(unit: .meter(), doubleValue: poolLengthMeters) }
             let native = try HKWorkoutSession(healthStore: health, configuration: configuration)
             let liveBuilder = native.associatedWorkoutBuilder()
             liveBuilder.dataSource = HKLiveWorkoutDataSource(healthStore: health, workoutConfiguration: configuration)
@@ -75,6 +79,14 @@ import TrainLogCore
             var value = Session(mode: .cardio, date: start)
             value.activity = ActivityRecord(kind: selection); value.activity?.source = "appleWatch"
             try persistActive(value)
+            hasRecovery = true
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                liveBuilder.addMetadata([HKMetadataKeySyncIdentifier: "com.trainlog.watch.\(value.id.uuidString)", HKMetadataKeySyncVersion: 1, HKMetadataKeyWorkoutBrandName: "TrainLog"]) { success, error in
+                    if let error { continuation.resume(throwing: error) }
+                    else if success { continuation.resume() }
+                    else { continuation.resume(throwing: ValidationError("训练标识未能保存。")) }
+                }
+            }
             record = value; session = native; builder = liveBuilder; startedAt = start
             points = []; heartRate = nil; heartRateDate = nil; energy = nil; distance = nil; elapsed = 0; elapsedUpdatedAt = start
             endedAt = nil; completedWorkout = nil
@@ -91,6 +103,7 @@ import TrainLogCore
             builder?.discardWorkout(); session?.end(); session = nil; builder = nil; record = nil
             running = false; issue = error.localizedDescription
             try? FileManager.default.removeItem(at: activeURL)
+            hasRecovery = false
         }
     }
     func togglePause() {
@@ -145,6 +158,7 @@ import TrainLogCore
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try data.write(to: directory.appending(path: "\(value.id.uuidString).json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             try? FileManager.default.removeItem(at: activeURL)
+            hasRecovery = false
             running = false; paused = false; finishing = false; issue = nil
             session = nil; self.builder = nil; record = nil; completedWorkout = nil
             if WCSession.default.activationState == .activated { try? WCSession.default.updateApplicationContext(["ended": true]) }
@@ -156,10 +170,12 @@ import TrainLogCore
         try JSONEncoder().encode(value).write(to: activeURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
     func recover() {
-        guard session == nil else { return }
+        guard session == nil, !recovering, FileManager.default.fileExists(atPath: activeURL.path) else { return }
+        recovering = true
         health.recoverActiveWorkoutSession { native, error in
             Task { @MainActor in
-                guard let native else { self.issue = error?.localizedDescription; return }
+                defer { self.recovering = false }
+                guard let native else { await self.recoverSavedWorkout(); return }
                 do {
                     let value = try JSONDecoder().decode(Session.self, from: Data(contentsOf: self.activeURL))
                     self.selection = value.activity?.kind ?? .matching(native.workoutConfiguration)
@@ -173,6 +189,38 @@ import TrainLogCore
                 } catch { self.issue = "训练恢复失败，原始数据已保留：\(error.localizedDescription)" }
             }
         }
+    }
+    private func recoverSavedWorkout() async {
+        do {
+            var value = try JSONDecoder().decode(Session.self, from: Data(contentsOf: activeURL))
+            let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: ["com.trainlog.watch.\(value.id.uuidString)"]),
+                HKQuery.predicateForObjects(from: HKSource.default())
+            ])
+            let workout: HKWorkout? = try await withCheckedThrowingContinuation { continuation in
+                health.execute(HKSampleQuery(sampleType: HKObjectType.workoutType(), predicate: predicate, limit: 1, sortDescriptors: nil) { _, samples, error in
+                    if let error { continuation.resume(throwing: error) }
+                    else { continuation.resume(returning: samples?.first as? HKWorkout) }
+                })
+            }
+            guard let workout else { issue = "上次训练没有找到已保存的健康结果。原始恢复文件已保留，可重试恢复。"; return }
+            selection = value.activity?.kind ?? .mixedCardio
+            value.activity?.watchWorkoutID = workout.uuid
+            let heart = HKQuantityType.quantityType(forIdentifier: .heartRate)!
+            let energy = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+            value.activity?.averageHeartRate = workout.statistics(for: heart)?.averageQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+            value.activity?.maximumHeartRate = workout.statistics(for: heart)?.maximumQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+            value.activity?.activeEnergyKcal = workout.statistics(for: energy)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+            if let distanceType { value.activity?.distanceMeters = workout.statistics(for: distanceType)?.sumQuantity()?.doubleValue(for: .meter()) }
+            value.accumulatedSeconds = workout.duration; value.manualDurationSeconds = nil; value.timerStartedAt = nil
+            value.endTime = workout.endDate; value.updatedAt = Date(); value.status = .completed
+            value.notes = "已从 Apple 健康恢复摘要；完整心率明细请在健康中查看。"
+            let envelope = WatchWorkoutEnvelope(session: value); try envelope.validate()
+            try JSONEncoder().encode(envelope).write(to: directory.appending(path: "\(value.id.uuidString).json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            try FileManager.default.removeItem(at: activeURL)
+            hasRecovery = false
+            issue = "已恢复保存的健康训练摘要。"; flush()
+        } catch { issue = "训练恢复文件已保留：\(error.localizedDescription)" }
     }
     private func collect(_ types: Set<HKSampleType>) {
         guard let builder, running, !finishing else { return }
@@ -194,6 +242,11 @@ import TrainLogCore
         energy = builder.statistics(for: energyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
         if let distanceType { distance = builder.statistics(for: distanceType)?.sumQuantity()?.doubleValue(for: .meter()) }
         publish(force: false)
+    }
+    func discardRecovery() {
+        guard session == nil, !running, !recovering else { return }
+        do { try FileManager.default.removeItem(at: activeURL); hasRecovery = false; issue = nil }
+        catch { issue = "恢复标记尚未移除：\(error.localizedDescription)" }
     }
     private func publish(force: Bool) {
         guard let record, let startedAt, WCSession.default.activationState == .activated else { return }
@@ -222,7 +275,9 @@ import TrainLogCore
         Task { @MainActor in
             self.paused = toState == .paused
             self.elapsed = self.builder?.elapsedTime ?? self.elapsed; self.elapsedUpdatedAt = Date()
-            if toState == .ended, self.finishing { await self.finalize() }
+            if toState == .ended, self.record != nil {
+                self.finishing = true; self.endedAt = self.endedAt ?? date; await self.finalize()
+            }
             else { self.publish(force: true) }
         }
     }
@@ -234,7 +289,9 @@ import TrainLogCore
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         guard let raw = userInfo["ack"] as? String, let id = UUID(uuidString: raw) else { return }
         Task { @MainActor in
-            do { try FileManager.default.removeItem(at: self.directory.appending(path: "\(id.uuidString).json")); self.refreshPending() }
+            let file = self.directory.appending(path: "\(id.uuidString).json")
+            guard FileManager.default.fileExists(atPath: file.path) else { return }
+            do { try FileManager.default.removeItem(at: file); self.refreshPending() }
             catch { self.issue = "手机已接收，手表副本暂未清理，可稍后重试。" }
         }
     }

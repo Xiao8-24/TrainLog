@@ -18,6 +18,7 @@ final class WatchAppDelegate: NSObject, WKApplicationDelegate {
 struct WatchWorkoutView: View {
     @State private var manager = WatchWorkoutManager.shared
     @State private var confirmingFinish = false
+    @State private var confirmingDiscardRecovery = false
     @Environment(\.scenePhase) private var phase
     var body: some View {
         @Bindable var manager = manager
@@ -52,6 +53,10 @@ struct WatchWorkoutView: View {
                         Text("允许健康权限后采集心率、活动能量及适用距离。训练可在离线时完成。").font(.caption2).foregroundStyle(.secondary)
                     }
                     if let issue = manager.issue { Text(issue).font(.caption2).foregroundStyle(.orange) }
+                    if !manager.running && manager.hasRecovery {
+                        Button("恢复上次训练") { manager.recover() }.font(.caption2)
+                        Button("放弃恢复标记", role: .destructive) { confirmingDiscardRecovery = true }.font(.caption2)
+                    }
                     if manager.pendingCount > 0 {
                         Text("\(manager.pendingCount) 次训练等待手机接收").font(.caption2)
                         Button("重试发送") { manager.flush() }
@@ -59,7 +64,9 @@ struct WatchWorkoutView: View {
                     Text("血氧不在运动中连续采集；可在手机中查看健康已有的血氧与有氧适能。").font(.caption2).foregroundStyle(.secondary)
                 }.padding(.horizontal, 4)
             }.navigationTitle("TrainLog")
+                .task { manager.recover() }
                 .confirmationDialog("结束并保存训练？", isPresented: $confirmingFinish) { Button("保存训练") { manager.finish() } }
+                .confirmationDialog("放弃未完成恢复记录？仅清除本机标记，Apple 健康原始记录保留。", isPresented: $confirmingDiscardRecovery) { Button("放弃恢复标记", role: .destructive) { manager.discardRecovery() } }
                 .onChange(of: phase) { _, value in if value == .active { manager.flush() } }
         }
     }

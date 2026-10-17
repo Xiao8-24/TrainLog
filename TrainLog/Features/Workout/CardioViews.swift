@@ -52,6 +52,11 @@ struct CardioAnalysisCard: View {
                     Text("曲线按最多每 10 秒一条采样显示；暂停与缺失时段不补值。").font(.caption).foregroundStyle(.secondary)
                 }
                 Text(CardioAnalysis.observation(for: session)).font(.subheadline).foregroundStyle(.secondary)
+                if let comparison = CardioAnalysis.comparableEffort(for: session, history: store.completed) {
+                    LabeledContent("近 \(comparison.count) 次相似记录平均心率", value: "\(comparison.previousMeanHeartRate.formattedValue) 次/分")
+                    LabeledContent("本次与其相比", value: (comparison.difference >= 0 ? "+" : "") + comparison.difference.formattedValue + " 次/分")
+                    Text("筛选同类型、配速差 ≤5%、距离差 ≤20%、时长至少 10 分钟的最近最多 5 次手表记录。用于观察同配速下的身体反应；天气、疲劳、地形等会影响心率，不能单凭差值判断有氧能力提高或下降。").font(.caption).foregroundStyle(.secondary)
+                }
                 if activity.hasWatchMeasurements {
                     Text("系统估算的活动能量不包含静息能量。手表佩戴、权限和运动类型会影响数据完整性。").font(.caption).foregroundStyle(.secondary)
                 }

@@ -2,6 +2,18 @@ import XCTest
 @testable import TrainLogCore
 
 final class CardioTests: XCTestCase {
+    func testComparableEffortUsesOnlyPriorMatchedWatchWorkouts() {
+        var current = workout(); current.activity?.source = "appleWatch"; current.activity?.watchWorkoutID = UUID()
+        current.activity?.averageHeartRate = 140
+        var earlier = current; earlier.id = UUID(); earlier.date = current.date.addingTimeInterval(-86400); earlier.activity?.averageHeartRate = 150
+        var earlier2 = earlier; earlier2.id = UUID(); earlier2.date = earlier.date.addingTimeInterval(-86400); earlier2.activity?.averageHeartRate = 160
+        var wrongKind = earlier; wrongKind.id = UUID(); wrongKind.activity?.kind = .outdoorCycle
+        var wrongPace = earlier; wrongPace.id = UUID(); wrongPace.manualDurationSeconds = 3600
+        var future = earlier; future.id = UUID(); future.date = current.date.addingTimeInterval(86400)
+        let result = CardioAnalysis.comparableEffort(for: current, history: [current, earlier, earlier2, wrongKind, wrongPace, future])
+        XCTAssertEqual(result?.count, 2); XCTAssertEqual(result?.previousMeanHeartRate, 155); XCTAssertEqual(result?.difference, -15)
+        XCTAssertNil(CardioAnalysis.comparableEffort(for: current, history: [earlier, wrongKind]))
+    }
     private func workout() -> Session {
         let start = Date(timeIntervalSince1970: 1_760_000_000)
         var value = Session(mode: .cardio, date: start)
@@ -54,6 +66,8 @@ final class CardioTests: XCTestCase {
         object.removeValue(forKey: "activity")
         let legacy = try JSONDecoder().decode(Session.self, from: JSONSerialization.data(withJSONObject: object))
         XCTAssertNil(legacy.activity); XCTAssertEqual(legacy.quickEntries, old.quickEntries)
+        var legacyBackup = backup; legacyBackup.schemaVersion = 1; legacyBackup.sessions = [old]
+        XCTAssertEqual(try BackupService.decode(BackupService.encode(legacyBackup)).sessions, [old])
     }
     func testWatchEnvelopeAndHealthExportAvoidDuplicateWorkout() throws {
         var value = workout()
@@ -98,5 +112,7 @@ final class CardioTests: XCTestCase {
         XCTAssertTrue(live.isFresh(at: start.addingTimeInterval(10)))
         XCTAssertFalse(live.isFresh(at: start.addingTimeInterval(21)))
         XCTAssertFalse(live.isFresh(at: start.addingTimeInterval(-6)))
+        var invalid = live; invalid.heartRate = .nan
+        XCTAssertFalse(invalid.isFresh(at: start))
     }
 }

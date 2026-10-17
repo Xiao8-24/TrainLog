@@ -58,6 +58,9 @@ public enum RecordValidator {
         if session.mode == .cardio {
             guard session.quickEntries.isEmpty, session.exercises.isEmpty, let activity = session.activity else { throw ValidationError("运动记录不能混入力量组或快速肌群。") }
             try activityRecord(activity)
+            if session.status == .completed && activity.hasWatchMeasurements && activity.watchWorkoutID == nil { throw ValidationError("手表训练缺少已保存的健康记录标识。") }
+            let end = session.endTime ?? Date()
+            guard activity.heartRate.allSatisfy({ $0.date >= session.startTime && $0.date <= end.addingTimeInterval(5) }) else { throw ValidationError("心率采样超出本次训练的时间范围。") }
             if session.status == .completed && session.elapsed() <= 0 { throw ValidationError("请记录大于零的运动时长。") }
         } else if session.mode == .quick {
             guard session.exercises.isEmpty else { throw ValidationError("快速记录不能包含详细动作。") }

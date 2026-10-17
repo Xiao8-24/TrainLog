@@ -50,7 +50,9 @@ import TrainLogCore
         let activityRows = try context.fetch(FetchDescriptor<SessionActivityData>())
         let activities = try Dictionary(uniqueKeysWithValues: activityRows.map { ($0.id, try ModelCodec.decode(ActivityRecord.self, $0.payload)) })
         let newSessions = try context.fetch(FetchDescriptor<WorkoutSession>()).map { model in
-            var value = try model.value(); value.activity = activities[value.id]; return value
+            var value = try model.value(); value.activity = activities[value.id]
+            if value.mode == .cardio && value.activity == nil { throw ValidationError("运动记录的扩展数据暂不可读，原始数据库已保留。") }
+            return value
         }.sorted { $0.date > $1.date }
         let newExercises = try context.fetch(FetchDescriptor<ExerciseDefinition>()).map { try $0.value() }.sorted { $0.name < $1.name }
         let newTemplates = try context.fetch(FetchDescriptor<WorkoutTemplate>()).map { try $0.value() }.sorted { $0.name < $1.name }
@@ -103,7 +105,7 @@ import TrainLogCore
     /// Delivered messages are acknowledged only after this transaction commits.
     /// Replays keep existing edits rather than overwriting a user's history.
     func receiveWatchSession(_ session: Session) throws {
-        guard session.status == .completed, session.mode == .cardio, session.activity?.hasWatchMeasurements == true else { throw ValidationError("手表训练数据无效。") }
+        try WatchWorkoutEnvelope(session: session).validate()
         let id = session.id
         if try context.fetchCount(FetchDescriptor<WatchImportReceipt>(predicate: #Predicate { $0.id == id })) > 0 { return }
         try RecordValidator.session(session)

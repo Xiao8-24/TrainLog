@@ -45,7 +45,9 @@ import TrainLogCore
         guard let receive else { return }
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            var failures: [String] = []
             for file in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) where file.pathExtension == "json" {
+                do {
                 let envelope = try WatchWorkoutEnvelope.decode(Data(contentsOf: file))
                 try receive(envelope.session)
                 // Receipt tombstones in the database make replay after deletion safe.
@@ -54,8 +56,9 @@ import TrainLogCore
                     try FileManager.default.removeItem(at: file)
                 }
                 if live?.sessionID == envelope.session.id { live = nil }
+                } catch { failures.append(error.localizedDescription) }
             }
-            issue = nil
+            issue = failures.isEmpty ? nil : "部分手表记录暂未导入，接收文件已保留：\(failures[0])"
         } catch { issue = "手表记录暂未导入，已保留接收文件。\(error.localizedDescription)" }
     }
     nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {

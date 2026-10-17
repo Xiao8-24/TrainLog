@@ -1,7 +1,7 @@
 import Foundation
 
 public struct Backup: Codable, Sendable {
-    public var schemaVersion: Int = 1
+    public var schemaVersion: Int = 2
     public var exportedAt: Date = Date()
     public var sessions: [Session]
     public var exercises: [Exercise]
@@ -30,7 +30,7 @@ public enum BackupService {
         return backup
     }
     public static func validate(_ backup: Backup) throws {
-        guard backup.schemaVersion == 1 else { throw ValidationError("不支持备份版本 \(backup.schemaVersion)，请使用兼容版本。") }
+        guard (1...2).contains(backup.schemaVersion) else { throw ValidationError("不支持备份版本 \(backup.schemaVersion)，请使用兼容版本。") }
         guard backup.sessions.count <= 50_000, backup.exercises.count <= 5_000, backup.templates.count <= 1_000 else { throw ValidationError("备份记录数量超出安全导入范围。") }
         var ids = Set<UUID>()
         func register(_ id: UUID) throws {

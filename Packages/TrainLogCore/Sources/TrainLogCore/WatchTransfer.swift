@@ -16,8 +16,12 @@ public struct WatchLiveSnapshot: Codable, Equatable, Sendable {
         self.activeEnergyKcal = activeEnergyKcal; self.distanceMeters = distanceMeters
     }
     public func isFresh(at now: Date = Date()) -> Bool {
-        now.timeIntervalSince(updatedAt) >= -5 && now.timeIntervalSince(updatedAt) <= 20 &&
-        elapsed.isFinite && elapsed >= 0 && elapsed <= 604800 && startedAt <= updatedAt
+        guard now.timeIntervalSince(updatedAt) >= -5 && now.timeIntervalSince(updatedAt) <= 20,
+              elapsed.isFinite, elapsed >= 0, elapsed <= 604800, startedAt <= updatedAt else { return false }
+        if let heartRate, !heartRate.isFinite || !(20...300).contains(heartRate) { return false }
+        if let activeEnergyKcal, !activeEnergyKcal.isFinite || !(0...100_000).contains(activeEnergyKcal) { return false }
+        if let distanceMeters, !distanceMeters.isFinite || !(0...2_000_000).contains(distanceMeters) { return false }
+        return true
     }
 }
 

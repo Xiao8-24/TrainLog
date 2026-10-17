@@ -3,6 +3,18 @@ import TrainLogCore
 @testable import TrainLog
 
 @MainActor final class HealthSyncTests: XCTestCase {
+    func testWatchManagedWorkoutNeverExportsOrDeletesASecondPhoneCopy() async {
+        let client = Client(), disk = Disk()
+        let sync = HealthSyncCoordinator(client: client, persistence: disk)
+        var value = Session(mode: .cardio, date: Date().addingTimeInterval(-600))
+        value.activity?.source = "appleWatch"; value.activity?.watchWorkoutID = UUID()
+        value.manualDurationSeconds = 600; value.finish()
+        await sync.enable(sessions: [])
+        sync.track(value); sync.export(value); await sync.waitUntilIdle()
+        sync.remove(value.id); await sync.waitUntilIdle()
+        XCTAssertTrue(client.writes.isEmpty); XCTAssertTrue(client.deletes.isEmpty)
+        XCTAssertEqual(sync.pendingCount, 0)
+    }
     final class Client: WorkoutHealthClient {
         var authorization = WorkoutHealthAuthorization.authorized
         var fails = false

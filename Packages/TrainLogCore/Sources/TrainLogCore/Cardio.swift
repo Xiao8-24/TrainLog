@@ -92,6 +92,30 @@ public struct CardioTotals: Equatable, Sendable {
 }
 
 public enum CardioAnalysis {
+    public struct EffortComparison: Equatable, Sendable {
+        public var count: Int
+        public var previousMeanHeartRate: Double
+        public var difference: Double
+    }
+    /// A descriptive comparison, not a fitness classification. Narrow the
+    /// context to the same activity, similar active pace and recorded distance.
+    public static func comparableEffort(for current: Session, history: [Session]) -> EffortComparison? {
+        guard current.status == .completed, current.elapsed() >= 600,
+              let activity = current.activity, activity.kind.isAerobic, activity.hasWatchMeasurements,
+              let mean = activity.averageHeartRate, let distance = activity.distanceMeters, distance > 0,
+              let pace = activity.paceSecondsPerKilometer(duration: current.elapsed()) else { return nil }
+        let candidates = history.filter { other in
+            guard other.id != current.id, other.status == .completed, other.date < current.date, other.elapsed() >= 600,
+                  let record = other.activity, record.kind == activity.kind, record.hasWatchMeasurements,
+                  record.averageHeartRate != nil, let otherDistance = record.distanceMeters,
+                  let otherPace = record.paceSecondsPerKilometer(duration: other.elapsed()) else { return false }
+            return abs(otherPace / pace - 1) <= 0.05 && abs(otherDistance / distance - 1) <= 0.20
+        }.sorted { $0.date > $1.date }.prefix(5)
+        let values = candidates.compactMap { $0.activity?.averageHeartRate }
+        guard values.count >= 2 else { return nil }
+        let previous = values.reduce(0, +) / Double(values.count)
+        return EffortComparison(count: values.count, previousMeanHeartRate: previous, difference: mean - previous)
+    }
     public static func totals(_ sessions: [Session], interval: DateInterval? = nil) -> CardioTotals {
         let records = sessions.filter { $0.status == .completed && $0.mode == .cardio && (interval?.includes($0.date) ?? true) }
         let distances = records.compactMap { $0.activity?.distanceMeters }

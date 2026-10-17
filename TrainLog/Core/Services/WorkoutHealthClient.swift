@@ -35,11 +35,12 @@ enum WorkoutHealthAuthorization { case unavailable, notDetermined, denied, autho
         try await store.requestAuthorization(toShare: [HKObjectType.workoutType()], read: [])
     }
     func save(_ value: HealthWorkoutExport, version: Int) async throws {
+        var metadata: [String: Any] = [HKMetadataKeySyncIdentifier: value.syncIdentifier,
+            HKMetadataKeySyncVersion: NSNumber(value: version), HKMetadataKeyWorkoutBrandName: "TrainLog"]
+        if let kind = value.activityKind { metadata[HKMetadataKeyIndoorWorkout] = !kind.isOutdoor }
         let workout = HKWorkout(activityType: value.activityKind?.healthKitType ?? .traditionalStrengthTraining, start: value.start, end: value.end,
             duration: value.duration, totalEnergyBurned: nil, totalDistance: nil,
-            metadata: [HKMetadataKeySyncIdentifier: value.syncIdentifier,
-                       HKMetadataKeySyncVersion: NSNumber(value: version),
-                       HKMetadataKeyWorkoutBrandName: "TrainLog"])
+            metadata: metadata)
         // No fabricated calorie or heart-rate samples. HKWorkout's explicit
         // duration preserves paused/manual timing without inventing pause events.
         try await store.save(workout)
