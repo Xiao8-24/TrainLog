@@ -149,7 +149,9 @@ final class TrainLogUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Apple 健康"].waitForExistence(timeout: 5))
         let toggle = app.switches["health.enabled"]
         XCTAssertTrue(toggle.exists); XCTAssertFalse(toggle.isEnabled)
-        XCTAssertTrue(app.staticTexts["当前不可用"].exists)
+        let authorization = app.descendants(matching: .any)["health.authorization"].firstMatch
+        XCTAssertTrue(authorization.exists)
+        XCTAssertEqual(authorization.value as? String, "当前不可用")
         capture(app, name: "Apple Health optional connection - isolated environment")
     }
     @MainActor func testCalendarAvailableFromEveryTabAndPreservesSelectedDate() {

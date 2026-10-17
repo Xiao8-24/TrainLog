@@ -6,10 +6,10 @@ swift test --package-path Packages/TrainLogCore 2>&1 | tee artifacts/core-tests.
 destination="${TRAINLOG_SIMULATOR_ID:-}"
 if [ -z "$destination" ]; then
   sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
-  destination=$(xcrun simctl list devices available -j | python3 Tools/select_simulator.py "$sdk_version" "${TRAINLOG_MINIMUM_IOS:-18}")
+  destination=$(xcrun simctl list devices available -j | python3 Tools/select_simulator.py "$sdk_version" "${TRAINLOG_MINIMUM_IOS:-27}")
 fi
 if [ -z "$destination" ]; then
-  echo "No matching iPhone simulator. Install an iOS ${TRAINLOG_MINIMUM_IOS:-18}+ runtime supported by the selected Xcode SDK." >&2
+  echo "No matching iPhone simulator. Install an iOS ${TRAINLOG_MINIMUM_IOS:-27}+ runtime supported by the selected Xcode SDK." >&2
   exit 1
 fi
 printf '%s\n' "$destination" > artifacts/simulator-id.txt

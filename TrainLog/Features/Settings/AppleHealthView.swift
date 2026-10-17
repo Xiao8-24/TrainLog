@@ -17,6 +17,10 @@ struct AppleHealthView: View {
                     .accessibilityIdentifier("health.enabled")
                 if health.isAuthorizing { ProgressView("正在请求健康授权…") }
                 LabeledContent("写入权限", value: authorizationLabel)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("健康写入权限")
+                    .accessibilityValue(authorizationLabel)
+                    .accessibilityIdentifier("health.authorization")
                 if health.authorization == .denied {
                     Text("请打开「健康」App，点按个人头像 → App → TrainLog，允许写入「体能训练」。返回此页后会重新检查权限。")
                         .font(.footnote).foregroundStyle(.secondary)

@@ -4,7 +4,7 @@ import re
 import sys
 
 sdk = tuple(map(int, sys.argv[1].split(".")))
-minimum = tuple(map(int, sys.argv[2].split("."))) if len(sys.argv) > 2 else (18,)
+minimum = tuple(map(int, sys.argv[2].split("."))) if len(sys.argv) > 2 else (27,)
 candidates = []
 for runtime, devices in json.load(sys.stdin)["devices"].items():
     match = re.search(r"iOS-([0-9-]+)$", runtime)
