@@ -47,6 +47,9 @@ jobs:
         run: python3 Tools/check_source.py
       - name: Run core, persistence and UI tests
         run: bash Tools/test-ios.sh
+      - name: Capture native Watch simulator appearance
+        continue-on-error: true
+        run: bash Tools/capture-watch.sh
       - name: Build unsigned iPhone archive and package delivery
         run: bash Tools/package-ios.sh
       - name: Preserve test results and logs

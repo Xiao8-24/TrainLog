@@ -93,7 +93,13 @@ struct CardioAnalysisCard: View {
     private func load() async {
         guard store.healthInsights.enabled else { return }
         loading = true; defer { loading = false }
-        do { reference = try await store.healthInsights.references(at: session.endTime ?? session.date); issue = nil }
+        do {
+            // A backfilled manual session's save date isn't its workout end.
+            let end = session.activity?.hasWatchMeasurements == true
+                ? (session.endTime ?? session.date)
+                : ((try? HealthWorkoutExport(session: session))?.end ?? session.date)
+            reference = try await store.healthInsights.references(at: end); issue = nil
+        }
         catch { issue = "健康参考暂不可读：\(error.localizedDescription)" }
     }
 }
@@ -112,6 +118,7 @@ struct WatchConnectionView: View {
                 Button("在 Apple Watch 上准备训练", systemImage: "applewatch") { Task { await store.watch.start(activity) } }
                     .disabled(store.watch.launching || !store.watch.installed)
                 Text("打开手表后点按「开始训练」，首次需在手表上允许健康权限。戴上手表不会擅自开始记录。暂停、继续和结束在手表操作。").font(.footnote).foregroundStyle(.secondary)
+                Text("首次请打开 iPhone 的 TrainLog。接收时机由系统决定；若记录尚未出现，请打开手机 App 并等待连接恢复。").font(.footnote).foregroundStyle(.secondary)
                 if let issue = store.watch.issue { Text(issue).font(.footnote).foregroundStyle(.secondary) }
             }
             Section("数据与同步") {

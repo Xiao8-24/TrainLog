@@ -49,6 +49,7 @@ struct SettingsView: View {
                 Text("通知为可选权限。拒绝通知后仍可使用全部记录与计时功能。").font(.caption).foregroundStyle(.secondary)
             }
             Section("Apple 健康与健身") {
+                NavigationLink { WatchConnectionView() } label: { Label("Apple Watch", systemImage: "applewatch") }
                 NavigationLink { AppleHealthView() } label: { Label("Apple 健康", systemImage: "heart.fill").foregroundStyle(.primary) }
                     .accessibilityIdentifier("settings.appleHealth")
                 Text("可选：把完成训练的时间与时长写入 Apple 健康，供系统健身 App 展示。")
@@ -60,11 +61,12 @@ struct SettingsView: View {
                         if enabled { UserDefaults.standard.removeObject(forKey: "lastLiveActivitySession") }
                         store.refreshSurfaces()
                     }
-                Text("详细训练开始后，在锁屏与灵动岛显示训练计时、正式组数和组间休息。点按可继续训练；完成或放弃草稿时结束。可在系统设置中关闭实时活动。").font(.caption).foregroundStyle(.secondary)
+                Text("手机详细训练与运动计时支持锁屏和灵动岛。力量显示正式组与组间休息，运动显示类型与时长；完成或放弃草稿时结束。可在系统设置中关闭实时活动。").font(.caption).foregroundStyle(.secondary)
                 Text("长按主屏幕，添加 TrainLog「训练日程」小组件。支持小号、中号和锁屏矩形；显示今日记录、本周目标和继续草稿入口。系统决定刷新时机。").font(.caption).foregroundStyle(.secondary)
                 if let issue = store.surfaceIssue { Text(issue).font(.caption).foregroundStyle(.secondary) }
             }
             Section("数据备份") {
+                Text("导出文件可能包含手表心率与活动能量，请妥善保管。血氧和有氧适能参考不会导出。").font(.footnote).foregroundStyle(.secondary)
                 Button("导出完整 JSON 备份", systemImage: "square.and.arrow.up") { prepareExport(csv: false) }
                 Button("导出 CSV 训练明细", systemImage: "tablecells") { prepareExport(csv: true) }
                 Button("导入 JSON 备份", systemImage: "square.and.arrow.down") { importing = true }.disabled(reading)
