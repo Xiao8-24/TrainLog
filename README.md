@@ -4,13 +4,13 @@
 
 面向个人力量训练的本地优先 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit**；0.5.0 起最低部署版本 **iOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
-## 0.5.0 Apple 健康与原生体验
+## 0.5.1 Apple 健康与原生体验
 
 新增可选 HealthKit 连接：授权后自动写入新完成力量训练的类型、起止时间与时长，供 Apple 健康与健身 App 展示；支持单条历史写入、同步状态、失败重试、编辑更新与已管理副本删除。不读取其他来源，不推算心率、热量或圆环进度，不需要 Apple 登录。健康授权和队列不会随 JSON 备份迁移。签名主 App 需启用 HealthKit。详见 [接入、时间规则与设备验收](Documentation/APPLE_HEALTH.md)。
 
-字体统一使用系统默认设计与语义字号，主要标题采用 semibold；计时交给系统文本刷新，休息计时仅更新独立数字，长训练列表按需创建，输入时不再反复排序历史。数字转场和离散交互使用系统动画，支持减少动态效果。源码与静态检查完成，云端 iOS 27 测试与 Release 归档待本次工作流验证；真机健康/健身展示与性能仍待验收。
+字体统一使用系统默认设计与语义字号，主要标题采用 semibold；计时交给系统文本刷新，休息计时仅更新独立数字，长训练列表按需创建，输入时不再反复排序历史。数字转场和离散交互使用系统动画，支持减少动态效果。云端 iOS 27 已通过 67 项测试与 Release 归档，并复核原生健康设置、浅深色及大辅助字号休息控件截图；真机健康/健身展示与性能仍待验收。
 
-> **[0.4.0 小组件与灵动岛预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.4.0)。** [最终验证](https://github.com/Xiao8-24/TrainLog/actions/runs/39024492159) 在 iOS 27 通过 50 项测试，Xcode 27 Release 归档包含小组件扩展。五个发布文件校验通过，82 个源码文件与测试提交一致。后续开发、验证与发布以 iOS 27 为目标。IPA 仍需同时签名主 App 和扩展并配置 App Group。
+> **[0.5.1 健康连接与原生体验预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.5.1)。** [最终验证](https://github.com/Xiao8-24/TrainLog/actions/runs/39036674709) 在 iOS 27 通过 67 项测试，Xcode 27 Release 归档包含小组件扩展。五个发布文件校验通过，94 个源码文件与测试提交一致。IPA 仍需分别签名主 App 和扩展、配置 App Group，并为主 App 启用 HealthKit。详见[验证记录](Documentation/VALIDATION.md)。
 
 ## 0.4.0 桌面小组件与灵动岛
 
@@ -43,7 +43,7 @@
 1. 将整个仓库或 `Delivery/TrainLog-iOS-source.zip` 解压到 Mac，保留 `Packages/TrainLogCore` 与 `TrainLog.xcodeproj` 的相对位置。
 2. 使用 Xcode 27.0 或更新正式版 打开 **`TrainLog.xcodeproj`**。工程不需要 CocoaPods、网络 Swift Package 或额外工程生成器。
 3. 选择共享 Scheme **TrainLog** 和已安装的 iPhone 模拟器。按 **⌘B** 构建、**⌘R** 运行。
-4. 真机安装：为 TrainLog 与 TrainLogWidgets 两个 target 选择自己的开发团队和唯一 Bundle Identifier，同时配置相同 App Group。若替换默认 App Group，需要同步修改两个 entitlements 与 `Shared/WidgetSnapshotStorage.swift`，详见[小组件签名配置](Documentation/WIDGETS_AND_LIVE_ACTIVITIES.md)。连接并信任 iPhone，按系统提示启用开发者模式，选择该设备并运行。
+4. 真机安装：为 TrainLog 与 TrainLogWidgets 两个 target 选择自己的开发团队和唯一 Bundle Identifier，同时配置相同 App Group；主 App 另外启用 HealthKit 并重新生成签名描述文件。若替换默认 App Group，需要同步修改两个 entitlements 与 `Shared/WidgetSnapshotStorage.swift`，详见[小组件签名配置](Documentation/WIDGETS_AND_LIVE_ACTIVITIES.md)。连接并信任 iPhone，按系统提示启用开发者模式，选择该设备并运行。
 5. 使用个人开发团队安装时，签名能力与有效期以 Xcode 当前提示为准。本仓库不包含签名证书、Team ID 或预签名 IPA。
 
 **首次在 Mac 上请先构建和运行测试，再导入重要训练档案。** 不建议通过删除已有数据库来解决构建或迁移问题。
@@ -78,6 +78,7 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 | 计时 | 训练计时与暂停、手动时长、组间倒计时、恢复截止时间、可选系统通知 |
 | 小组件 | 桌面小／中号、锁屏矩形、今日统计、本周目标与七天标记、草稿和日历入口 |
 | 实时活动 | 锁屏与灵动岛紧凑／最小／展开、训练计时、暂停、休息倒计时、结束状态、设置开关 |
+| Apple 健康 | 可选体能训练写入授权、完成摘要、单条历史写入、确认状态、持久化重试、编辑更新与管理副本删除 |
 | 动作库 | 37 个内置动作、主次肌群映射、搜索/肌群筛选、收藏、自定义动作与编辑、历史定义快照 |
 | 模板 | Push/Pull/Legs、自定义、动作排序、组数、默认重量次数、复用上次配置、删除确认 |
 | 历史 | 日期/肌群/动作筛选、详情、补记日期、编辑、删除确认、关联原始 PR 组 |
@@ -87,7 +88,7 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 | 数据 | 版本化 JSON、校验与预览、合并/确认替换、导入前恢复副本、CSV、系统文件导出与分享 |
 | 设置 | kg/lb、每周目标、训练目标、主题、体重历史、统计说明、隐私说明 |
 
-以上功能已有源码，自动化测试覆盖业务规则、持久化与七个 App UI 流程；小组件和实时活动的系统展示、其余交互及真机体验仍需按验收清单逐项检查。
+以上功能已有源码，自动化测试覆盖业务规则、持久化、健康队列与八个 App UI 流程；健康/健身、小组件和实时活动的真实系统展示、其余交互及真机体验仍需按验收清单逐项检查。
 
 ### 未实现及需后续验证的部分
 
@@ -158,7 +159,7 @@ PR 全部从现存原始记录派生，关联会话、训练组和日期；编�
 - 主线程隔离的 `AppStore` 管理 ModelContext，显式保存，失败回滚。训练编辑使用值类型，历史只有点击保存后才写回。
 - 草稿不参与统计。正常数字修改在 500 ms 防抖后落盘；无效输入保留在页面并明确提示尚未保存，不用上一数值冒充成功。系统在防抖窗口内强杀时，最近未落盘的编辑可能丢失。
 - 启动数据库失败显示错误与重试，**不会静默删除数据库，也不会切换到临时内存库冒充保存成功**。
-- 只在用户启用休息提醒时申请通知权限。无 HealthKit、相机、位置、网络或账号要求。
+- 启用休息提醒时申请通知权限；主动连接 Apple 健康时仅申请体能训练写入权限。核心记录无账号或联网要求，不访问相机与位置。
 - 系统设备备份是否包含沙盒由 iOS 和用户设置决定；本应用没有自己的云同步服务。
 
 JSON schemaVersion 为 1，日期使用 ISO 8601（秒精度）。完整备份含草稿、训练组、历史动作快照、动作库、模板、体重和设置。导入限制 32 MB，校验字段、数值、全局重复 ID、关联与版本。
@@ -189,7 +190,7 @@ Documentation/                 验证状态、手工验收、矢量几何审查�
 
 新增/移动 Swift 源文件后运行 `python3 Tools/generate_project.py` 更新工程引用。此脚本只使用 Python 标准库；日常 Xcode 构建不需要运行它。图标已经提交，`generate_assets.py` 仅供重新生成，使用 Pillow。
 
-## 本次实际检查结果
+## 0.1.0 历史检查结果
 
 检查日期：**2026-10-10（Asia/Shanghai）**。
 

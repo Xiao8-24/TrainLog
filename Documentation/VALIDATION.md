@@ -1,5 +1,19 @@
 # 验证记录
 
+## 0.5.1 Apple 健康与原生体验
+
+2026-10-17，[Actions #20](https://github.com/Xiao8-24/TrainLog/actions/runs/39036674709) 验证提交 `796235708bf205213624e1f116b1a369ca218c69`，21:44（上海时间）发布 [v0.5.1](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.5.1)。Xcode 27.0 (27A266a)、Swift 6.4 编译器 / Swift 5 语言模式、iPhone Air / iOS 27.0 (24A434) 上，42 个核心、17 个持久化/服务集成与 8 个原生 UI 测试，共 67 项全部通过。Release 设备归档包含小组件扩展，主 App 与扩展均为 0.5.1 / build 7，最低部署 iOS 27.0、iphoneos27.0 SDK。
+
+健康队列测试使用替代客户端，验证拒绝授权、历史不自动全量上传、失败后原版本重试、提交前落盘失败、系统保存后确认落盘失败、同步中删除、关闭后编辑、替换导入及落盘失败时暂停旧摘要提交。纯业务检查覆盖暂停跨度与有效时长、快速补记不结束于未来、历史日期、无效时长、稳定标识与版本、序列化恢复及迟到确认。UI 隔离模式不访问真实健康数据库；新增健康页检查验证关闭且不可用的开关与明确的权限名称/值。已目视复核健康设置、浅深色休息浮层和最大辅助字号截图。
+
+前两轮 #18 / #19 的业务与集成检查均通过，新增健康页 UI 测试因按独立 StaticText 查找系统已合并的 LabeledContent 值失败，发布被阻止。最终为该行显式设置辅助功能名称、值与标识，通过稳定元素读取状态，没有删除状态断言。失败时 Xcode 额外等待约 600 秒收集模拟器诊断；不能将这段诊断等待视为 App 动画卡顿。
+
+已下载五个发布文件，与 GitHub Release 的大小和 SHA256 逐一一致，并校验发布校验单。源码 ZIP 的 94 个文件与上述测试提交逐字节匹配。源码 ZIP SHA256：`01ace8139b61567aff03dc59290f5fceb58ec47a6e8b14e0c9a6f143a4979680`；IPA：`d03ef3f580134bc08587838058839b7f677e87db3614b4ee90479eae86d52547`。IPA 中主 App 包含健康用途说明、Live Activities 声明，小组件版本一致，两者均无设备 provisioning profile。
+
+归档保留 Text 拼接、HKWorkout 显式 duration 初始化的弃用警告，以及 SwiftData Predicate Sendable 与共享文件双组引用警告，未阻止当前 SDK 的测试和构建。显式 duration 构造保留暂停累计时长，未伪造未知的暂停事件或能量样本；后续迁移 WorkoutBuilder 需要相应的计时事件模型。当前不是零警告或 Swift 6 语言模式迁移验收。
+
+**仍待签名 iPhone 验收：** 首次健康授权、拒绝后恢复、健康/健身真实显示、系统锁定与后台恢复、跨设备健康同步、真实系统小组件/灵动岛，以及 Instruments 帧率、功耗和完整辅助功能走查。主 App 签名需启用 HealthKit；健康连接通过系统管理，无额外 Apple 登录，不采集/估算心率或活动热量。详见 [Apple 健康接入说明](APPLE_HEALTH.md)。
+
 ## 0.4.0 小组件与训练实时活动
 
 2026-10-17，[Actions #17](https://github.com/Xiao8-24/TrainLog/actions/runs/39024492159) 验证提交 `33cf48403fff442742546db5e0d09ac54d384527`，18:36（上海时间）发布 [v0.4.0](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.4.0)。Xcode 27.0 (27A266a)、Swift 6.4 编译器、iPhone Air / iOS 27.0 (24A434) 上，34 个核心、9 个集成及 7 个 App UI 测试，共 50 项全部通过，Release 设备归档成功。新增链接流程通过设置进入日历、在日历弹窗中进入训练，并在 App 重启后继续原草稿；已复核其真实截图及最大辅助字号休息控件截图。
