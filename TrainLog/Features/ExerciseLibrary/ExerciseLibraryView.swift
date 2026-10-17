@@ -7,10 +7,11 @@ struct ExerciseLibraryView: View {
     var onPick: ((Exercise) -> Void)? = nil
     @State private var search = ""
     @State private var muscle: MuscleGroup?
+    @State private var equipment: Equipment?
     @State private var favoritesOnly = false
     @State private var creating = false
     private var results: [Exercise] {
-        store.exercises.filter { !$0.isArchived && (!favoritesOnly || $0.isFavorite) && (muscle == nil || $0.primary.contains(muscle!) || $0.secondary.contains(muscle!)) && (search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) || $0.englishName.localizedCaseInsensitiveContains(search)) }
+        store.exercises.filter { !$0.isArchived && (!favoritesOnly || $0.isFavorite) && (equipment == nil || $0.equipment == equipment) && (muscle == nil || $0.primary.contains(muscle!) || $0.secondary.contains(muscle!)) && (search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) || $0.englishName.localizedCaseInsensitiveContains(search)) }
             .sorted { $0.isFavorite == $1.isFavorite ? $0.name < $1.name : $0.isFavorite }
     }
     var body: some View {
@@ -21,6 +22,10 @@ struct ExerciseLibraryView: View {
                     ForEach(MuscleGroup.allCases) { Text($0.name).tag(Optional($0)) }
                 }
                 Toggle("只看收藏", isOn: $favoritesOnly)
+                Picker("器械筛选", selection: $equipment) {
+                    Text("全部器械").tag(Optional<Equipment>.none)
+                    ForEach(Equipment.allCases) { Text($0.name).tag(Optional($0)) }
+                }
             }
             Section("\(results.count) 个动作") {
                 ForEach(results) { exercise in

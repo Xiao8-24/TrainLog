@@ -122,6 +122,7 @@ import TrainLogCore
         }
     }
     private func stage(_ session: Session) {
+        if session.activity?.hasWatchMeasurements == true { return }
         do {
             let workout = try HealthWorkoutExport(session: session)
             var next = ledger; next.stage(workout)

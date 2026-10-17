@@ -35,7 +35,7 @@ enum WorkoutHealthAuthorization { case unavailable, notDetermined, denied, autho
         try await store.requestAuthorization(toShare: [HKObjectType.workoutType()], read: [])
     }
     func save(_ value: HealthWorkoutExport, version: Int) async throws {
-        let workout = HKWorkout(activityType: .traditionalStrengthTraining, start: value.start, end: value.end,
+        let workout = HKWorkout(activityType: value.activityKind?.healthKitType ?? .traditionalStrengthTraining, start: value.start, end: value.end,
             duration: value.duration, totalEnergyBurned: nil, totalDistance: nil,
             metadata: [HKMetadataKeySyncIdentifier: value.syncIdentifier,
                        HKMetadataKeySyncVersion: NSNumber(value: version),

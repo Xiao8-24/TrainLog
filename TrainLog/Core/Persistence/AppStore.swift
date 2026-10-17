@@ -13,6 +13,8 @@ import TrainLogCore
     private let surfaces = WorkoutSurfacesCoordinator()
     private let publishesSurfaces: Bool
     let health: HealthSyncCoordinator
+    let watch = WatchBridge()
+    let healthInsights = HealthInsights()
     var surfaceIssue: String? { surfaces.issue }
     let container: ModelContainer
     private var context: ModelContext { container.mainContext }
@@ -23,7 +25,7 @@ import TrainLogCore
     init(inMemory: Bool = false, storeURL: URL? = nil) throws {
         publishesSurfaces = !inMemory && storeURL == nil
         health = !inMemory && storeURL == nil ? .production() : .isolated()
-        let schema = Schema(versionedSchema: TrainLogSchemaV1.self)
+        let schema = Schema(versionedSchema: TrainLogSchemaV2.self)
         let config = Self.configuration(schema: schema, inMemory: inMemory, storeURL: storeURL)
         container = try ModelContainer(for: schema, migrationPlan: TrainLogMigrationPlan.self, configurations: [config])
         context.autosaveEnabled = false
@@ -35,6 +37,7 @@ import TrainLogCore
                 for template in ExerciseCatalog.templates { context.insert(try WorkoutTemplate(template)) }
             }
         }
+        try installMissingExercises()
     }
     static func configuration(schema: Schema, inMemory: Bool = false, storeURL: URL? = nil) -> ModelConfiguration {
         if let storeURL { return ModelConfiguration("TrainLog", schema: schema, url: storeURL, cloudKitDatabase: .none) }
@@ -44,7 +47,11 @@ import TrainLogCore
     }
     private func reload() throws {
         // Decode into temporary values so a corrupt row cannot leave a half-refreshed screen.
-        let newSessions = try context.fetch(FetchDescriptor<WorkoutSession>()).map { try $0.value() }.sorted { $0.date > $1.date }
+        let activityRows = try context.fetch(FetchDescriptor<SessionActivityData>())
+        let activities = try Dictionary(uniqueKeysWithValues: activityRows.map { ($0.id, try ModelCodec.decode(ActivityRecord.self, $0.payload)) })
+        let newSessions = try context.fetch(FetchDescriptor<WorkoutSession>()).map { model in
+            var value = try model.value(); value.activity = activities[value.id]; return value
+        }.sorted { $0.date > $1.date }
         let newExercises = try context.fetch(FetchDescriptor<ExerciseDefinition>()).map { try $0.value() }.sorted { $0.name < $1.name }
         let newTemplates = try context.fetch(FetchDescriptor<WorkoutTemplate>()).map { try $0.value() }.sorted { $0.name < $1.name }
         let newWeights = try context.fetch(FetchDescriptor<BodyWeightRecord>()).map { $0.value() }.sorted { $0.date > $1.date }
@@ -77,12 +84,47 @@ import TrainLogCore
         if let existing = models.first(where: { $0.id == session.id }) { model = existing }
         else { model = WorkoutSession(session); context.insert(model) }
         try model.apply(session, context: context)
+        try upsertActivity(session)
+    }
+    private func upsertActivity(_ session: Session) throws {
+        let id = session.id
+        let rows = try context.fetch(FetchDescriptor<SessionActivityData>(predicate: #Predicate { $0.id == id }))
+        if let activity = session.activity {
+            if let old = rows.first { old.payload = try ModelCodec.encode(activity) }
+            else { context.insert(try SessionActivityData(id: id, activity: activity)) }
+        } else { for row in rows { context.delete(row) } }
+    }
+    func installMissingExercises() throws {
+        let ids = Set(exercises.map(\.id))
+        let missing = ExerciseCatalog.exercises.filter { !ids.contains($0.id) }
+        guard !missing.isEmpty else { return }
+        try transact { for exercise in missing { context.insert(try ExerciseDefinition(exercise)) } }
+    }
+    /// Delivered messages are acknowledged only after this transaction commits.
+    /// Replays keep existing edits rather than overwriting a user's history.
+    func receiveWatchSession(_ session: Session) throws {
+        guard session.status == .completed, session.mode == .cardio, session.activity?.hasWatchMeasurements == true else { throw ValidationError("手表训练数据无效。") }
+        let id = session.id
+        if try context.fetchCount(FetchDescriptor<WatchImportReceipt>(predicate: #Predicate { $0.id == id })) > 0 { return }
+        try RecordValidator.session(session)
+        try transact {
+            if !sessions.contains(where: { $0.id == id }) { try upsert(session) }
+            context.insert(WatchImportReceipt(id: id))
+        }
+    }
+    func activateWatch() {
+        guard publishesSurfaces else { return }
+        watch.activate { [weak self] session in
+            guard let self else { throw ValidationError("训练档案尚未就绪。") }
+            try self.receiveWatchSession(session)
+        }
     }
     func deleteSession(_ id: UUID) throws {
         try transact(refresh: false) {
             let sessionID = id
             let descriptor = FetchDescriptor<WorkoutSession>(predicate: #Predicate { $0.id == sessionID })
             for model in try context.fetch(descriptor) { context.delete(model) }
+            for row in try context.fetch(FetchDescriptor<SessionActivityData>()) where row.id == id { context.delete(row) }
         }
         sessions.removeAll { $0.id == id }
         refreshSurfaces()
@@ -147,10 +189,12 @@ import TrainLogCore
             let sessionModels = try context.fetch(FetchDescriptor<WorkoutSession>())
             let existingSessions = Dictionary(uniqueKeysWithValues: sessionModels.map { ($0.id, $0) })
             for model in sessionModels where !sessionIDs.contains(model.id) { context.delete(model) }
+            for row in try context.fetch(FetchDescriptor<SessionActivityData>()) where !sessionIDs.contains(row.id) { context.delete(row) }
             for value in next.sessions {
                 let model = existingSessions[value.id] ?? WorkoutSession(value)
                 if existingSessions[value.id] == nil { context.insert(model) }
                 try model.apply(value, context: context)
+                try upsertActivity(value)
             }
             let definitions = try context.fetch(FetchDescriptor<ExerciseDefinition>())
             let exerciseIDs = Set(next.exercises.map(\.id))

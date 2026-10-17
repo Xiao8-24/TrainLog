@@ -34,13 +34,16 @@ configs = []
 for target, folder, product, product_type in [
     ("TrainLog", "TrainLog", "TrainLog.app", "com.apple.product-type.application"),
     ("TrainLogWidgets", "TrainLogWidgets", "TrainLogWidgets.appex", "com.apple.product-type.app-extension"),
+    ("TrainLogWatch", "TrainLogWatch", "TrainLogWatch.app", "com.apple.product-type.application"),
     ("TrainLogTests", "TrainLogTests", "TrainLogTests.xctest", "com.apple.product-type.bundle.unit-test"),
     ("TrainLogUITests", "TrainLogUITests", "TrainLogUITests.xctest", "com.apple.product-type.bundle.ui-testing"),
 ]:
     children, sources, resources, frameworks = [], [], [], []
     paths = list((ROOT / folder).rglob("*.swift"))
     if target in ["TrainLog", "TrainLogWidgets"]:
-        paths += list((ROOT / "Shared").rglob("*.swift"))
+        paths += [p for p in (ROOT / "Shared").rglob("*.swift") if target == "TrainLog" or p.name != "WorkoutActivityMapping.swift"]
+    if target == "TrainLogWatch":
+        paths += [ROOT / "Shared/WorkoutActivityMapping.swift"]
     for path in sorted(paths):
         relative = path.relative_to(ROOT).as_posix()
         file_id = ref(relative, "sourcecode.swift")
@@ -57,8 +60,13 @@ for target, folder, product, product_type in [
         children.append(ref("TrainLogWidgets/TrainLogWidgets.entitlements", "text.plist.entitlements"))
         privacy = ref("TrainLog/Resources/PrivacyInfo.xcprivacy", "text.xml")
         resources.append(put("widget-privacy", "PBXBuildFile", f"fileRef = {privacy};"))
+    if target == "TrainLogWatch":
+        for resource, kind in [("TrainLogWatch/Assets.xcassets", "folder.assetcatalog"), ("TrainLog/Resources/PrivacyInfo.xcprivacy", "text.xml")]:
+            file_id = ref(resource, kind)
+            resources.append(put("build:watch:" + resource, "PBXBuildFile", f"fileRef = {file_id};"))
+        children += [ref("TrainLogWatch/Info.plist", "text.plist.xml"), ref("TrainLogWatch/TrainLogWatch.entitlements", "text.plist.entitlements")]
     source_groups.append(put("group:" + target, "PBXGroup", f"children = {refs(children)}; name = {target}; sourceTree = \"<group>\";"))
-    product_ref = put("product:" + target, "PBXFileReference", f"explicitFileType = {'wrapper.application' if target == 'TrainLog' else 'wrapper.app-extension' if target == 'TrainLogWidgets' else 'wrapper.cfbundle'}; includeInIndex = 0; path = {product}; sourceTree = BUILT_PRODUCTS_DIR;")
+    product_ref = put("product:" + target, "PBXFileReference", f"explicitFileType = {'wrapper.application' if target in ['TrainLog', 'TrainLogWatch'] else 'wrapper.app-extension' if target == 'TrainLogWidgets' else 'wrapper.cfbundle'}; includeInIndex = 0; path = {product}; sourceTree = BUILT_PRODUCTS_DIR;")
     product_refs.append(product_ref)
     dependencies, packages = [], []
     if target != "TrainLogUITests":
@@ -76,13 +84,20 @@ for target, folder, product, product_type in [
         dependencies.append(put("widget-dependency", "PBXTargetDependency", f"target = {ident('target:TrainLogWidgets')}; targetProxy = {proxy};"))
         embedded = put("embed-widget", "PBXBuildFile", f"fileRef = {ident('product:TrainLogWidgets')}; settings = {{ ATTRIBUTES = (RemoveHeadersOnCopy,); }};")
         phases.append(put("embed-extensions", "PBXCopyFilesBuildPhase", f"buildActionMask = 2147483647; dstPath = \"\"; dstSubfolderSpec = 13; files = ({embedded},); name = \"Embed App Extensions\"; runOnlyForDeploymentPostprocessing = 0;"))
+        proxy = put("watch-proxy", "PBXContainerItemProxy", f"containerPortal = {ident('project')}; proxyType = 1; remoteGlobalIDString = {ident('target:TrainLogWatch')}; remoteInfo = TrainLogWatch;")
+        dependencies.append(put("watch-dependency", "PBXTargetDependency", f"target = {ident('target:TrainLogWatch')}; targetProxy = {proxy};"))
+        embedded = put("embed-watch", "PBXBuildFile", f"fileRef = {ident('product:TrainLogWatch')}; settings = {{ ATTRIBUTES = (RemoveHeadersOnCopy,); }};")
+        phases.append(put("embed-watch-phase", "PBXCopyFilesBuildPhase", f'buildActionMask = 2147483647; dstPath = "$(CONTENTS_FOLDER_PATH)/Watch"; dstSubfolderSpec = 16; files = ({embedded},); name = "Embed Watch Content"; runOnlyForDeploymentPostprocessing = 0;'))
     config_ids = []
     for name in ["Debug", "Release"]:
         values = {"PRODUCT_BUNDLE_IDENTIFIER": "com.trainlog.personal" + ("" if target == "TrainLog" else "." + target), "PRODUCT_NAME": "$(TARGET_NAME)", "SWIFT_VERSION": "5.0", "IPHONEOS_DEPLOYMENT_TARGET": "27.0", "TARGETED_DEVICE_FAMILY": "1", "CODE_SIGN_STYLE": "Automatic", "DEVELOPMENT_TEAM": "", "SWIFT_STRICT_CONCURRENCY": "targeted", "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks"}
         if target == "TrainLog":
-            values.update({"INFOPLIST_FILE": "TrainLog/Resources/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor", "MARKETING_VERSION": "0.5.1", "CURRENT_PROJECT_VERSION": "7", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO", "ENABLE_PREVIEWS": "YES", "CODE_SIGN_ENTITLEMENTS": "TrainLog/Resources/TrainLog.entitlements"})
+            values.update({"INFOPLIST_FILE": "TrainLog/Resources/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor", "MARKETING_VERSION": "0.6.0", "CURRENT_PROJECT_VERSION": "8", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO", "ENABLE_PREVIEWS": "YES", "CODE_SIGN_ENTITLEMENTS": "TrainLog/Resources/TrainLog.entitlements"})
         elif target == "TrainLogWidgets":
-            values.update({"INFOPLIST_FILE": "TrainLogWidgets/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "MARKETING_VERSION": "0.5.1", "CURRENT_PROJECT_VERSION": "7", "SKIP_INSTALL": "YES", "APPLICATION_EXTENSION_API_ONLY": "YES", "CODE_SIGN_ENTITLEMENTS": "TrainLogWidgets/TrainLogWidgets.entitlements", "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"})
+            values.update({"INFOPLIST_FILE": "TrainLogWidgets/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "MARKETING_VERSION": "0.6.0", "CURRENT_PROJECT_VERSION": "8", "SKIP_INSTALL": "YES", "APPLICATION_EXTENSION_API_ONLY": "YES", "CODE_SIGN_ENTITLEMENTS": "TrainLogWidgets/TrainLogWidgets.entitlements", "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"})
+        elif target == "TrainLogWatch":
+            values.update({"SDKROOT": "watchos", "WATCHOS_DEPLOYMENT_TARGET": "27.0", "TARGETED_DEVICE_FAMILY": "4", "SUPPORTED_PLATFORMS": "watchos watchsimulator", "INFOPLIST_FILE": "TrainLogWatch/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "MARKETING_VERSION": "0.6.0", "CURRENT_PROJECT_VERSION": "8", "SKIP_INSTALL": "YES", "CODE_SIGN_ENTITLEMENTS": "TrainLogWatch/TrainLogWatch.entitlements", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon", "SWIFT_EMIT_LOC_STRINGS": "YES"})
+            values.pop("IPHONEOS_DEPLOYMENT_TARGET")
         else:
             values.update({"GENERATE_INFOPLIST_FILE": "YES"})
             if target == "TrainLogTests":
@@ -109,7 +124,7 @@ content += f"\n\t}};\n\trootObject = {ident('project')};\n}}\n"
 (PROJECT / "project.pbxproj").write_text(content, encoding="utf-8")
 
 def buildable(target):
-    suffix = ".app" if target == "TrainLog" else ".xctest"
+    suffix = ".app" if target in ["TrainLog", "TrainLogWatch"] else ".xctest"
     return f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ident("target:" + target)}" BuildableName="{target + suffix}" BlueprintName="{target}" ReferencedContainer="container:TrainLog.xcodeproj"/>'
 
 scheme = f'''<?xml version="1.0" encoding="UTF-8"?>
@@ -131,6 +146,16 @@ scheme = f'''<?xml version="1.0" encoding="UTF-8"?>
 scheme_dir = PROJECT / "xcshareddata" / "xcschemes"
 scheme_dir.mkdir(parents=True, exist_ok=True)
 (scheme_dir / "TrainLog.xcscheme").write_text(scheme, encoding="utf-8")
+watch_scheme = f'''<?xml version="1.0" encoding="UTF-8"?>
+<Scheme LastUpgradeVersion="2700" version="1.7">
+  <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries>
+    <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">{buildable("TrainLogWatch")}</BuildActionEntry>
+  </BuildActionEntries></BuildAction>
+  <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB"><BuildableProductRunnable runnableDebuggingMode="0">{buildable("TrainLogWatch")}</BuildableProductRunnable></LaunchAction>
+  <AnalyzeAction buildConfiguration="Debug"/><ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>
+</Scheme>
+'''
+(scheme_dir / "TrainLogWatch.xcscheme").write_text(watch_scheme, encoding="utf-8")
 workspace = PROJECT / "project.xcworkspace"
 workspace.mkdir(exist_ok=True)
 (workspace / "contents.xcworkspacedata").write_text('<?xml version="1.0" encoding="UTF-8"?><Workspace version="1.0"><FileRef location="self:"/></Workspace>\n', encoding="utf-8")

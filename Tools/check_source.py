@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root / ".tools" / "python"))
 failures = []
-swift = sorted(p for folder in ["TrainLog", "TrainLogWidgets", "Shared", "TrainLogTests", "TrainLogUITests", "Packages"] for p in (root / folder).rglob("*.swift"))
+swift = sorted(p for folder in ["TrainLog", "TrainLogWatch", "TrainLogWidgets", "Shared", "TrainLogTests", "TrainLogUITests", "Packages"] for p in (root / folder).rglob("*.swift"))
 for path in (root / "TrainLog" / "Resources").glob("*.plist"):
     with path.open("rb") as file: plistlib.load(file)
 for path in (root / "TrainLog" / "Resources").glob("*.xcprivacy"):
@@ -27,6 +27,11 @@ for name in ["TrainLog/Resources/TrainLog.entitlements", "TrainLogWidgets/TrainL
     with (root / name).open("rb") as file: groups.append(plistlib.load(file)["com.apple.security.application-groups"])
 assert groups[0] == groups[1] == ["group.com.trainlog.personal"]
 assert "com.apple.product-type.app-extension" in project and "Embed App Extensions" in project
+assert "Embed Watch Content" in project and 'WATCHOS_DEPLOYMENT_TARGET = "27.0"' in project
+with (root / "TrainLogWatch/Info.plist").open("rb") as file:
+    watch_info = plistlib.load(file)
+assert watch_info["WKApplication"] is True and watch_info["WKCompanionAppBundleIdentifier"] == "com.trainlog.personal"
+assert "workout-processing" in watch_info["WKBackgroundModes"]
 with (root / "TrainLog/Resources/Info.plist").open("rb") as file:
     app_info = plistlib.load(file)
 assert app_info["NSHealthUpdateUsageDescription"] and app_info["NSHealthShareUsageDescription"]

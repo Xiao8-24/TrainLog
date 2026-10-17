@@ -59,6 +59,7 @@ struct RootView: View {
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
             clock.refresh()
+            store.activateWatch()
             store.refreshSurfaces()
             await Task.yield()
             guard !Task.isCancelled else { return }

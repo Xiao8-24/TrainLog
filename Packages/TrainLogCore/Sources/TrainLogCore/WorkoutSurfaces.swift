@@ -68,8 +68,10 @@ public struct WorkoutLiveState: Codable, Hashable, Sendable {
     public var timerOrigin: Date?
     public var restDeadline: Date?
     public var updatedAt: Date
+    public var activityKind: CardioActivity?
 
     public init(session: Session, restDeadline: Date?, now: Date = Date()) {
+        activityKind = session.activity?.kind
         updatedAt = now
         workingSets = session.exercises.reduce(0) { $0 + WorkoutStatisticsService.workingSets($1).count }
         elapsedSeconds = Int(session.elapsed(at: now))

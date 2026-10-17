@@ -4,6 +4,8 @@ import TrainLogCore
 struct HistoryView: View {
     @Environment(AppStore.self) private var store
     @State private var muscle: MuscleGroup?
+    @State private var activity: CardioActivity?
+    @State private var cardioOnly = false
     @State private var exerciseID: UUID?
     @State private var useDates = false
     @State private var startDate = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
@@ -14,6 +16,8 @@ struct HistoryView: View {
         let end = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: endDate)) ?? endDate
         return store.completed.filter { session in
             (!useDates || (session.date >= start && session.date < end)) &&
+            (!cardioOnly || session.mode == .cardio) &&
+            (activity.map { session.activity?.kind == $0 } ?? true) &&
             (muscle.map { MuscleMappingService.coverage(of: session).contains($0) } ?? true) &&
             (exerciseID.map { id in session.exercises.contains { $0.exercise.id == id } } ?? true)
         }
@@ -21,6 +25,8 @@ struct HistoryView: View {
     var body: some View {
         List {
             Section("筛选") {
+                Toggle("仅运动记录", isOn: $cardioOnly)
+                Picker("运动类型", selection: $activity) { Text("全部运动").tag(Optional<CardioActivity>.none); ForEach(CardioActivity.allCases) { Text($0.name).tag(Optional($0)) } }
                 Toggle("限定日期", isOn: $useDates)
                 if useDates {
                     DatePicker("开始", selection: $startDate, in: ...endDate, displayedComponents: .date)
@@ -75,7 +81,8 @@ struct SessionDetailView: View {
                             if let rpe = session.sessionRPE { LabeledContent("整次训练 RPE", value: rpe.formattedValue) }
                             if !session.notes.isEmpty { Text(session.notes).font(.subheadline).textSelection(.enabled) }
                         }
-                        MuscleMapCard(title: "本次训练覆盖", model: MuscleHeatmapViewModel(sessions: [session], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { selectedMuscle = $0 }
+                        if session.mode != .cardio { MuscleMapCard(title: "本次训练覆盖", model: MuscleHeatmapViewModel(sessions: [session], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { selectedMuscle = $0 } }
+                        CardioAnalysisCard(session: session)
                         if session.status == .completed { WorkoutHealthCard(session: session) }
                         if session.mode == .quick {
                             AppCard {
@@ -107,12 +114,12 @@ struct SessionDetailView: View {
                         Button("删除训练", role: .destructive) { deleting = true }.frame(minHeight: 44)
                     }.padding(20)
                 }.background(AppTheme.background)
-                    .toolbar { Button("编辑") { editing = session }.accessibilityIdentifier("editWorkout") }
+                    .toolbar { if session.activity?.hasWatchMeasurements != true { Button("编辑") { editing = session }.accessibilityIdentifier("editWorkout") } }
             } else { ContentUnavailableView("训练记录已删除", systemImage: "tray") }
         }.navigationTitle("训练详情").navigationBarTitleDisplayMode(.inline)
             .sheet(item: $editing) { session in NavigationStack { WorkoutEditorView(session: session) { _ in editing = nil } }.interactiveDismissDisabled() }
             .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: TimeRange.all.interval()) } }
-            .confirmationDialog("删除训练？统计将更新，已连接的 Apple 健康副本会在保持授权与连接时一并移除。", isPresented: $deleting, titleVisibility: .visible) {
+            .confirmationDialog("删除训练？统计将更新。手机导出的健康副本会排队移除；Apple Watch 记录的健康原件会保留。", isPresented: $deleting, titleVisibility: .visible) {
                 Button("删除训练", role: .destructive) { do { try store.deleteSession(sessionID); dismiss() } catch { store.errorMessage = error.localizedDescription } }
             }
     }
@@ -128,6 +135,9 @@ struct SessionMetrics: View {
                 item("动作", value: "\(session.exercises.count)", unit: "个")
                 item("正式组", value: "\(totals.workingSets)", unit: "组")
                 item("适用容量", value: totals.volumeKg.map { store.settings.unit.display($0).formattedValue } ?? "—", unit: store.settings.unit.rawValue)
+            } else if session.mode == .cardio {
+                item("距离", value: session.activity?.distanceMeters.map { ($0 / 1000).formattedValue } ?? "—", unit: "km")
+                item("活动能量", value: session.activity?.activeEnergyKcal.map(\.formattedValue) ?? "—", unit: "千卡")
             } else { item("覆盖肌群", value: "\(session.quickEntries.count)", unit: "个") }
         }
     }

@@ -55,7 +55,11 @@ public enum RecordValidator {
         if let timer = session.timerStartedAt, timer > Date().addingTimeInterval(60) { throw ValidationError("计时开始时间不能在未来。") }
         if let rpe = session.sessionRPE, !rpe.isFinite || !(1...10).contains(rpe) { throw ValidationError("整次训练 RPE 应在 1–10 之间。") }
         guard Set(session.quickEntries.map(\.muscle)).count == session.quickEntries.count else { throw ValidationError("快速记录包含重复肌群。") }
-        if session.mode == .quick {
+        if session.mode == .cardio {
+            guard session.quickEntries.isEmpty, session.exercises.isEmpty, let activity = session.activity else { throw ValidationError("运动记录不能混入力量组或快速肌群。") }
+            try activityRecord(activity)
+            if session.status == .completed && session.elapsed() <= 0 { throw ValidationError("请记录大于零的运动时长。") }
+        } else if session.mode == .quick {
             guard session.exercises.isEmpty else { throw ValidationError("快速记录不能包含详细动作。") }
             if session.status == .completed && session.quickEntries.isEmpty { throw ValidationError("请至少选择一个肌群。") }
         } else {
@@ -68,9 +72,23 @@ public enum RecordValidator {
                 throw ValidationError("请至少完成一个有效训练组，再结束训练。")
             }
         }
+        if session.mode != .cardio && session.activity != nil { throw ValidationError("身体数据应保存在独立运动记录中。") }
         if session.status == .completed {
             guard let end = session.endTime, end >= session.startTime, end <= Date().addingTimeInterval(60), session.timerStartedAt == nil else { throw ValidationError("已完成训练的起止时间或计时状态无效。") }
         }
+    }
+    public static func activityRecord(_ value: ActivityRecord) throws {
+        if let distance = value.distanceMeters {
+            guard value.kind.supportsDistance, distance.isFinite, (0...2_000_000).contains(distance) else { throw ValidationError("此运动的距离无效，应在 0–2000 km 之间。") }
+        }
+        if let energy = value.activeEnergyKcal, !energy.isFinite || !(0...100_000).contains(energy) { throw ValidationError("活动能量数据无效。") }
+        for heart in [value.averageHeartRate, value.maximumHeartRate].compactMap({ $0 }) {
+            guard heart.isFinite, (20...300).contains(heart) else { throw ValidationError("心率数据无效。") }
+        }
+        if let mean = value.averageHeartRate, let maximum = value.maximumHeartRate, mean > maximum { throw ValidationError("平均心率不能大于最高心率。") }
+        guard value.heartRate.count <= 10_000, value.heartRate.allSatisfy({ $0.date.timeIntervalSince1970.isFinite && $0.bpm.isFinite && (20...300).contains($0.bpm) }) else { throw ValidationError("心率采样数据无效或过多。") }
+        guard ["manual", "appleWatch"].contains(value.source) else { throw ValidationError("运动数据来源无效。") }
+        if !value.hasWatchMeasurements && (value.activeEnergyKcal != nil || value.averageHeartRate != nil || value.maximumHeartRate != nil || !value.heartRate.isEmpty || value.watchWorkoutID != nil) { throw ValidationError("传感器数据必须标记其手表来源。") }
     }
     public static func settings(_ value: Settings) throws {
         guard (1...14).contains(value.weeklyGoal), (0...3600).contains(value.restSeconds) else { throw ValidationError("每周目标或休息时间超出范围。") }

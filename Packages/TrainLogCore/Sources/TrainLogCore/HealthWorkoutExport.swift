@@ -7,9 +7,11 @@ public struct HealthWorkoutExport: Codable, Equatable, Sendable {
     public var start: Date
     public var end: Date
     public var duration: TimeInterval
+    public var activityKind: CardioActivity?
     public var syncIdentifier: String { "com.trainlog.workout.\(sessionID.uuidString)" }
 
     public init(session: Session, now: Date = Date()) throws {
+        guard session.activity?.hasWatchMeasurements != true else { throw ValidationError("Apple Watch 已管理本次健康训练，无需在手机重复写入。") }
         guard session.status == .completed else { throw ValidationError("完成训练后才可写入 Apple 健康。") }
         let duration = session.elapsed(at: session.endTime ?? session.updatedAt)
         guard duration.isFinite, duration > 0, duration <= 604_800 else {
@@ -23,7 +25,7 @@ public struct HealthWorkoutExport: Codable, Equatable, Sendable {
         }
         // A timed workout retains its wall-clock span while duration excludes
         // pauses. A quick/manual record uses its explicitly entered duration.
-        let wallSpan = session.mode == .detailed && session.manualDurationSeconds == nil
+        let wallSpan = session.mode != .quick && session.manualDurationSeconds == nil
             ? max(duration, (session.endTime ?? session.updatedAt).timeIntervalSince(session.startTime))
             : duration
         guard wallSpan.isFinite, wallSpan > 0, wallSpan <= 604_800 else {
@@ -37,6 +39,7 @@ public struct HealthWorkoutExport: Codable, Equatable, Sendable {
         self.start = start
         self.end = start.addingTimeInterval(wallSpan)
         self.duration = duration
+        self.activityKind = session.activity?.kind
     }
 }
 

@@ -1,0 +1,244 @@
+import Foundation
+import HealthKit
+import Observation
+import WatchConnectivity
+import TrainLogCore
+
+@MainActor @Observable final class WatchWorkoutManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate, WCSessionDelegate {
+    static let shared = WatchWorkoutManager()
+    var selection: CardioActivity = .outdoorRun
+    var poolLengthMeters = 25.0
+    private(set) var running = false
+    private(set) var paused = false
+    private(set) var busy = false
+    private(set) var finishing = false
+    private(set) var issue: String?
+    private(set) var heartRate: Double?
+    private(set) var heartRateDate: Date?
+    private(set) var energy: Double?
+    private(set) var distance: Double?
+    private(set) var elapsed = 0.0
+    private(set) var elapsedUpdatedAt = Date()
+    private(set) var startedAt: Date?
+    private(set) var pendingCount = 0
+    private let health = HKHealthStore()
+    private var session: HKWorkoutSession?
+    private var builder: HKLiveWorkoutBuilder?
+    private var record: Session?
+    private var points: [HeartRatePoint] = []
+    private var lastPublished = Date.distantPast
+    private var completedWorkout: HKWorkout?
+    private let directory = URL.applicationSupportDirectory.appending(path: "WatchOutbox", directoryHint: .isDirectory)
+    private var activeURL: URL { directory.appending(path: "active.json") }
+    private var finalizing = false
+    private var endedAt: Date?
+
+    override init() {
+        super.init()
+        if WCSession.isSupported() { WCSession.default.delegate = self; WCSession.default.activate() }
+        refreshPending()
+    }
+    private var distanceType: HKQuantityType? {
+        switch selection {
+        case .outdoorRun, .indoorRun, .outdoorWalk, .indoorWalk, .hiking: return HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)
+        case .outdoorCycle, .indoorCycle: return HKQuantityType.quantityType(forIdentifier: .distanceCycling)
+        case .swimming, .openWaterSwimming: return HKQuantityType.quantityType(forIdentifier: .distanceSwimming)
+        default: return nil
+        }
+    }
+    func prepare(_ configuration: HKWorkoutConfiguration) {
+        guard session == nil, !busy else { issue = "请先结束当前训练。"; return }
+        selection = .matching(configuration)
+        // Starting remains an explicit action on the watch, including pool length.
+    }
+    func start() async {
+        guard session == nil, !busy else { return }
+        guard HKHealthStore.isHealthDataAvailable() else { issue = "此设备不支持健康训练。"; return }
+        busy = true; issue = nil
+        defer { busy = false }
+        do {
+            let workoutType = HKObjectType.workoutType()
+            let heart = HKQuantityType.quantityType(forIdentifier: .heartRate)!
+            let active = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+            var share: Set<HKSampleType> = [workoutType, active]
+            var read: Set<HKObjectType> = [heart, active]
+            if let distanceType { share.insert(distanceType); read.insert(distanceType) }
+            try await health.requestAuthorization(toShare: share, read: read)
+            guard health.authorizationStatus(for: workoutType) == .sharingAuthorized else { throw ValidationError("请允许 TrainLog 写入体能训练后再开始。") }
+            let configuration = selection.workoutConfiguration
+            if selection == .swimming { configuration.poolLength = HKQuantity(unit: .meter(), doubleValue: poolLengthMeters) }
+            let native = try HKWorkoutSession(healthStore: health, configuration: configuration)
+            let liveBuilder = native.associatedWorkoutBuilder()
+            liveBuilder.dataSource = HKLiveWorkoutDataSource(healthStore: health, workoutConfiguration: configuration)
+            native.delegate = self; liveBuilder.delegate = self
+            let start = Date()
+            var value = Session(mode: .cardio, date: start)
+            value.activity = ActivityRecord(kind: selection); value.activity?.source = "appleWatch"
+            try persistActive(value)
+            record = value; session = native; builder = liveBuilder; startedAt = start
+            points = []; heartRate = nil; heartRateDate = nil; energy = nil; distance = nil; elapsed = 0; elapsedUpdatedAt = start
+            endedAt = nil; completedWorkout = nil
+            native.startActivity(with: start)
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                liveBuilder.beginCollection(withStart: start) { success, error in
+                    if let error { continuation.resume(throwing: error) }
+                    else if success { continuation.resume() }
+                    else { continuation.resume(throwing: ValidationError("手表未能开始采集。")) }
+                }
+            }
+            running = true; paused = false; publish(force: true)
+        } catch {
+            builder?.discardWorkout(); session?.end(); session = nil; builder = nil; record = nil
+            running = false; issue = error.localizedDescription
+            try? FileManager.default.removeItem(at: activeURL)
+        }
+    }
+    func togglePause() {
+        guard running, !finishing else { return }
+        if paused { session?.resume() } else { session?.pause() }
+    }
+    func finish() {
+        guard running, !finishing, !busy else { return }
+        finishing = true; endedAt = Date(); session?.end()
+    }
+    func retrySave() {
+        guard finishing else { return }
+        Task { await finalize() }
+    }
+    private func finalize() async {
+        guard !finalizing, let builder, var value = record, let end = endedAt else { return }
+        finalizing = true; defer { finalizing = false }
+        do {
+            if completedWorkout == nil {
+                if builder.endDate == nil {
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                        builder.endCollection(withEnd: end) { success, error in
+                            if let error { continuation.resume(throwing: error) }
+                            else if success { continuation.resume() }
+                            else { continuation.resume(throwing: ValidationError("训练采集尚未结束。")) }
+                        }
+                    }
+                }
+                completedWorkout = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<HKWorkout, Error>) in
+                    builder.finishWorkout { workout, error in
+                        if let error { continuation.resume(throwing: error) }
+                        else if let workout { continuation.resume(returning: workout) }
+                        else { continuation.resume(throwing: ValidationError("健康训练尚未保存，请重试。")) }
+                    }
+                }
+            }
+            guard let workout = completedWorkout else { return }
+            let heart = HKQuantityType.quantityType(forIdentifier: .heartRate)!
+            let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+            let heartStats = builder.statistics(for: heart)
+            value.activity?.averageHeartRate = heartStats?.averageQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+            value.activity?.maximumHeartRate = heartStats?.maximumQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+            value.activity?.activeEnergyKcal = builder.statistics(for: energyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+            if let distanceType { value.activity?.distanceMeters = builder.statistics(for: distanceType)?.sumQuantity()?.doubleValue(for: .meter()) }
+            value.activity?.heartRate = points
+            value.activity?.watchWorkoutID = workout.uuid
+            value.manualDurationSeconds = nil; value.accumulatedSeconds = workout.duration
+            value.timerStartedAt = nil; value.endTime = workout.endDate; value.updatedAt = Date(); value.status = .completed
+            let envelope = WatchWorkoutEnvelope(session: value)
+            try envelope.validate()
+            let data = try JSONEncoder().encode(envelope)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try data.write(to: directory.appending(path: "\(value.id.uuidString).json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            try? FileManager.default.removeItem(at: activeURL)
+            running = false; paused = false; finishing = false; issue = nil
+            session = nil; self.builder = nil; record = nil; completedWorkout = nil
+            if WCSession.default.activationState == .activated { try? WCSession.default.updateApplicationContext(["ended": true]) }
+            flush()
+        } catch { issue = "训练尚未完成保存：\(error.localizedDescription)。请保留此页并重试。" }
+    }
+    private func persistActive(_ value: Session) throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONEncoder().encode(value).write(to: activeURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    func recover() {
+        guard session == nil else { return }
+        health.recoverActiveWorkoutSession { native, error in
+            Task { @MainActor in
+                guard let native else { self.issue = error?.localizedDescription; return }
+                do {
+                    let value = try JSONDecoder().decode(Session.self, from: Data(contentsOf: self.activeURL))
+                    self.selection = value.activity?.kind ?? .matching(native.workoutConfiguration)
+                    self.record = value; self.startedAt = native.startDate; self.session = native
+                    let builder = native.associatedWorkoutBuilder()
+                    builder.dataSource = HKLiveWorkoutDataSource(healthStore: self.health, workoutConfiguration: native.workoutConfiguration)
+                    builder.delegate = self; native.delegate = self; self.builder = builder
+                    self.running = true; self.paused = native.state == .paused; self.elapsed = builder.elapsedTime; self.elapsedUpdatedAt = Date()
+                    self.issue = "已恢复训练；恢复前的心率明细保留在 Apple 健康，曲线从恢复后继续。"
+                    self.publish(force: true)
+                } catch { self.issue = "训练恢复失败，原始数据已保留：\(error.localizedDescription)" }
+            }
+        }
+    }
+    private func collect(_ types: Set<HKSampleType>) {
+        guard let builder, running, !finishing else { return }
+        elapsed = builder.elapsedTime
+        elapsedUpdatedAt = Date()
+        let heart = HKQuantityType.quantityType(forIdentifier: .heartRate)!
+        if types.contains(heart), !paused, let stats = builder.statistics(for: heart), let quantity = stats.mostRecentQuantity() {
+            let bpm = quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+            let date = stats.mostRecentQuantityDateInterval()?.end ?? Date()
+            if bpm.isFinite, (20...300).contains(bpm), date != heartRateDate {
+                heartRate = bpm; heartRateDate = date
+                // Bounded sampling retains up to a full day at >=10-second spacing.
+                if points.last.map({ date.timeIntervalSince($0.date) >= 10 }) ?? true {
+                    if points.count < 10_000 { points.append(HeartRatePoint(date: date, bpm: bpm)) }
+                }
+            }
+        }
+        let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+        energy = builder.statistics(for: energyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+        if let distanceType { distance = builder.statistics(for: distanceType)?.sumQuantity()?.doubleValue(for: .meter()) }
+        publish(force: false)
+    }
+    private func publish(force: Bool) {
+        guard let record, let startedAt, WCSession.default.activationState == .activated else { return }
+        let now = Date(); guard force || now.timeIntervalSince(lastPublished) >= 5 else { return }
+        lastPublished = now
+        let freshHeart = heartRateDate.map { now.timeIntervalSince($0) <= 20 } == true ? heartRate : nil
+        let snapshot = WatchLiveSnapshot(sessionID: record.id, kind: selection, updatedAt: now, startedAt: startedAt,
+            elapsed: builder?.elapsedTime ?? elapsed, paused: paused, heartRate: paused ? nil : freshHeart, activeEnergyKcal: energy, distanceMeters: distance)
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        try? WCSession.default.updateApplicationContext(["live": data])
+        if WCSession.default.isReachable { WCSession.default.sendMessage(["live": data], replyHandler: nil, errorHandler: nil) }
+    }
+    private func pendingFiles() -> [URL] {
+        (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).filter { $0.pathExtension == "json" && $0.lastPathComponent != "active.json" }) ?? []
+    }
+    private func refreshPending() { pendingCount = pendingFiles().count }
+    func flush() {
+        refreshPending()
+        guard WCSession.default.activationState == .activated else { return }
+        let queued = Set(WCSession.default.outstandingFileTransfers.map { $0.file.fileURL.lastPathComponent })
+        for file in pendingFiles() where !queued.contains(file.lastPathComponent) {
+            WCSession.default.transferFile(file, metadata: ["trainlog": 1])
+        }
+    }
+    nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
+        Task { @MainActor in
+            self.paused = toState == .paused
+            self.elapsed = self.builder?.elapsedTime ?? self.elapsed; self.elapsedUpdatedAt = Date()
+            if toState == .ended, self.finishing { await self.finalize() }
+            else { self.publish(force: true) }
+        }
+    }
+    nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) { Task { @MainActor in self.issue = "系统训练发生错误：\(error.localizedDescription)" } }
+    nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}
+    nonisolated func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) { Task { @MainActor in self.collect(collectedTypes) } }
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) { Task { @MainActor in self.flush() } }
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) { Task { @MainActor in self.flush(); self.publish(force: true) } }
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        guard let raw = userInfo["ack"] as? String, let id = UUID(uuidString: raw) else { return }
+        Task { @MainActor in
+            do { try FileManager.default.removeItem(at: self.directory.appending(path: "\(id.uuidString).json")); self.refreshPending() }
+            catch { self.issue = "手机已接收，手表副本暂未清理，可稍后重试。" }
+        }
+    }
+    nonisolated func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {
+        if let error { Task { @MainActor in self.issue = "手机暂未接收，记录已留在手表：\(error.localizedDescription)" } }
+    }
+}

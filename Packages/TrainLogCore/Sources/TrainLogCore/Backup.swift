@@ -107,6 +107,18 @@ public enum BackupService {
                 }
             }
         }
+        let activityColumns = ["activity_type", "distance_meters", "active_energy_kcal", "average_heart_rate_bpm", "maximum_heart_rate_bpm", "measurement_source", "watch_workout_id"]
+        rows = rows.enumerated().map { index, row in row + (index == 0 ? activityColumns : Array(repeating: "", count: activityColumns.count)) }
+        for session in sessions.sorted(by: { $0.date < $1.date }) where session.mode == .cardio {
+            guard let activity = session.activity else { continue }
+            var row = Array(repeating: "", count: header.count)
+            row[0] = session.id.uuidString; row[1] = formatter.string(from: session.date)
+            row[2] = session.status.rawValue; row[3] = session.mode.rawValue
+            row[18] = session.intensity?.rawValue ?? ""; row[19] = number(session.sessionRPE)
+            row[20] = String(Int(session.elapsed())); row[21] = session.notes
+            row += [activity.kind.rawValue, number(activity.distanceMeters), number(activity.activeEnergyKcal), number(activity.averageHeartRate), number(activity.maximumHeartRate), activity.source, activity.watchWorkoutID?.uuidString ?? ""]
+            rows.append(row)
+        }
         return "\u{FEFF}" + rows.map { $0.map(cell).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n"
     }
 }

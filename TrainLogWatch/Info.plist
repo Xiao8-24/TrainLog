@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+    <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+    <key>CFBundleDisplayName</key><string>TrainLog</string>
+    <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>WKApplication</key><true/>
+    <key>WKCompanionAppBundleIdentifier</key><string>com.trainlog.personal</string>
+    <key>WKRunsIndependentlyOfCompanionApp</key><true/>
+    <key>WKBackgroundModes</key><array><string>workout-processing</string></array>
+    <key>NSHealthUpdateUsageDescription</key><string>将你开始的训练及系统采集的活动能量、适用距离保存到 Apple 健康，供健身显示训练。</string>
+    <key>NSHealthShareUsageDescription</key><string>读取本次训练的心率、活动能量和适用距离，在手表实时显示并在完成后发送到配对 iPhone。</string>
+    <key>ITSAppUsesNonExemptEncryption</key><false/>
+</dict></plist>

@@ -28,7 +28,8 @@ for line in catalog.splitlines():
     exercises.append(dict(id=int(identifier), name=name, english=english,
                           primary=re.findall(r'\.(\w+)', primary), secondary=re.findall(r'\.(\w+)', secondary or ""),
                           equipment=values[0], pattern=values[1], estimate=values[2] == "true", tracking=values[3], loading=values[4]))
-assert len(regions) == 40 and len(muscles) == 18 and len(exercises) == 37
+assert len(regions) == 40 and len(muscles) == 18 and len(exercises) >= 37
+assert len({exercise['id'] for exercise in exercises}) == len(exercises)
 data = dict(outline=outline, regions=regions, muscles=muscles, exercises=exercises)
 out = root / "WindowsPreview/catalog.js"
 out.parent.mkdir(exist_ok=True)

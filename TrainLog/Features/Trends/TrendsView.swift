@@ -37,6 +37,7 @@ struct TrendsView: View {
                     }.font(.subheadline)
                 }
                 summaryCards
+                CardioTrendsCard(sessions: store.sessions, interval: interval)
                 if daily.isEmpty {
                     AppCard { EmptyStateView(title: "这段时间还没有训练记录", message: "记录后即可查看频率、正式组数、适用容量和主观感受的变化。") }
                 } else {

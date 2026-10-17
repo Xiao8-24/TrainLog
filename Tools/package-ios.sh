@@ -9,17 +9,24 @@ xcodebuild -project TrainLog.xcodeproj -scheme TrainLog -configuration Release \
 app_path="$archive_path/Products/Applications/TrainLog.app"
 test -d "$app_path"
 test -d "$app_path/PlugIns/TrainLogWidgets.appex"
+test -d "$app_path/Watch/TrainLogWatch.app"
 python3 - "$app_path" <<'PY'
 import pathlib, plistlib, sys
 app = pathlib.Path(sys.argv[1])
 info = plistlib.loads((app / 'Info.plist').read_bytes())
 widget = plistlib.loads((app / 'PlugIns/TrainLogWidgets.appex/Info.plist').read_bytes())
+watch = plistlib.loads((app / 'Watch/TrainLogWatch.app/Info.plist').read_bytes())
 assert info['NSSupportsLiveActivities'] is True
 assert info['NSHealthUpdateUsageDescription'] and info['NSHealthShareUsageDescription']
 assert widget['NSExtension']['NSExtensionPointIdentifier'] == 'com.apple.widgetkit-extension'
 for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
     assert info[key] == widget[key], key
-print('Verified embedded widget extension, Live Activities declaration and matching versions.')
+    assert info[key] == watch[key], key
+assert watch['WKCompanionAppBundleIdentifier'] == info['CFBundleIdentifier']
+assert watch['WKApplication'] is True
+assert watch['NSHealthShareUsageDescription'] and watch['NSHealthUpdateUsageDescription']
+assert 'workout-processing' in watch['WKBackgroundModes']
+print('Verified embedded widget and Watch app, HealthKit declarations and matching versions.')
 PY
 python3 Tools/package_delivery.py
 # Temporary staging is scoped to the workspace and removed only by the trap.
@@ -37,14 +44,18 @@ TrainLog-unsigned.ipa: Release device build with NO signing certificate or profi
 The IPA cannot be installed directly on an iPhone. It needs a valid Apple signing
 certificate and provisioning profile for the intended distribution method.
 This is not an App Store or TestFlight release and has not passed real-device QA.
-Sign BOTH the app and PlugIns/TrainLogWidgets.appex. Enable the App Group
+Sign the app, PlugIns/TrainLogWidgets.appex and Watch/TrainLogWatch.app. Enable the App Group
 group.com.trainlog.personal for both bundle identifiers in your Apple team,
 or replace that identifier in both entitlements and WidgetSnapshotStorage.swift.
 Live Activities require NSSupportsLiveActivities and system permission. Widget
 refresh timing and Live Activity presentation are controlled by iOS.
-Enable HealthKit for the MAIN app bundle identifier and regenerate its profile.
+Enable HealthKit for the MAIN app and WATCH app identifiers and regenerate profiles.
 The widget extension does not need HealthKit. Health writes require explicit
 on-device authorization. No health data is written by this unsigned package.
+Requires iOS 27 and watchOS 27. Testflight/App Store/device distribution requires
+valid Apple signing. Watch workouts/sensors and WatchConnectivity file delivery
+must be validated on a paired physical iPhone and Apple Watch. Simulators cannot
+prove heart-rate, oxygen, calorie accuracy or offline connectivity behavior.
 
 The GitHub workflow publishes only after the core, persistence and UI tests pass
 and the unsigned device archive succeeds. See the workflow diagnostics artifact

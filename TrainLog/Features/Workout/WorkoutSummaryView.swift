@@ -17,8 +17,9 @@ struct WorkoutSummaryView: View {
                         Text("又一次，认真完成。").font(.title2.weight(.semibold))
                         Text("训练已安全保存在本机").font(.subheadline).foregroundStyle(.secondary)
                     }.padding(.top, 12)
-                    MuscleMapCard(title: "看见今天的努力", model: MuscleHeatmapViewModel(sessions: reveal ? [session] : [], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { muscle = $0 }
+                    if session.mode != .cardio { MuscleMapCard(title: "看见今天的努力", model: MuscleHeatmapViewModel(sessions: reveal ? [session] : [], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { muscle = $0 } }
                     AppCard { SessionMetrics(session: session) }
+                    CardioAnalysisCard(session: session)
                     WorkoutHealthCard(session: session)
                     let records = PersonalRecordService.newRecords(for: session, all: store.completed)
                     if !records.isEmpty {

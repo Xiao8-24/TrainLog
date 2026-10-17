@@ -39,7 +39,7 @@ import Observation
     }
     private func apply(session: Session?, restDeadline: Date?) async {
         let enabled = UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true
-        let eligible = enabled && session?.status == .draft && session?.mode == .detailed
+        let eligible = enabled && session?.status == .draft && session?.mode != .quick
         for activity in Activity<WorkoutActivityAttributes>.activities where !eligible || activity.attributes.sessionID != session?.id {
             await activity.end(nil, dismissalPolicy: .immediate)
         }

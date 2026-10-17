@@ -88,6 +88,7 @@ extension Double {
 }
 extension Session {
     var displayName: String {
+        if mode == .cardio { return activity?.kind.name ?? "运动记录" }
         if mode == .quick { return quickEntries.map(\.muscle.name).joined(separator: "、") + "训练" }
         let names = exercises.map(\.exercise.name)
         return names.isEmpty ? "详细训练" : names.prefix(2).joined(separator: " · ")
@@ -98,12 +99,12 @@ struct SessionRow: View {
     var showsChevron = false
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: session.mode == .quick ? "figure.strengthtraining.functional" : "dumbbell.fill").foregroundStyle(.blue).frame(width: 36, height: 36).background(.blue.opacity(0.08), in: Circle())
+            Image(systemName: session.activity?.kind.symbol ?? (session.mode == .quick ? "figure.strengthtraining.functional" : "dumbbell.fill")).foregroundStyle(.blue).frame(width: 36, height: 36).background(.blue.opacity(0.08), in: Circle())
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.displayName).font(.subheadline.weight(.semibold)).lineLimit(2)
                 Text(session.date.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
                 let total = WorkoutStatisticsService.totals([session])
-                Text(session.mode == .quick ? "快速记录 · 不计入组数与容量" : "\(session.exercises.count) 个动作 · \(total.workingSets) 个正式组").font(.caption).foregroundStyle(.secondary)
+                Text(session.mode == .cardio ? "\(Int(session.elapsed() / 60)) 分钟 · \(session.activity?.hasWatchMeasurements == true ? "Apple Watch" : "手动记录")" : session.mode == .quick ? "快速记录 · 不计入组数与容量" : "\(session.exercises.count) 个动作 · \(total.workingSets) 个正式组").font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
             if showsChevron { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary).accessibilityHidden(true) }

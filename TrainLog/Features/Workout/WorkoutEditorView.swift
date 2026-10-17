@@ -32,7 +32,7 @@ struct WorkoutEditorView: View {
         GeometryReader { geometry in
         ScrollView {
             LazyVStack(spacing: 18) {
-                if !editingHistory && session.mode == .detailed { sessionTimer }
+                if !editingHistory && session.mode != .quick { sessionTimer }
                 AppCard {
                     if dynamicTypeSize.isAccessibilitySize {
                         Text("训练日期").font(.headline)
@@ -45,7 +45,10 @@ struct WorkoutEditorView: View {
                     if editingHistory { Text("历史修改只有在点击保存后才生效；返回会保留原记录。").font(.caption).foregroundStyle(.secondary) }
                     else { Text(draftStatus).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("draftStatus") }
                 }
-                if session.mode == .quick { quickSelection } else { detailedExercises }
+                if session.mode == .quick { quickSelection }
+                else if session.mode == .cardio {
+                    CardioEditorCard(activity: Binding(get: { session.activity ?? ActivityRecord() }, set: { session.activity = $0 }))
+                } else { detailedExercises }
                 AppCard {
                     SectionHeader(title: "训练感受", subtitle: "可选 · 缺失信息不会被推算")
                     Picker("主观强度", selection: $session.intensity) {
@@ -53,13 +56,13 @@ struct WorkoutEditorView: View {
                         ForEach(Intensity.allCases) { Text($0.name).tag(Optional($0)) }
                     }
                     HStack { Text("整次训练 RPE"); Spacer(); OptionalNumberField(title: "1–10，可留空", value: $session.sessionRPE).frame(maxWidth: 150) }
-                    HStack { Text("手动时长（分钟）"); Spacer(); OptionalNumberField(title: "使用计时", value: durationMinutes).frame(maxWidth: 140) }
+                    HStack { Text("手动时长（分钟）"); Spacer(); OptionalNumberField(title: "使用计时", value: durationMinutes).frame(maxWidth: 140).accessibilityIdentifier("workout.manualMinutes") }
                     TextField("训练备注", text: $session.notes, axis: .vertical).lineLimit(2...5)
                 }
                 if !editingHistory {
                     Button("放弃这份草稿", role: .destructive) { discardConfirmation = true }.frame(minHeight: 44)
                 }
-                Text("仅已完成正式组计入组数、容量与力量统计。递减组只参与肌群覆盖，热身与失败组不参与统计。").font(.caption).foregroundStyle(.secondary)
+                Text(session.mode == .cardio ? "运动记录计入训练日历、次数和时长，不换算为力量组数、肌群覆盖或 e1RM。" : "仅已完成正式组计入组数、容量与力量统计。递减组只参与肌群覆盖，热身与失败组不参与统计。").font(.caption).foregroundStyle(.secondary)
             }.frame(width: max(0, geometry.size.width - 40)).padding(20)
         }
         }
@@ -67,7 +70,7 @@ struct WorkoutEditorView: View {
         .scrollDismissesKeyboard(.interactively)
         .nativeMotion(value: session.exercises.map(\.id))
         .nativeMotion(value: restTimer.deadline != nil)
-        .navigationTitle(editingHistory ? "编辑训练" : session.mode == .quick ? "快速记录" : "正在训练")
+        .navigationTitle(editingHistory ? "编辑训练" : session.mode == .cardio ? "运动记录" : session.mode == .quick ? "快速记录" : "正在训练")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { Button(editingHistory ? "取消" : "稍后继续") { close() }.disabled(saving) }
@@ -126,6 +129,7 @@ struct WorkoutEditorView: View {
                         else { session.pause() }
                     } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时")
                 }
+            if session.mode == .detailed {
             let restLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
             restLayout {
                 Text("组间休息").font(.subheadline)
@@ -136,6 +140,7 @@ struct WorkoutEditorView: View {
                 } label: { Label("开始计时", systemImage: "timer") }.accessibilityIdentifier("startRestTimer")
             }
             if let warning = restTimer.notificationError { Text("提醒未能安排：\(warning)。屏幕计时仍可使用。").font(.caption).foregroundStyle(.orange) }
+            }
         }
     }
     private var quickSelection: some View {

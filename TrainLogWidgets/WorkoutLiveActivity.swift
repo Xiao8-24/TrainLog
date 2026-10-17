@@ -10,7 +10,7 @@ struct WorkoutLiveActivity: Widget {
                 Image(systemName: symbol(context.state, stale: context.isStale)).font(.title2).foregroundStyle(.blue)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(context.state.label(stale: context.isStale)).font(.headline).lineLimit(1).minimumScaleFactor(0.8)
-                    Text("已完成 \(context.state.workingSets) 个正式组").font(.caption).foregroundStyle(.secondary)
+                    Text(context.state.activityKind?.name ?? "已完成 \(context.state.workingSets) 个正式组").font(.caption).foregroundStyle(.secondary)
                     Text("点按继续训练").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
@@ -28,7 +28,7 @@ struct WorkoutLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
-                        Text("已完成 \(context.state.workingSets) 个正式组").font(.subheadline)
+                        Text(context.state.activityKind?.name ?? "已完成 \(context.state.workingSets) 个正式组").font(.subheadline)
                         Spacer()
                         Link("打开训练", destination: WorkoutDeepLink.workout(context.attributes.sessionID).url)
                             .font(.subheadline.weight(.semibold))
@@ -50,7 +50,7 @@ struct WorkoutLiveActivity: Widget {
     private func symbol(_ state: WorkoutLiveState, stale: Bool) -> String {
         if stale { return state.phase == .resting ? "checkmark" : "arrow.clockwise" }
         switch state.phase {
-        case .training: return "dumbbell.fill"
+        case .training: return state.activityKind?.symbol ?? "dumbbell.fill"
         case .paused: return "pause.fill"
         case .resting: return "timer"
         case .finished: return "checkmark"

@@ -163,8 +163,23 @@ enum TrainLogSchemaV1: VersionedSchema {
     static var versionIdentifier: Schema.Version { Schema.Version(1, 0, 0) }
     static var models: [any PersistentModel.Type] { [WorkoutSession.self, SessionExercise.self, WorkoutSet.self, QuickMuscleEntry.self, ExerciseDefinition.self, WorkoutTemplate.self, BodyWeightRecord.self, UserSettings.self] }
 }
+// V1's stored properties remain unchanged. New optional activity payloads are
+// separate rows so old strength records migrate without rewriting their graph.
+@Model final class SessionActivityData {
+    @Attribute(.unique) var id: UUID
+    var payload: Data
+    init(id: UUID, activity: ActivityRecord) throws { self.id = id; payload = try ModelCodec.encode(activity) }
+}
+enum TrainLogSchemaV2: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
+    static var models: [any PersistentModel.Type] { TrainLogSchemaV1.models + [SessionActivityData.self, WatchImportReceipt.self] }
+}
+@Model final class WatchImportReceipt {
+    @Attribute(.unique) var id: UUID
+    init(id: UUID) { self.id = id }
+}
 enum TrainLogMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [TrainLogSchemaV1.self] }
-    static var stages: [MigrationStage] { [] }
+    static var schemas: [any VersionedSchema.Type] { [TrainLogSchemaV1.self, TrainLogSchemaV2.self] }
+    static var stages: [MigrationStage] { [.lightweight(fromVersion: TrainLogSchemaV1.self, toVersion: TrainLogSchemaV2.self)] }
 }
 

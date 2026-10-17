@@ -1,6 +1,32 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
+    @MainActor func testCardioRecordingSummaryAndCalendar() {
+        let app = launch()
+        app.tabBars.buttons["训练"].tap()
+        let start = app.buttons["cardioWorkout"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5)); start.tap()
+        XCTAssertTrue(app.navigationBars["运动记录"].waitForExistence(timeout: 5))
+        let distance = app.textFields["cardio.distance"]
+        for _ in 0..<4 where !distance.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(distance.exists); distance.tap(); distance.typeText("5")
+        let minutes = app.textFields["workout.manualMinutes"]
+        app.buttons["收起键盘"].tap()
+        for _ in 0..<4 where !minutes.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(minutes.exists); minutes.tap(); minutes.typeText("30")
+        app.buttons["收起键盘"].tap()
+        app.buttons["finishWorkout"].tap()
+        XCTAssertTrue(app.navigationBars["训练完成"].waitForExistence(timeout: 8))
+        capture(app, name: "Cardio summary - manual run with honest missing sensor data")
+        let done = app.buttons["closeSummary"]
+        for _ in 0..<8 where !done.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(done.exists); done.tap()
+        app.buttons["openFitnessCalendar"].tap(); app.buttons["calendar.today"].tap()
+        let run = app.staticTexts["户外跑步"].firstMatch
+        for _ in 0..<5 where !run.exists { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(run.waitForExistence(timeout: 5))
+        capture(app, name: "Cardio record in native fitness calendar")
+    }
     @MainActor private func launch(extraArguments: [String] = [], persistent: Bool = false) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = ["-ui-testing"] + extraArguments
         if persistent { app.launchEnvironment["TRAINLOG_UI_TEST_STORE"] = UUID().uuidString }
