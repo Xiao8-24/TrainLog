@@ -68,7 +68,7 @@ struct SessionDetailView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         AppCard {
-                            Text(session.displayName).font(.title2.bold())
+                            Text(session.displayName).font(.title2.weight(.semibold))
                             Text(session.date.formatted(date: .complete, time: .shortened)).foregroundStyle(.secondary)
                             SessionMetrics(session: session)
                             if let intensity = session.intensity { LabeledContent("主观强度", value: intensity.name) }
@@ -76,6 +76,7 @@ struct SessionDetailView: View {
                             if !session.notes.isEmpty { Text(session.notes).font(.subheadline).textSelection(.enabled) }
                         }
                         MuscleMapCard(title: "本次训练覆盖", model: MuscleHeatmapViewModel(sessions: [session], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { selectedMuscle = $0 }
+                        if session.status == .completed { WorkoutHealthCard(session: session) }
                         if session.mode == .quick {
                             AppCard {
                                 SectionHeader(title: "快速记录", subtitle: "不产生正式组数、训练容量或 e1RM")
@@ -111,7 +112,7 @@ struct SessionDetailView: View {
         }.navigationTitle("训练详情").navigationBarTitleDisplayMode(.inline)
             .sheet(item: $editing) { session in NavigationStack { WorkoutEditorView(session: session) { _ in editing = nil } }.interactiveDismissDisabled() }
             .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: TimeRange.all.interval()) } }
-            .confirmationDialog("删除训练？此操作会同步更新所有统计。", isPresented: $deleting, titleVisibility: .visible) {
+            .confirmationDialog("删除训练？统计将更新，已连接的 Apple 健康副本会在保持授权与连接时一并移除。", isPresented: $deleting, titleVisibility: .visible) {
                 Button("删除训练", role: .destructive) { do { try store.deleteSession(sessionID); dismiss() } catch { store.errorMessage = error.localizedDescription } }
             }
     }

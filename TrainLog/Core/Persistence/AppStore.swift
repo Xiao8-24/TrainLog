@@ -12,6 +12,7 @@ import TrainLogCore
     var errorMessage: String?
     private let surfaces = WorkoutSurfacesCoordinator()
     private let publishesSurfaces: Bool
+    let health: HealthSyncCoordinator
     var surfaceIssue: String? { surfaces.issue }
     let container: ModelContainer
     private var context: ModelContext { container.mainContext }
@@ -21,6 +22,7 @@ import TrainLogCore
 
     init(inMemory: Bool = false, storeURL: URL? = nil) throws {
         publishesSurfaces = !inMemory && storeURL == nil
+        health = !inMemory && storeURL == nil ? .production() : .isolated()
         let schema = Schema(versionedSchema: TrainLogSchemaV1.self)
         let config = Self.configuration(schema: schema, inMemory: inMemory, storeURL: storeURL)
         container = try ModelContainer(for: schema, migrationPlan: TrainLogMigrationPlan.self, configurations: [config])
@@ -64,6 +66,7 @@ import TrainLogCore
         sessions.append(session)
         sessions.sort { $0.date == $1.date ? $0.createdAt > $1.createdAt : $0.date > $1.date }
         refreshSurfaces()
+        health.track(session)
     }
     private func upsert(_ session: Session) throws {
         let sessionID = session.id
@@ -83,6 +86,7 @@ import TrainLogCore
         }
         sessions.removeAll { $0.id == id }
         refreshSurfaces()
+        health.remove(id)
     }
     func saveExercise(_ exercise: Exercise) throws {
         try RecordValidator.exercise(exercise)
@@ -171,6 +175,7 @@ import TrainLogCore
             if let model = try context.fetch(FetchDescriptor<UserSettings>()).first { model.payload = try ModelCodec.encode(next.settings) }
             else { context.insert(try UserSettings(next.settings)) }
         }
+        health.reconcileManaged(sessions: sessions)
         return recovery
     }
 }

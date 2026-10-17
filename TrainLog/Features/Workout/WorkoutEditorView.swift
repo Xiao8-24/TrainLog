@@ -31,7 +31,7 @@ struct WorkoutEditorView: View {
     var body: some View {
         GeometryReader { geometry in
         ScrollView {
-            VStack(spacing: 18) {
+            LazyVStack(spacing: 18) {
                 if !editingHistory && session.mode == .detailed { sessionTimer }
                 AppCard {
                     if dynamicTypeSize.isAccessibilitySize {
@@ -114,12 +114,11 @@ struct WorkoutEditorView: View {
     }
     private var sessionTimer: some View {
         AppCard {
-            TimelineView(.periodic(from: .now, by: 1)) { context in
                 let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
                 layout {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(session.timerStartedAt == nil ? "训练计时 · 已暂停" : "训练计时").font(.caption).foregroundStyle(.secondary)
-                        Text(Duration.seconds(session.elapsed(at: context.date)).formatted(.time(pattern: .hourMinuteSecond))).font(.title2.weight(.semibold)).monospacedDigit()
+                        SessionElapsedLabel(session: session)
                     }
                     if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                     Button {
@@ -127,7 +126,6 @@ struct WorkoutEditorView: View {
                         else { session.pause() }
                     } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时")
                 }
-            }
             let restLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
             restLayout {
                 Text("组间休息").font(.subheadline)
@@ -153,7 +151,7 @@ struct WorkoutEditorView: View {
         .sensoryFeedback(.selection, trigger: selection.wrappedValue)
     }
     private var detailedExercises: some View {
-        VStack(spacing: 18) {
+        LazyVStack(spacing: 18) {
             ForEach($session.exercises) { $entry in
                 ExerciseEditorCard(entry: $entry, history: store.completed.filter { $0.id != session.id }, unit: store.settings.unit, onComplete: { seconds in
                     if !editingHistory { restTimer.start(seconds: seconds, notify: store.settings.notifyRest) }
@@ -195,18 +193,42 @@ struct RestTimerBanner: View {
     var timer: RestTimer
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
             let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
             layout {
                 Label("组间休息", systemImage: "timer").font(.subheadline)
                     .accessibilityIdentifier("restTimer.label")
                 if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
-                Text("\(timer.remaining(at: context.date)) 秒").font(.headline).monospacedDigit()
-                    .accessibilityIdentifier("restTimer.remaining")
+                RestCountdownLabel(timer: timer)
                 Button("结束") { timer.cancel() }.frame(minWidth: 44, minHeight: 44)
                     .accessibilityIdentifier("restTimer.end")
             }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
                 .modifier(NativeFloatingSurface())
+    }
+}
+
+/// System-managed timer text updates without reevaluating the editor or its
+/// glass controls every second. Paused and manually entered time remain static.
+struct SessionElapsedLabel: View {
+    var session: Session
+    var body: some View {
+        Group {
+            if session.manualDurationSeconds == nil, let running = session.timerStartedAt {
+                let start = running.addingTimeInterval(-session.accumulatedSeconds)
+                Text(timerInterval: start...max(start, .distantFuture), countsDown: false, showsHours: true)
+            } else {
+                Text(Duration.seconds(session.elapsed()).formatted(.time(pattern: .hourMinuteSecond)))
+            }
+        }.font(.title2.weight(.semibold)).monospacedDigit()
+            .accessibilityIdentifier("workout.elapsed")
+    }
+}
+
+private struct RestCountdownLabel: View {
+    var timer: RestTimer
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            Text("\(timer.remaining(at: context.date)) 秒").font(.headline).monospacedDigit()
+                .accessibilityIdentifier("restTimer.remaining")
                 .onChange(of: context.date) { _, now in timer.tick(at: now) }
         }
     }

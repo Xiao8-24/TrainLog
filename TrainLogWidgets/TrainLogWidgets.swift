@@ -69,7 +69,7 @@ struct TrainingWidgetView: View {
         let records = snapshot.today(at: entry.date)
         return VStack(alignment: .leading, spacing: 5) {
             Label("今日训练", systemImage: "dumbbell.fill").font(.caption.weight(.semibold)).widgetAccentable()
-            Text("\(records.count) 次").font(.system(.largeTitle, design: .rounded, weight: .semibold)).minimumScaleFactor(0.7).lineLimit(1)
+            Text("\(records.count) 次").font(.largeTitle.weight(.semibold)).monospacedDigit().minimumScaleFactor(0.7).lineLimit(1)
             Text("\(records.reduce(0) { $0 + $1.minutes }) 分钟 · \(records.reduce(0) { $0 + $1.workingSets }) 组")
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
             Spacer(minLength: 0)

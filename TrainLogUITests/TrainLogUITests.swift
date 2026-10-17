@@ -140,6 +140,18 @@ final class TrainLogUITests: XCTestCase {
         let app = launch()
         for label in ["趋势", "能力", "训练", "概览"] { app.tabBars.buttons[label].tap(); XCTAssertTrue(app.navigationBars.firstMatch.exists) }
     }
+    @MainActor func testAppleHealthConnectionIsOptionalAndUnavailableInIsolatedTests() {
+        let app = launch()
+        app.buttons["设置"].tap()
+        let health = app.buttons["settings.appleHealth"]
+        for _ in 0..<4 where !health.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(health.waitForExistence(timeout: 5)); health.tap()
+        XCTAssertTrue(app.navigationBars["Apple 健康"].waitForExistence(timeout: 5))
+        let toggle = app.switches["health.enabled"]
+        XCTAssertTrue(toggle.exists); XCTAssertFalse(toggle.isEnabled)
+        XCTAssertTrue(app.staticTexts["当前不可用"].exists)
+        capture(app, name: "Apple Health optional connection - isolated environment")
+    }
     @MainActor func testCalendarAvailableFromEveryTabAndPreservesSelectedDate() {
         let app = launch()
         for label in ["概览", "训练", "趋势", "能力"] {

@@ -14,11 +14,12 @@ struct WorkoutSummaryView: View {
                 VStack(spacing: 22) {
                     VStack(spacing: 12) {
                         Image(systemName: "checkmark.circle.fill").font(.system(size: 48, weight: .light)).foregroundStyle(.green).accessibilityHidden(true)
-                        Text("又一次，认真完成。").font(.title2.bold())
+                        Text("又一次，认真完成。").font(.title2.weight(.semibold))
                         Text("训练已安全保存在本机").font(.subheadline).foregroundStyle(.secondary)
                     }.padding(.top, 12)
                     MuscleMapCard(title: "看见今天的努力", model: MuscleHeatmapViewModel(sessions: reveal ? [session] : [], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { muscle = $0 }
                     AppCard { SessionMetrics(session: session) }
+                    WorkoutHealthCard(session: session)
                     let records = PersonalRecordService.newRecords(for: session, all: store.completed)
                     if !records.isEmpty {
                         AppCard {
@@ -32,7 +33,6 @@ struct WorkoutSummaryView: View {
             }.background(AppTheme.background).navigationTitle("训练完成").navigationBarTitleDisplayMode(.inline)
                 .toolbar { Button("关闭") { dismiss() } }
                 .task {
-                    if !reduceMotion { try? await Task.sleep(for: .milliseconds(180)) }
                     withAnimation(reduceMotion ? nil : .smooth(duration: 0.35)) { reveal = true }
                 }
                 .sheet(item: $muscle) { value in NavigationStack { MuscleDetailSheet(muscle: value, interval: TimeRange.today.interval(now: session.date), sessionScope: [sessionID]) } }

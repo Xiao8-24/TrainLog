@@ -62,6 +62,7 @@ struct RootView: View {
             store.refreshSurfaces()
             await Task.yield()
             guard !Task.isCancelled else { return }
+            store.health.refresh(sessions: store.sessions)
             routePendingURL()
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(30)); try Task.checkCancellation() } catch { return }

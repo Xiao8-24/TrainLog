@@ -27,6 +27,13 @@ for name in ["TrainLog/Resources/TrainLog.entitlements", "TrainLogWidgets/TrainL
     with (root / name).open("rb") as file: groups.append(plistlib.load(file)["com.apple.security.application-groups"])
 assert groups[0] == groups[1] == ["group.com.trainlog.personal"]
 assert "com.apple.product-type.app-extension" in project and "Embed App Extensions" in project
+with (root / "TrainLog/Resources/Info.plist").open("rb") as file:
+    app_info = plistlib.load(file)
+assert app_info["NSHealthUpdateUsageDescription"] and app_info["NSHealthShareUsageDescription"]
+with (root / "TrainLog/Resources/TrainLog.entitlements").open("rb") as file:
+    assert plistlib.load(file)["com.apple.developer.healthkit"] is True
+with (root / "TrainLogWidgets/TrainLogWidgets.entitlements").open("rb") as file:
+    assert "com.apple.developer.healthkit" not in plistlib.load(file)
 definitions = re.findall(r"^\s*([A-F0-9]{24}) = \{", project, re.M)
 if len(definitions) != len(set(definitions)): failures.append("Duplicate project object ID")
 for identifier in set(re.findall(r"\b[A-F0-9]{24}\b", project)):

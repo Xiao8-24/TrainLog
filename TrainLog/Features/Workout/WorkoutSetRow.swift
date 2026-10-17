@@ -10,7 +10,9 @@ struct ExerciseEditorCard: View {
     @State private var confirmDelete = false
     @State private var confirmReuse = false
     private var previous: ExerciseEntry? {
-        history.sorted { $0.date > $1.date }.lazy.compactMap { $0.exercises.first { $0.exercise.comparisonKey == entry.exercise.comparisonKey } }.first
+        // AppStore already keeps history newest first; don't sort it twice for
+        // every keystroke in every set row.
+        history.lazy.compactMap { $0.exercises.first { $0.exercise.comparisonKey == entry.exercise.comparisonKey } }.first
     }
     var body: some View {
         AppCard {

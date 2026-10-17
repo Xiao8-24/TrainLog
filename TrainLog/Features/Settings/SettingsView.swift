@@ -48,6 +48,12 @@ struct SettingsView: View {
                 Toggle("休息结束时通知", isOn: Binding(get: { store.settings.notifyRest }, set: { enabled in setNotification(enabled) }))
                 Text("通知为可选权限。拒绝通知后仍可使用全部记录与计时功能。").font(.caption).foregroundStyle(.secondary)
             }
+            Section("Apple 健康与健身") {
+                NavigationLink { AppleHealthView() } label: { Label("Apple 健康", systemImage: "heart.fill").foregroundStyle(.primary) }
+                    .accessibilityIdentifier("settings.appleHealth")
+                Text("可选：把完成训练的时间与时长写入 Apple 健康，供系统健身 App 展示。")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             Section("桌面与锁屏") {
                 Toggle("训练实时活动", isOn: $liveActivitiesEnabled)
                     .onChange(of: liveActivitiesEnabled) { _, enabled in

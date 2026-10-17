@@ -9,7 +9,7 @@ struct WorkoutHomeView: View {
             VStack(spacing: 20) {
                 AppCard {
                     Image(systemName: "dumbbell.fill").font(.largeTitle).foregroundStyle(.blue).accessibilityHidden(true)
-                    Text(store.draft == nil ? "留住今天的努力" : "训练还在进行中").font(.title2.bold())
+                    Text(store.draft == nil ? "留住今天的努力" : "训练还在进行中").font(.title2.weight(.semibold))
                     Text(store.draft == nil ? "逐组记录重量与次数，也可以只记下训练部位。" : "草稿已保存在本机，随时继续。").font(.subheadline).foregroundStyle(.secondary)
                     PrimaryActionButton(title: store.draft == nil ? "详细记录" : "继续训练", symbol: "play.fill") { router.start(.detailed, store: store) }
                     if store.draft == nil { Button { router.start(.quick, store: store) } label: { Label("快速记录肌群", systemImage: "figure.stand").frame(maxWidth: .infinity, minHeight: 44) }.accessibilityIdentifier("quickWorkout") }

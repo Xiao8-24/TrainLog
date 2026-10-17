@@ -18,7 +18,7 @@ import TrainLogCore
                         Text("原始数据库已保留，没有重置或覆盖。\n\(startupError)")
                     } actions: { Button("重新尝试", action: load).buttonStyle(.borderedProminent) }
                 } else { LoadingStateView() }
-            }.tint(.blue).task { if store == nil && startupError == nil { load() } }
+            }.tint(.blue).fontDesign(.default).task { if store == nil && startupError == nil { load() } }
                 .onOpenURL {
                     #if DEBUG
                     if ProcessInfo.processInfo.arguments.contains("-ui-testing") { NSLog("TrainLog UI URL received: %@", $0.absoluteString) }

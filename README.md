@@ -2,7 +2,13 @@
 
 记录每一次训练，看见每一点进步。
 
-面向个人力量训练的离线 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols**；最低部署版本 **iOS 18.0**。无服务器、无账号、无第三方运行时依赖。
+面向个人力量训练的本地优先 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit**；0.5.0 起最低部署版本 **iOS 27.0**。无服务器、无账号、无第三方运行时依赖。
+
+## 0.5.0 Apple 健康与原生体验
+
+新增可选 HealthKit 连接：授权后自动写入新完成力量训练的类型、起止时间与时长，供 Apple 健康与健身 App 展示；支持单条历史写入、同步状态、失败重试、编辑更新与已管理副本删除。不读取其他来源，不推算心率、热量或圆环进度，不需要 Apple 登录。健康授权和队列不会随 JSON 备份迁移。签名主 App 需启用 HealthKit。详见 [接入、时间规则与设备验收](Documentation/APPLE_HEALTH.md)。
+
+字体统一使用系统默认设计与语义字号，主要标题采用 semibold；计时交给系统文本刷新，休息计时仅更新独立数字，长训练列表按需创建，输入时不再反复排序历史。数字转场和离散交互使用系统动画，支持减少动态效果。源码与静态检查完成，云端 iOS 27 测试与 Release 归档待本次工作流验证；真机健康/健身展示与性能仍待验收。
 
 > **[0.4.0 小组件与灵动岛预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.4.0)。** [最终验证](https://github.com/Xiao8-24/TrainLog/actions/runs/39024492159) 在 iOS 27 通过 50 项测试，Xcode 27 Release 归档包含小组件扩展。五个发布文件校验通过，82 个源码文件与测试提交一致。后续开发、验证与发布以 iOS 27 为目标。IPA 仍需同时签名主 App 和扩展并配置 App Group。
 
@@ -85,8 +91,8 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 
 ### 未实现及需后续验证的部分
 
-- 可选增强：HealthKit、长期报告导出、更多解剖细分。
-- Liquid Glass 使用系统导航、TabView 与新系统原生玻璃 API，低版本按可用性回退；具体表现由构建 SDK 和运行系统决定。
+- 可选增强：Apple Watch 伴侣 App、实测心率/能量、长期报告导出、更多解剖细分。
+- Liquid Glass 使用系统导航、TabView 与原生玻璃 API，以 iOS 27 为目标，保留减少透明度与动态效果的辅助功能适配。
 - 当前支持中文界面及 iPhone，未单独设计 iPad 多栏布局和其他语言本地化。
 - 未做 iOS 真机性能测试、VoiceOver 实机走查、超大字号/横屏截图验收、通知后台交付验收。
 - 当前数据库只有 V1；已声明版本化 Schema 和 MigrationPlan，但尚无跨版本升级数据可验证迁移。

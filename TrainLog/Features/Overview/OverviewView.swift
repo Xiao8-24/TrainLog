@@ -16,7 +16,7 @@ struct OverviewView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(clock.now.formatted(.dateTime.month().day().weekday(.wide))).font(.subheadline).foregroundStyle(.secondary)
                     Text(today.isEmpty ? "今天准备练什么？" : "每一次记录，都在积累。")
-                        .font(.title2.weight(.bold))
+                        .font(.title2.weight(.semibold))
                     Text(today.isEmpty ? "专注当下，让进步慢慢清晰。" : "今天已完成 \(today.count) 次训练。")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }.padding(.top, 4)

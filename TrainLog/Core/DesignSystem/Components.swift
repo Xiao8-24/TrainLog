@@ -15,7 +15,7 @@ enum AppTheme {
 }
 struct AppCard<Content: View>: View {
     @ViewBuilder var content: Content
-    var body: some View { VStack(alignment: .leading, spacing: 16) { content }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(AppTheme.card, in: RoundedRectangle(cornerRadius: AppTheme.radius)) }
+    var body: some View { VStack(alignment: .leading, spacing: 16) { content }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(AppTheme.card, in: RoundedRectangle(cornerRadius: AppTheme.radius, style: .continuous)) }
 }
 struct SectionHeader: View {
     var title: String
@@ -30,7 +30,7 @@ struct SectionHeader: View {
 struct StatValue: View {
     var value: String
     var unit: String = ""
-    var body: some View { (Text(value).font(.title2.weight(.semibold)) + Text(unit.isEmpty ? "" : " \(unit)").font(.caption).foregroundColor(.secondary)).monospacedDigit() }
+    var body: some View { (Text(value).font(.title2.weight(.semibold)) + Text(unit.isEmpty ? "" : " \(unit)").font(.caption).foregroundColor(.secondary)).monospacedDigit().nativeNumberTransition(value: value) }
 }
 struct MetricCard: View {
     var title: String

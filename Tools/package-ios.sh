@@ -15,6 +15,7 @@ app = pathlib.Path(sys.argv[1])
 info = plistlib.loads((app / 'Info.plist').read_bytes())
 widget = plistlib.loads((app / 'PlugIns/TrainLogWidgets.appex/Info.plist').read_bytes())
 assert info['NSSupportsLiveActivities'] is True
+assert info['NSHealthUpdateUsageDescription'] and info['NSHealthShareUsageDescription']
 assert widget['NSExtension']['NSExtensionPointIdentifier'] == 'com.apple.widgetkit-extension'
 for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
     assert info[key] == widget[key], key
@@ -41,6 +42,9 @@ group.com.trainlog.personal for both bundle identifiers in your Apple team,
 or replace that identifier in both entitlements and WidgetSnapshotStorage.swift.
 Live Activities require NSSupportsLiveActivities and system permission. Widget
 refresh timing and Live Activity presentation are controlled by iOS.
+Enable HealthKit for the MAIN app bundle identifier and regenerate its profile.
+The widget extension does not need HealthKit. Health writes require explicit
+on-device authorization. No health data is written by this unsigned package.
 
 The GitHub workflow publishes only after the core, persistence and UI tests pass
 and the unsigned device archive succeeds. See the workflow diagnostics artifact
