@@ -16,13 +16,15 @@
 
 ## 数据与签名
 
-主 App 原子写入 App Group 的版本化 JSON 摘要，扩展只读，不直接打开 SwiftData 数据库。文件使用首次解锁后可读取的保护级别；读取失败时显示可理解的空状态。修改、删除、导入与设置更新后重新生成摘要，并请求刷新。核心数据仍只在主 App 中修改。
+主 App 原子写入 App Group 的版本化 JSON 摘要，扩展只读，不直接打开 SwiftData 数据库。文件使用首次解锁后可读取的保护级别；读取失败时显示可理解的空状态。修改、删除、导入与设置更新后重新生成摘要，并请求刷新。SwiftData 显式使用 `groupContainer: .none`，保留增加扩展之前的 App 沙盒数据库位置，避免系统自动改用 App Group 导致原历史记录不可见；已有配置位置加入集成回归测试。
 
 签名需要两个 Bundle ID：`com.trainlog.personal` 与 `com.trainlog.personal.TrainLogWidgets`，两者同时启用 `group.com.trainlog.personal` App Group。若团队使用其他标识，需同步修改两个 entitlements 和 `Shared/WidgetSnapshotStorage.swift`。设备归档仍未签名；必须同时签名主 App 与内嵌 `PlugIns/TrainLogWidgets.appex`。模拟器测试使用 ad-hoc 签名，不需要 Apple 开发者证书。
 
 ## 验证范围
 
 核心用例覆盖午夜、跨周和夏令时、草稿排除、有效正式组、暂停、休息过期、完成状态、序列化、删除记录和非法深链接。工程检查验证相同 App Group；归档检查验证扩展存在、版本一致和 Live Activities 声明。云端结果见 VALIDATION.md。
+
+App UI 的链接用例使用独立持久化测试档案和系统 `UIApplication.open`，验证从设置打开日历、在日历弹窗中进入详细训练，以及重启后恢复草稿。测试模式禁用真实 WidgetKit 摘要写入和 ActivityKit 请求，因此这些测试不证明主屏幕小组件展示、灵动岛生命周期或由系统直接冷启动到链接目的地已经在设备上验收。
 
 仍需已签名 iPhone 验收：在主屏幕添加各种尺寸、浅／深／着色／透明外观、VoiceOver 与辅助字号；锁屏隐私；灵动岛紧凑／展开／多活动最小显示；后台倒计时到点；系统禁止和手动移除实时活动；重启后首次解锁；实际签名团队的 App Group 数据共享。模拟器构建成功不能替代这些验证。
 
@@ -33,3 +35,4 @@
 - [ActivityKit 生命周期与 staleDate](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities)
 - [WidgetKit 时间线与刷新预算](https://developer.apple.com/documentation/widgetkit/keeping-a-widget-up-to-date)
 - [小组件背景与系统渲染](https://developer.apple.com/documentation/widgetkit/displaying-the-right-widget-background)
+- [SwiftData 禁用自动 App Group 数据库位置](https://developer.apple.com/documentation/swiftdata/modelconfiguration/groupcontainer-swift.struct/none)

@@ -13,6 +13,11 @@ if [ -z "$destination" ]; then
   exit 1
 fi
 printf '%s\n' "$destination" > artifacts/simulator-id.txt
+collect_url_diagnostics() {
+  xcrun simctl spawn "$destination" log show --last 20m --style compact \
+    --predicate 'eventMessage CONTAINS "TrainLog UI URL"' > artifacts/url-routing.log 2>&1 || true
+}
+trap collect_url_diagnostics EXIT
 # Use a new result bundle for every invocation; never delete previous test evidence.
 result_path="artifacts/TrainLog-$(date +%Y%m%d-%H%M%S)-$$.xcresult"
 xcodebuild -project TrainLog.xcodeproj -scheme TrainLog \

@@ -27,7 +27,7 @@
 1. 将整个仓库或 `Delivery/TrainLog-iOS-source.zip` 解压到 Mac，保留 `Packages/TrainLogCore` 与 `TrainLog.xcodeproj` 的相对位置。
 2. 使用 Xcode 27.0 或更新正式版 打开 **`TrainLog.xcodeproj`**。工程不需要 CocoaPods、网络 Swift Package 或额外工程生成器。
 3. 选择共享 Scheme **TrainLog** 和已安装的 iPhone 模拟器。按 **⌘B** 构建、**⌘R** 运行。
-4. 真机安装：在 TrainLog target → Signing & Capabilities 中选择自己的开发团队，修改 Bundle Identifier 为自己的唯一标识。连接并信任 iPhone，按系统提示启用开发者模式，选择该设备并运行。
+4. 真机安装：为 TrainLog 与 TrainLogWidgets 两个 target 选择自己的开发团队和唯一 Bundle Identifier，同时配置相同 App Group。若替换默认 App Group，需要同步修改两个 entitlements 与 `Shared/WidgetSnapshotStorage.swift`，详见[小组件签名配置](Documentation/WIDGETS_AND_LIVE_ACTIVITIES.md)。连接并信任 iPhone，按系统提示启用开发者模式，选择该设备并运行。
 5. 使用个人开发团队安装时，签名能力与有效期以 Xcode 当前提示为准。本仓库不包含签名证书、Team ID 或预签名 IPA。
 
 **首次在 Mac 上请先构建和运行测试，再导入重要训练档案。** 不建议通过删除已有数据库来解决构建或迁移问题。
@@ -60,6 +60,8 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 | 详细记录 | 重量/次数/时长、RPE/RIR、正式/热身/递减/失败组、完成标记、复制组、加减重量/次数、组备注 |
 | 草稿 | 本地恢复、500 ms 防抖保存、退到后台和关闭前保存、继续/放弃、保存错误提示 |
 | 计时 | 训练计时与暂停、手动时长、组间倒计时、恢复截止时间、可选系统通知 |
+| 小组件 | 桌面小／中号、锁屏矩形、今日统计、本周目标与七天标记、草稿和日历入口 |
+| 实时活动 | 锁屏与灵动岛紧凑／最小／展开、训练计时、暂停、休息倒计时、结束状态、设置开关 |
 | 动作库 | 37 个内置动作、主次肌群映射、搜索/肌群筛选、收藏、自定义动作与编辑、历史定义快照 |
 | 模板 | Push/Pull/Legs、自定义、动作排序、组数、默认重量次数、复用上次配置、删除确认 |
 | 历史 | 日期/肌群/动作筛选、详情、补记日期、编辑、删除确认、关联原始 PR 组 |
@@ -69,12 +71,12 @@ TRAINLOG_SIMULATOR_ID="你的模拟器 UUID" bash Tools/test-ios.sh
 | 数据 | 版本化 JSON、校验与预览、合并/确认替换、导入前恢复副本、CSV、系统文件导出与分享 |
 | 设置 | kg/lb、每周目标、训练目标、主题、体重历史、统计说明、隐私说明 |
 
-以上功能已实现，自动化测试覆盖业务规则、持久化与三个 UI 流程；其余交互和真机体验仍需按验收清单逐项检查。
+以上功能已有源码，自动化测试覆盖业务规则、持久化与七个 App UI 流程；小组件和实时活动的系统展示、其余交互及真机体验仍需按验收清单逐项检查。
 
 ### 未实现及需后续验证的部分
 
-- 可选增强：HealthKit、WidgetKit、长期报告导出、更多解剖细分。
-- 没有手写 Liquid Glass API；使用系统导航、TabView 和原生材质，由系统 SDK/运行系统决定原生外观，因此不存在强制调用新系统玻璃 API 的兼容性问题。
+- 可选增强：HealthKit、长期报告导出、更多解剖细分。
+- Liquid Glass 使用系统导航、TabView 与新系统原生玻璃 API，低版本按可用性回退；具体表现由构建 SDK 和运行系统决定。
 - 当前支持中文界面及 iPhone，未单独设计 iPad 多栏布局和其他语言本地化。
 - 未做 iOS 真机性能测试、VoiceOver 实机走查、超大字号/横屏截图验收、通知后台交付验收。
 - 当前数据库只有 V1；已声明版本化 Schema 和 MigrationPlan，但尚无跨版本升级数据可验证迁移。

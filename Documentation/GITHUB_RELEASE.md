@@ -10,7 +10,7 @@
 2. 打开 **Actions → TrainLog build and release**，首次 push 会运行检查、业务测试、iOS 模拟器测试和未签名设备归档。
 3. 如果失败，在该次运行下载 `TrainLog-diagnostics-*`，检查 `core-tests.log`、`ios-tests.log`、`archive.log` 和 `.xcresult`。修复后重新推送。红色失败状态不能视为完成构建。
 4. 成功后，可以从 `TrainLog-delivery-*` 下载源码和未签名 IPA。
-5. 发布版本：选择 **Run workflow**，选要发布的分支，勾选 `publish`，输入尚未使用的版本号（例如 `v0.3.0`）。流程会重新测试，并且只在全部成功后为同一提交创建 GitHub 预览版 Release。
+5. 发布版本：选择 **Run workflow**，选要发布的分支，勾选 `publish`，输入尚未使用的版本号（例如 `v0.4.0`）。也可向 `main` 推送标题以 `Release vMAJOR.MINOR.PATCH` 开头的明确发布提交。两种入口都会重新测试，只在全部成功后为同一提交创建 GitHub 预览版 Release；普通 push 不发布。
 6. Release 附件保留在版本页面；Actions 的临时构建/诊断附件保留 14 天。发布流程只在发布 job 中使用 `contents: write`，PR 测试没有发布权限。
 
 不要把 ZIP 文件本身当作仓库源码上传；工作流必须位于仓库根目录的 `.github/workflows/ios.yml`。不要给已有 tag 改指向；已发布版本应使用新版本号。

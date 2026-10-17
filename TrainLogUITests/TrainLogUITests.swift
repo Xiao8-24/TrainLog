@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class TrainLogUITests: XCTestCase {
     @MainActor private func launch(extraArguments: [String] = [], persistent: Bool = false) -> XCUIApplication {
@@ -13,20 +14,29 @@ final class TrainLogUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
-    @MainActor func testWidgetDeepLinksResumePersistedDraftAfterRelaunch() {
+    @MainActor private func openDeepLink(_ url: URL) async {
+        let opened = await withCheckedContinuation { continuation in
+            UIApplication.shared.open(url, options: [:]) { continuation.resume(returning: $0) }
+        }
+        XCTAssertTrue(opened, "The system must accept the registered TrainLog URL")
+    }
+    @MainActor func testWidgetDeepLinksDismissModalAndResumePersistedDraft() async {
         let app = launch(persistent: true)
         app.buttons["设置"].tap()
-        app.open(URL(string: "trainlog://calendar")!)
+        await openDeepLink(URL(string: "trainlog://calendar")!)
         let calendarOpened = app.navigationBars["健身日历"].waitForExistence(timeout: 10)
         capture(app, name: "Widget calendar deep link after launch")
         XCTAssertTrue(calendarOpened)
         guard calendarOpened else { return }
-        app.buttons["calendar.close"].tap()
-        app.buttons["设置"].tap()
-        app.open(URL(string: "trainlog://workout")!)
+        // Open a workout while the same shared calendar used by all tabs is up.
+        await openDeepLink(URL(string: "trainlog://workout")!)
         XCTAssertTrue(app.buttons["startRestTimer"].waitForExistence(timeout: 10))
         app.buttons["稍后继续"].tap()
-        app.open(URL(string: "trainlog://workout")!)
+        app.terminate(); app.launch()
+        let resume = app.buttons["startWorkout"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10))
+        XCTAssertTrue(resume.label.contains("继续"))
+        await openDeepLink(URL(string: "trainlog://workout")!)
         XCTAssertTrue(app.buttons["startRestTimer"].waitForExistence(timeout: 10))
         capture(app, name: "Widget deep link resumes the training draft")
     }

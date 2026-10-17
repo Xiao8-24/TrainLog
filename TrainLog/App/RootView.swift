@@ -7,6 +7,7 @@ struct SessionRoute: Identifiable { var id: UUID }
 @MainActor @Observable final class AppRouter {
     var tab: AppTab = .overview
     var editing: Session?
+    var calendarPresented = false
     var summary: SessionRoute?
     var pendingSummary: UUID?
     func start(_ mode: WorkoutMode, store: AppStore, template: TrainingTemplate? = nil) {
@@ -24,7 +25,6 @@ struct RootView: View {
     @State private var clock = AppClock()
     @Environment(\.scenePhase) private var scenePhase
     @State private var settingsPresented = false
-    @State private var calendarPresented = false
     var body: some View {
         @Bindable var store = store
         @Bindable var router = router
@@ -44,7 +44,7 @@ struct RootView: View {
         }
         .environment(router)
         .sheet(isPresented: $settingsPresented, onDismiss: routePendingURL) { NavigationStack { SettingsView() } }
-        .sheet(isPresented: $calendarPresented, onDismiss: routePendingURL) { NavigationStack { FitnessCalendarView() } }
+        .sheet(isPresented: $router.calendarPresented, onDismiss: routePendingURL) { NavigationStack { FitnessCalendarView() } }
         .sheet(item: $router.editing, onDismiss: {
             if let id = router.pendingSummary { router.pendingSummary = nil; router.summary = SessionRoute(id: id) }
         }) { session in
@@ -80,20 +80,25 @@ struct RootView: View {
         }
     }
     private func routePendingURL() {
+        #if DEBUG
+        if pendingURL != nil, ProcessInfo.processInfo.arguments.contains("-ui-testing") {
+            NSLog("TrainLog UI URL route: active=%d onboarded=%d settings=%d calendar=%d", scenePhase == .active, store.settings.hasOnboarded, settingsPresented, router.calendarPresented)
+        }
+        #endif
         guard scenePhase == .active, store.settings.hasOnboarded, let url = pendingURL else { return }
         guard let route = WorkoutDeepLink(url: url) else { pendingURL = nil; return }
         guard router.editing == nil else { pendingURL = nil; return }
         // Wait for modal dismissal before presenting another destination.
         if settingsPresented { settingsPresented = false; return }
         if router.summary != nil { router.summary = nil; return }
-        if calendarPresented && route != .calendar { calendarPresented = false; return }
+        if router.calendarPresented && route != .calendar { router.calendarPresented = false; return }
         pendingURL = nil
         switch route {
         case .overview: router.tab = .overview
         case .calendar:
             // Avoid dismissing an editor with unsaved fields to show a calendar.
             guard router.editing == nil else { return }
-            calendarPresented = true
+            router.calendarPresented = true
         case .workout(let id):
             router.tab = .workout
             guard router.editing == nil else { return }

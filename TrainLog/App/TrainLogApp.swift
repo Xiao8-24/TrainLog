@@ -7,7 +7,7 @@ import TrainLogCore
     @State private var pendingURL: URL?
     var body: some Scene {
         WindowGroup {
-            Group {
+            ZStack {
                 if let store {
                     RootView(pendingURL: $pendingURL).environment(store)
                         .preferredColorScheme(store.settings.theme == .system ? nil : store.settings.theme == .dark ? .dark : .light)
@@ -19,7 +19,12 @@ import TrainLogCore
                     } actions: { Button("重新尝试", action: load).buttonStyle(.borderedProminent) }
                 } else { LoadingStateView() }
             }.tint(.blue).task { if store == nil && startupError == nil { load() } }
-                .onOpenURL { pendingURL = $0 }
+                .onOpenURL {
+                    #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("-ui-testing") { NSLog("TrainLog UI URL received: %@", $0.absoluteString) }
+                    #endif
+                    pendingURL = $0
+                }
         }
     }
     private func load() {

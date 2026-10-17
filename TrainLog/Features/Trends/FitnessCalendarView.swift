@@ -133,14 +133,14 @@ struct NativeWorkoutCalendar: UIViewRepresentable {
 }
 
 struct FitnessCalendarAccess: ViewModifier {
-    @State private var presented = false
+    @Environment(AppRouter.self) private var router
     func body(content: Content) -> some View {
         content.toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { presented = true } label: { Label("健身日历", systemImage: "calendar") }
+                Button { router.calendarPresented = true } label: { Label("健身日历", systemImage: "calendar") }
                     .accessibilityIdentifier("openFitnessCalendar")
             }
-        }.sheet(isPresented: $presented) { NavigationStack { FitnessCalendarView() } }
+        }
     }
 }
 extension View {
