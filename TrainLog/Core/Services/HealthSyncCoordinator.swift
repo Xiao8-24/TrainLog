@@ -108,6 +108,7 @@ import TrainLogCore
         guard loadIfNeeded(), ledger.records[id] != nil else { return }
         var next = ledger; next.remove(id)
         if commit(next) { sessionIssues.removeValue(forKey: id); kick() }
+        else { stagingFailures.insert(id) }
     }
     func reconcileManaged(sessions: [Session]) {
         guard loaded else { return }
@@ -132,7 +133,8 @@ import TrainLogCore
             sessionIssues[session.id] = error.localizedDescription
             // An invalid edit must not leave an older queued summary to upload.
             if ledger.records[session.id] != nil {
-                var next = ledger; next.remove(session.id); _ = commit(next)
+                var next = ledger; next.remove(session.id)
+                if !commit(next) { stagingFailures.insert(session.id) }
             }
         }
     }
@@ -159,7 +161,8 @@ import TrainLogCore
         worker = Task { [weak self] in
             guard let self else { return }
             defer { self.isWorking = false; self.worker = nil }
-            while self.enabled, self.client.authorization == .authorized, let record = self.ledger.pending.first {
+            while self.enabled, self.client.authorization == .authorized,
+                  let record = self.ledger.pending.first(where: { !self.stagingFailures.contains($0.sessionID) }) {
                 do {
                     if let workout = record.workout { try await self.client.save(workout, version: record.version) }
                     else { try await self.client.delete(syncIdentifier: record.syncIdentifier) }

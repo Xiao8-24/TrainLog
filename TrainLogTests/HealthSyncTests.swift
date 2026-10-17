@@ -81,6 +81,20 @@ import TrainLogCore
         XCTAssertEqual(client.writes.last?.1, version)
         XCTAssertTrue(restored.isExported(session.id))
     }
+    func testFailedEditStagingCannotSubmitAnOlderQueuedWorkout() async {
+        let client = Client(), disk = Disk(); var session = session()
+        let sync = HealthSyncCoordinator(client: client, persistence: disk)
+        await sync.enable(sessions: [session]); client.fails = true
+        sync.track(session); await sync.waitUntilIdle()
+        XCTAssertEqual(client.writes.count, 1)
+        client.fails = false; disk.fails = true
+        session.manualDurationSeconds = 1_800
+        sync.track(session); await sync.waitUntilIdle()
+        XCTAssertEqual(client.writes.count, 1, "An unpersisted edit must hold the older pending revision")
+        disk.fails = false; sync.retry(sessions: [session]); await sync.waitUntilIdle()
+        XCTAssertEqual(client.writes.last?.0.duration, 1_800)
+        XCTAssertTrue(sync.isExported(session.id))
+    }
     func testDeletionWhileWriteIsInFlightWins() async throws {
         let client = Client(), disk = Disk(), session = session()
         let sync = HealthSyncCoordinator(client: client, persistence: disk)
