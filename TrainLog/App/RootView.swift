@@ -60,6 +60,8 @@ struct RootView: View {
             guard scenePhase == .active else { return }
             clock.refresh()
             store.refreshSurfaces()
+            await Task.yield()
+            guard !Task.isCancelled else { return }
             routePendingURL()
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(30)); try Task.checkCancellation() } catch { return }
@@ -69,10 +71,16 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in clock.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in clock.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in clock.refresh() }
-        .onChange(of: pendingURL) { _, _ in routePendingURL() }
+        // A cold-launch URL can arrive before this view is created. A task
+        // also handles its initial value after the root has joined the scene.
+        .task(id: pendingURL) {
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            routePendingURL()
+        }
     }
     private func routePendingURL() {
-        guard store.settings.hasOnboarded, let url = pendingURL else { return }
+        guard scenePhase == .active, store.settings.hasOnboarded, let url = pendingURL else { return }
         guard let route = WorkoutDeepLink(url: url) else { pendingURL = nil; return }
         guard router.editing == nil else { pendingURL = nil; return }
         // Wait for modal dismissal before presenting another destination.

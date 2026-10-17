@@ -17,7 +17,10 @@ final class TrainLogUITests: XCTestCase {
         let app = launch(persistent: true)
         app.buttons["设置"].tap()
         app.open(URL(string: "trainlog://calendar")!)
-        XCTAssertTrue(app.navigationBars["健身日历"].waitForExistence(timeout: 10))
+        let calendarOpened = app.navigationBars["健身日历"].waitForExistence(timeout: 10)
+        capture(app, name: "Widget calendar deep link after launch")
+        XCTAssertTrue(calendarOpened)
+        guard calendarOpened else { return }
         app.buttons["calendar.close"].tap()
         app.buttons["设置"].tap()
         app.open(URL(string: "trainlog://workout")!)
