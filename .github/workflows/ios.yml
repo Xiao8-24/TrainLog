@@ -65,30 +65,9 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  legacy-tests:
-    name: iOS 18 compatibility
-    runs-on: macos-15
-    timeout-minutes: 45
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run iOS 18 compatibility tests
-        run: |
-          mkdir -p artifacts
-          { xcodebuild -version; xcrun simctl list runtimes; } | tee artifacts/environment.txt
-          bash Tools/test-ios.sh
-      - name: Preserve compatibility evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: TrainLog-iOS18-diagnostics-${{ github.run_number }}
-          path: artifacts/
-          retention-days: 14
-
   publish:
     if: (github.event_name == 'workflow_dispatch' && inputs.publish) || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release v'))
-    needs: [native-tests, legacy-tests]
+    needs: [native-tests]
     runs-on: ubuntu-latest
     permissions:
       contents: write

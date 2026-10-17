@@ -4,11 +4,13 @@
 
 面向个人力量训练的离线 iPhone 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols**；最低部署版本 **iOS 18.0**。无服务器、无账号、无第三方运行时依赖。
 
-> **[0.3.1 原生 Liquid Glass 预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.3.1)。** [最终验证](https://github.com/Xiao8-24/TrainLog/actions/runs/38727215902) 在 iOS 27 和 iOS 18 各通过 42 项测试，Xcode 27 Release 归档成功。修复通知服务同步等待造成的休息计时卡顿：屏幕计时立即响应，通知清理与调度在后台依次执行。发布文件校验通过，IPA 仍需有效 Apple 签名。
+> **[0.4.0 小组件与灵动岛预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.4.0)。** [最终验证](https://github.com/Xiao8-24/TrainLog/actions/runs/39024492159) 在 iOS 27 通过 50 项测试，Xcode 27 Release 归档包含小组件扩展。五个发布文件校验通过，82 个源码文件与测试提交一致。后续开发、验证与发布以 iOS 27 为目标。IPA 仍需同时签名主 App 和扩展并配置 App Group。
+
+## 0.4.0 桌面小组件与灵动岛
+
+桌面小／中号与锁屏矩形小组件显示今日统计、本周目标和七天训练标记，支持继续草稿和打开日历。详细训练 Live Activities 与灵动岛展示训练计时、暂停、组间倒计时和休息结束状态。链接入口与四个页面共用日历路由，数据库保留原位置。查看[设计、系统行为与签名配置](Documentation/WIDGETS_AND_LIVE_ACTIVITIES.md)。小组件与实时活动的设备展示仍待签名 iPhone 验收。
 
 ## 0.3.0 Liquid Glass
-
-0.4.0 开发：新增桌面小／中号与锁屏矩形训练小组件、详细训练 Live Activities 和灵动岛状态。查看[设计、系统行为与签名配置](Documentation/WIDGETS_AND_LIVE_ACTIVITIES.md)。最终验证结果以 Actions 与发布页为准。
 
 系统导航、标签栏、工具栏和日历跟随新系统；主要按钮采用原生玻璃样式，休息计时浮层支持系统滚动边缘效果、大字体和减少透明度回退。数据卡片保持清晰。详见 [适配说明与官方依据](Documentation/LIQUID_GLASS.md)。
 

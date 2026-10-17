@@ -1,5 +1,17 @@
 # 验证记录
 
+## 0.4.0 小组件与训练实时活动
+
+2026-10-17，[Actions #17](https://github.com/Xiao8-24/TrainLog/actions/runs/39024492159) 验证提交 `33cf48403fff442742546db5e0d09ac54d384527`，18:36（上海时间）发布 [v0.4.0](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.4.0)。Xcode 27.0 (27A266a)、Swift 6.4 编译器、iPhone Air / iOS 27.0 (24A434) 上，34 个核心、9 个集成及 7 个 App UI 测试，共 50 项全部通过，Release 设备归档成功。新增链接流程通过设置进入日历、在日历弹窗中进入训练，并在 App 重启后继续原草稿；已复核其真实截图及最大辅助字号休息控件截图。
+
+核心测试覆盖小组件跨午夜、周边界、夏令时、删除和有效正式组摘要，以及实时活动暂停、休息过期和结束状态。SwiftData 显式禁用自动 App Group 数据库位置，原沙盒位置的回归检查通过。扩展不直接读取完整数据库。UI 测试通过 `XCUIDevice.shared.system.open` 发送链接；直接从测试运行器使用 `UIApplication.open` 曾被系统以 “Request is not trusted” 拒绝，此前失败不能当作已送达 App 的链接处理结果。
+
+已下载并校验交付和诊断附件，五个发布资产的大小与 SHA256 均与 GitHub Release 一致；源码包 82 个文件与测试提交逐字节相同。IPA 含 `PlugIns/TrainLogWidgets.appex`，两者均为 0.4.0 / build 5，使用 iphoneos27.0 SDK；主 App 包含 Live Activities 声明及 `trainlog` URL scheme。源码 ZIP SHA256：`f9f141a1442f02c2b23b17c7c38bd29749711e02cddca333a297ffb3d9a7d2f7`；IPA：`79a40ff7bb80b3fee42b7abce135b9c1af0266d28207443dad883eec0dd8eabf`。两者未签名，未包含设备 provisioning profile。
+
+测试模式禁用真实小组件摘要写入和 ActivityKit 请求，因此编译、模型和 App UI 测试不替代主屏幕、锁屏、灵动岛及后台倒计时的设备验收。仍需签名 iPhone 验证扩展 App Group 共享、实际系统布局、权限、手动移除、首次解锁与系统直接冷启动链接。可选统一日志导出在本轮因目标模拟器未启动而未取得内容，判断依据为测试结果与截图。
+
+按用户 2026-10-17 的要求，后续只维护 iOS 27 验证，已移除 iOS 18 CI 任务与发布依赖；以下历史记录保留当时实际结果。已发布二进制的最低部署元数据仍为 iOS 18，不代表后续继续承诺旧系统兼容验收。
+
 ## 0.3.1 通知服务响应修复
 
 2026-10-15，[Actions #11](https://github.com/Xiao8-24/TrainLog/actions/runs/38727215902) 的提交 `01fb9f0225955d45eb0ff5c11a7477da121277c9` 在 iOS 27 与 iOS 18 各通过 42 项测试（28 核心 + 8 集成 + 6 UI），Release 设备归档成功，19:36（上海时间）发布 [v0.3.1](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.3.1)。慢服务测试分别用时 1.388 / 0.056 秒，开始与取消的一秒返回断言均通过。iOS 27 浅/深色休息交互测试通过，最终日志无此前的等待采样标记，导出附件中无 Spindump。已目视复核浅色、深色、大辅助字号及已完成训练日历截图；这不替代真机性能或通知后台交付验收。
