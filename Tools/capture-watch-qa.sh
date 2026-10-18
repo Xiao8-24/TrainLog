@@ -29,10 +29,10 @@ app_path='DerivedData/Build/Products/Debug-watchsimulator/TrainLogWatch.app'
 test -d "$app_path"
 xcrun simctl install "$watch_id" "$app_path"
 xcrun simctl launch "$watch_id" com.trainlog.personal.TrainLogWatch
-sleep 4
+sleep 25
 xcrun simctl io "$watch_id" screenshot artifacts/watch/TrainLog-Watch-start.png
 xcrun simctl terminate "$watch_id" com.trainlog.personal.TrainLogWatch
 xcrun simctl launch "$watch_id" com.trainlog.personal.TrainLogWatch --snapshot-activities
-sleep 4
+sleep 25
 xcrun simctl io "$watch_id" screenshot artifacts/watch/TrainLog-Watch-activities.png
 echo 'Captured actual watchOS screens; no sensor data simulated.'
