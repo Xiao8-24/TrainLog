@@ -16,9 +16,10 @@ if ! boot_watch > artifacts/watch/boot-before.log 2>&1; then
   echo 'Installed runtime metadata is unusable; download and import an Apple runtime.'
   runtime_dir="$RUNNER_TEMP/trainlog-watch-runtime"
   mkdir -p "$runtime_dir"
-  xcodebuild -downloadPlatform watchOS -buildVersion 27.0 -exportPath "$runtime_dir" 2>&1 | tee artifacts/watch/runtime-download.log
-  runtime_image=$(find "$runtime_dir" -type f -name '*.dmg' -print -quit)
-  [[ -n "$runtime_image" ]] || { echo 'No exported runtime disk image.' >&2; exit 1; }
+  xcodebuild -downloadPlatform watchOS -buildVersion 27.0 -exportPath "$runtime_dir" 2>&1 | tee artifacts/watch/runtime-download.log || download_status=$?
+  echo "Apple download exit status: ${download_status:-0}"
+  runtime_image=$(find "$runtime_dir" \( -name '*.dmg' -o -name '*.exportedBundle' \) -print -quit)
+  [[ -n "$runtime_image" ]] || { echo 'No exported Apple runtime.' >&2; exit 1; }
   xcodebuild -importPlatform "$runtime_image" 2>&1 | tee artifacts/watch/runtime-import.log
   watch_id=$(select_watch after)
   boot_watch > artifacts/watch/boot-after.log 2>&1 || { cat artifacts/watch/boot-after.log; exit 1; }
