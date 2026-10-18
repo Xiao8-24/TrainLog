@@ -1,99 +1,38 @@
-name: TrainLog build and release
+name: TrainLog Watch layout verification
 on:
   push:
-  pull_request:
+    branches: [codex/watch-qa-v061]
   workflow_dispatch:
-    inputs:
-      publish:
-        description: Publish a prerelease after all tests and builds pass
-        type: boolean
-        default: false
-      version:
-        description: New release tag (vMAJOR.MINOR.PATCH)
-        type: string
-        default: v0.6.1
-
 permissions:
   contents: read
-
 jobs:
-  native-tests:
+  watch-layout:
     runs-on: xcode-27
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
-      TRAINLOG_MINIMUM_IOS: '27'
     steps:
       - uses: actions/checkout@v4
-      - name: Validate release version
-        if: inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release v'))
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        with:
+          fetch-depth: 2
+      - name: Record environment and unchanged release sources
         run: |
-          if [[ -z "$RELEASE_VERSION" ]]; then
-            title="${RELEASE_COMMIT_MESSAGE%%$'\n'*}"
-            [[ "$title" =~ ^Release\ (v[0-9]+\.[0-9]+\.[0-9]+)(\ |$) ]] || exit 1
-            RELEASE_VERSION="${BASH_REMATCH[1]}"
-          fi
-          [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-      - name: Record build environment
+          mkdir -p artifacts/watch
+          { git rev-parse HEAD; xcodebuild -version; xcrun simctl list runtimes; } > artifacts/watch/environment.txt
+          git diff --exit-code f3955ee905a15c43c3269029408b7e48407f6434 -- TrainLogWatch Shared Packages/TrainLogCore TrainLog.xcodeproj
+      - name: Build native Watch simulator app
         run: |
-          mkdir -p artifacts
-          { git rev-parse HEAD; xcodebuild -version; swift --version; xcrun simctl list runtimes; } | tee artifacts/environment.txt
-          sdk_version=$(xcrun --sdk iphoneos --show-sdk-version)
-          [[ "${sdk_version%%.*}" -ge 27 ]] || { echo 'iOS 27 SDK is required for this delivery'; exit 1; }
-      - name: Check project and resources
-        run: python3 Tools/check_source.py
-      - name: Run core, persistence and UI tests
-        run: bash Tools/test-ios.sh
-      - name: Capture native Watch simulator appearance
-        continue-on-error: true
-        run: bash Tools/capture-watch.sh
-      - name: Build unsigned iPhone archive and package delivery
-        run: bash Tools/package-ios.sh
-      - name: Preserve test results and logs
+          set -o pipefail
+          xcodebuild -project TrainLog.xcodeproj -scheme TrainLogWatch -configuration Debug \
+            -destination 'generic/platform=watchOS Simulator' -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build 2>&1 | tee artifacts/watch/build.log
+      - name: Check runtime and capture actual native screens
+        run: bash Tools/capture-watch-qa.sh
+      - name: Preserve native Watch screenshots and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: TrainLog-diagnostics-${{ github.run_number }}
-          path: artifacts/
-          if-no-files-found: warn
-          retention-days: 14
-      - name: Upload verified build packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: TrainLog-delivery-${{ github.sha }}
-          path: Delivery/
+          name: TrainLog-Watch-layout-v061
+          path: artifacts/watch/
           if-no-files-found: error
           retention-days: 14
-
-  publish:
-    if: (github.event_name == 'workflow_dispatch' && inputs.publish) || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release v'))
-    needs: [native-tests]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: TrainLog-delivery-${{ github.sha }}
-          path: Delivery
-      - name: Publish tested commit as a prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          if [[ -z "$RELEASE_VERSION" ]]; then
-            title="${RELEASE_COMMIT_MESSAGE%%$'\n'*}"
-            [[ "$title" =~ ^Release\ (v[0-9]+\.[0-9]+\.[0-9]+)(\ |$) ]] || exit 1
-            RELEASE_VERSION="${BASH_REMATCH[1]}"
-          fi
-          [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          gh release create "$RELEASE_VERSION" Delivery/* \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "TrainLog $RELEASE_VERSION Preview" --prerelease \
-            --notes-file Documentation/RELEASE_NOTES.md
-
