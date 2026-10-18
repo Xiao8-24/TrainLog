@@ -1,5 +1,33 @@
 # 验证记录
 
+## 0.6.1 手表原生选择与最终交付
+
+2026-10-18 12:08（上海时间），[Actions #24](https://github.com/Xiao8-24/TrainLog/actions/runs/39094961972) 验证提交 `f3955ee905a15c43c3269029408b7e48407f6434` 并发布 [v0.6.1](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.6.1)。52 项核心、22 项数据库/服务、9 项原生手机 UI，共 **83 项通过，0 失败**。Xcode 27.0 (27A266a)、Swift 6.4 编译器 / Swift 5 语言模式、iPhone Air / iOS 27.0 (24A434)；设备归档包含 Widget 与原生 Watch App，三个产品均为 0.6.1 / build 9，最低 iOS/watchOS 27.0，分别使用 iPhoneOS/watchOS 27.0 SDK。
+
+修复 Watch 启动页的运动与泳池长度选择：改用系统导航和带当前选中状态的列表，避免滚动容器内的选择器压成细条。测试命令在当前 Xcode 支持时关闭额外诊断收集，保留显式截图与 xcresult；本轮没有此前测试通过后额外等待 600 秒的情况。
+
+已下载核对全部五个发布资产的大小、GitHub SHA256 与发布校验单，源码 ZIP 的 **112 个文件**与上述提交逐字节一致。本地 `Delivery` 的五个原生交付文件已全部更新；Windows 预览维持其 README 所述演示范围。
+
+| 发布文件 | 字节 | SHA256 |
+|---|---:|---|
+| BUILD-ENVIRONMENT.txt | 487 | `9fd015cc34c36a9d14cc3065fc482d28f00f16ab612d7ea9ffc30e34892cc735` |
+| INSTALLATION.txt | 1614 | `9330cba64ab990e8cb73ebc6371d236cf001fc53a1b4d94260949e4a5406be1e` |
+| SHA256SUMS.txt | 349 | `2edcb601a2f93bbfc7ab5f0b748cfaa3151a3d6def48c7afecc754e4c001576c` |
+| TrainLog-iOS-source.zip | 323237 | `3afe4eb558850fa6a5cd55fa625b4f167a5004abc4337aac3eaefe23838d1ddd` |
+| TrainLog-unsigned.ipa | 1695775 | `c63fd7e557ccd31f5c52bd71d4eaf8e42c8085648aab5644fe1d9b4994e95958` |
+
+IPA 内三个产品的版本、部署系统、Watch companion ID、健康用途、实时活动与后台训练声明均已检查；无设备 provisioning profile，不能直接当作已签名安装包使用。
+
+**截图验证范围：** #24 的可选 Watch 截图步骤因云端运行时路径缺失而未生成 PNG；不能根据该步骤的外层成功状态认定截图通过。隔离分支 `codex/watch-qa-v061` 对发布版 Watch、Shared、核心模块和工程执行差异检查。[专项验证 #25](https://github.com/Xiao8-24/TrainLog/actions/runs/39096310776) 的模拟器编译通过，但启动因运行时 profile 不可用失败；按 [Apple 的组件下载与导入流程](https://developer.apple.com/documentation/xcode/downloading-and-installing-additional-xcode-components)，重新导入已导出的 `.exportedBundle` 后运行时可用。
+
+[专项验证 #27](https://github.com/Xiao8-24/TrainLog/actions/runs/39097357239)、[#28](https://github.com/Xiao8-24/TrainLog/actions/runs/39132257586)、[#29](https://github.com/Xiao8-24/TrainLog/actions/runs/39132743407) 已取得未改动 App 的实际启动页截图，目视确认运动名称与绿色开始按钮完整显示，原细条裁切问题已消除。设备为 Apple Watch Ultra 4 (49mm)，watchOS 27.0 (24R362)。但自动导航到列表的 DEBUG 截图入口即使等待 25 秒，仍停在系统启动画面；进程采样显示首帧中 SwiftUI 导航/列表布局反复更新，不能将工作流成功视为导航验收，也尚未确认手动进入是否复现。
+
+原始截图与采样已下载并校验：#28 附件 SHA256 `71d9e76fce54f229385b7478220ab776cbcf509808e63d0c7dbfab4a7cbf36f7`，#29 `6f2fc356dacdfc46f756ebadbadd3ddc86fec8d769db99c452c8bce2c1e1b7c9`。自动导航截图入口仅在 DEBUG 执行，Release 不执行该入口；正常手动进入是否复现仍待确认。
+
+[专项验证 #30](https://github.com/Xiao8-24/TrainLog/actions/runs/39133334897) 使用原生隔离调试宿主复核列表：只替换 QA 构建的 WindowGroup 入口，列表实现逐字节保留，宿主差异保存在附件；main 与已发布二进制未改动。已目视确认 422×514 原生截图中运动名称、系统行容器与绿色选中勾完整可见，采样时主线程处于正常事件等待。附件 SHA256 `3d1a96deb1482ef7068fcc7022c0874a18b81b0463dc10566e481c5c448dd1f4`，已下载核对。**这证明列表视图的原生布局，不替代发布 App 中点击进入、选择、返回等交互验证；也没有模拟传感器读数。**
+
+**仍待配对真机：** 健康授权、实际心率/距离/系统能量、血氧/VO₂ max 可读性、熄屏后台、锁定/断线接收、意外退出恢复、健身摘要/圆环、帧率与电池。血氧是健康已有测量的参考值，不承诺运动中连续采集；VO₂ max 读取系统已有估算，不从单次训练推算。传感器与 WatchConnectivity 行为不能由模拟器或替代客户端测试证明。主 App、Widget、Watch 必须分别签名，主 App 与 Watch 启用 HealthKit。
+
 ## 0.6.0 有氧与 Apple Watch
 
 2026-10-18 00:21（上海时间），[Actions #23](https://github.com/Xiao8-24/TrainLog/actions/runs/39046620313) 对提交 `97b25db107305254c9e3e0f936c41cd573a39e94` 完成验证并发布 [v0.6.0](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.6.0)。52 项核心、22 项数据库/服务、9 项原生手机 UI，共 **83 项通过，0 失败**。Xcode 27.0 (27A266a)、Swift 6.4 编译器 / Swift 5 语言模式、iPhone Air / iOS 27.0 (24A434)，Watch 使用 watchOS 27.0 (24R362) 模拟器。设备归档包含 Widget 与原生 Watch App，均为 0.6.0 / build 8，最低 iOS/watchOS 27.0。
