@@ -20,6 +20,8 @@ jobs:
           mkdir -p artifacts/watch
           { git rev-parse HEAD; xcodebuild -version; xcrun simctl list runtimes; } > artifacts/watch/environment.txt
           git diff --exit-code f3955ee905a15c43c3269029408b7e48407f6434 -- TrainLogWatch Shared Packages/TrainLogCore TrainLog.xcodeproj
+      - name: Prepare isolated native selection preview host
+        run: python3 Tools/prepare-watch-preview.py
       - name: Build native Watch simulator app
         run: |
           set -o pipefail
