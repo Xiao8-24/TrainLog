@@ -19,6 +19,7 @@ struct WatchWorkoutView: View {
     @State private var manager = WatchWorkoutManager.shared
     @State private var confirmingFinish = false
     @State private var confirmingDiscardRecovery = false
+    @State private var snapshotActivityList = false
     @Environment(\.scenePhase) private var phase
     var body: some View {
         @Bindable var manager = manager
@@ -45,11 +46,22 @@ struct WatchWorkoutView: View {
                         }
                     } else {
                         Label("开始运动", systemImage: "figure.run").font(.headline)
-                        Picker("运动类型", selection: $manager.selection) { ForEach(CardioActivity.allCases) { Text($0.name).tag($0) } }
+                        NavigationLink {
+                            WatchActivitySelection(selection: $manager.selection)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("运动类型").font(.caption2).foregroundStyle(.secondary)
+                                Label(manager.selection.name, systemImage: manager.selection.symbol).font(.body).fixedSize(horizontal: false, vertical: true)
+                            }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 6)
+                        }.buttonStyle(.bordered).accessibilityIdentifier("watch.chooseActivity")
                         if manager.selection == .swimming {
-                            Picker("泳池长度（米）", selection: $manager.poolLengthMeters) { ForEach([20.0, 25.0, 50.0], id: \.self) { Text("\(Int($0)) 米").tag($0) } }
+                            NavigationLink {
+                                WatchPoolLengthSelection(length: $manager.poolLengthMeters)
+                            } label: {
+                                Text("泳池长度 · \(Int(manager.poolLengthMeters)) 米").fixedSize(horizontal: false, vertical: true)
+                            }.buttonStyle(.bordered)
                         }
-                        Button("开始训练", systemImage: "play.fill") { Task { await manager.start() } }.buttonStyle(.borderedProminent).disabled(manager.busy)
+                        Button("开始训练", systemImage: "play.fill") { Task { await manager.start() } }.buttonStyle(.borderedProminent).tint(.green).disabled(manager.busy)
                         Text("允许健康权限后采集心率、活动能量及适用距离。训练可在离线时完成。").font(.caption2).foregroundStyle(.secondary)
                     }
                     if let issue = manager.issue { Text(issue).font(.caption2).foregroundStyle(.orange) }
@@ -64,7 +76,14 @@ struct WatchWorkoutView: View {
                     Text("血氧不在运动中连续采集；可在手机中查看健康已有的血氧与有氧适能。").font(.caption2).foregroundStyle(.secondary)
                 }.padding(.horizontal, 4)
             }.navigationTitle("TrainLog")
-                .task { manager.recover() }
+                .navigationDestination(isPresented: $snapshotActivityList) { WatchActivitySelection(selection: $manager.selection) }
+                .task {
+                    manager.recover()
+                    #if DEBUG
+                    // Capture the real selection screen without requesting sensors.
+                    snapshotActivityList = ProcessInfo.processInfo.arguments.contains("--snapshot-activities")
+                    #endif
+                }
                 .confirmationDialog("结束并保存训练？", isPresented: $confirmingFinish) { Button("保存训练") { manager.finish() } }
                 .confirmationDialog("放弃未完成恢复记录？仅清除本机标记，Apple 健康原始记录保留。", isPresented: $confirmingDiscardRecovery) { Button("放弃恢复标记", role: .destructive) { manager.discardRecovery() } }
                 .onChange(of: phase) { _, value in if value == .active { manager.flush() } }
@@ -75,5 +94,42 @@ struct WatchWorkoutView: View {
             Text(title).font(.caption2).foregroundStyle(.secondary)
             Text(value.map { $0.formatted(.number.precision(.fractionLength(0...1))) + " " + unit } ?? "—").font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(color)
         }.accessibilityElement(children: .combine)
+    }
+}
+
+private struct WatchActivitySelection: View {
+    @Binding var selection: CardioActivity
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        List(CardioActivity.allCases) { activity in
+            Button {
+                selection = activity; dismiss()
+            } label: {
+                HStack {
+                    Label(activity.name, systemImage: activity.symbol).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    if selection == activity { Image(systemName: "checkmark").foregroundStyle(.green) }
+                }
+            }.accessibilityIdentifier("watch.activity.\(activity.rawValue)")
+                .accessibilityAddTraits(selection == activity ? .isSelected : [])
+        }.navigationTitle("运动类型")
+    }
+}
+
+private struct WatchPoolLengthSelection: View {
+    @Binding var length: Double
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        List([20.0, 25.0, 50.0], id: \.self) { meters in
+            Button {
+                length = meters; dismiss()
+            } label: {
+                HStack {
+                    Text("\(Int(meters)) 米")
+                    Spacer()
+                    if length == meters { Image(systemName: "checkmark").foregroundStyle(.green) }
+                }
+            }.accessibilityAddTraits(length == meters ? .isSelected : [])
+        }.navigationTitle("泳池长度")
     }
 }

@@ -1,5 +1,19 @@
 # 验证记录
 
+## 0.6.0 有氧与 Apple Watch
+
+2026-10-18 00:21（上海时间），[Actions #23](https://github.com/Xiao8-24/TrainLog/actions/runs/39046620313) 对提交 `97b25db107305254c9e3e0f936c41cd573a39e94` 完成验证并发布 [v0.6.0](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.6.0)。52 项核心、22 项数据库/服务、9 项原生手机 UI，共 **83 项通过，0 失败**。Xcode 27.0 (27A266a)、Swift 6.4 编译器 / Swift 5 语言模式、iPhone Air / iOS 27.0 (24A434)，Watch 使用 watchOS 27.0 (24R362) 模拟器。设备归档包含 Widget 与原生 Watch App，均为 0.6.0 / build 8，最低 iOS/watchOS 27.0。
+
+2026-10-18 下载并核对五个发布资产的大小、GitHub SHA256 和发布校验单；112 个源码文件与测试提交逐字节一致。源码 ZIP SHA256：`9078d2d395f2018f233aaa102f02d8d9409fd3e53ccc70915ecae98dca47b53f`，IPA：`ae8ced7e7b1ee9f348a94a190f311f4e7c7407445cbfdec0d2c86c1764cc929d`。IPA 包含 `Watch/TrainLogWatch.app` 与 Widget，健康用途、Watch companion ID、后台训练声明及版本一致，无设备 provisioning profile。
+
+已目视复核手动跑步完成页（30 分钟/5 km，配速 6 分/km，缺失心率/能量显示未记录）、日历内跑步记录及原生 Watch 启动页。**Watch 运动选择器被压缩成细条并裁切文字，已安排 0.6.1 改为原生导航列表，不将该截图视为完整的手表视觉验收通过。**
+
+升级测试确认 SwiftData V1→V2、原有收藏/归档/名称保留、运动磁盘读写、手表重复导入及删除后迟到消息防重。首轮 #21 的 51 项核心通过，但 Watch 编译因误用泳池长度属性名失败，改为 SDK 的 `lapLength` 后，#22 与 #23 完整通过。
+
+日志保留现有弃用、Predicate Sendable 和共享文件引用警告；有氧 UI 用例首次聚焦距离输入时出现一条框架尺寸警告，用例通过且完成页/日历截图未见横向裁切，输入期间的真实交互性能仍待设备确认。临时数据库测试清理时出现 SQLite 文件仍在使用的日志，测试数据与真实档案隔离。Xcode 在测试成功后额外等待 600 秒收集模拟器诊断并超时；这不是用例失败，也不能作为 App 卡顿或流畅度的结论。0.6.1 检查当前 Xcode 是否支持跳过额外诊断收集，保留 xcresult 结果与显式截图。
+
+**仍待配对真机：** 健康授权、实际心率/距离/系统能量、血氧/VO₂ max 可读性、熄屏后台、锁定/断线接收、意外退出恢复、健身摘要/圆环、帧率与电池。传感器与 WatchConnectivity 行为不能由模拟器或替代客户端测试证明。主 App、Widget、Watch 必须分别签名，主 App 与 Watch 启用 HealthKit。
+
 ## 0.5.1 Apple 健康与原生体验
 
 2026-10-17，[Actions #20](https://github.com/Xiao8-24/TrainLog/actions/runs/39036674709) 验证提交 `796235708bf205213624e1f116b1a369ca218c69`，21:44（上海时间）发布 [v0.5.1](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.5.1)。Xcode 27.0 (27A266a)、Swift 6.4 编译器 / Swift 5 语言模式、iPhone Air / iOS 27.0 (24A434) 上，42 个核心、17 个持久化/服务集成与 8 个原生 UI 测试，共 67 项全部通过。Release 设备归档包含小组件扩展，主 App 与扩展均为 0.5.1 / build 7，最低部署 iOS 27.0、iphoneos27.0 SDK。

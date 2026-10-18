@@ -4,11 +4,11 @@
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
-## 0.6.0 有氧与 Apple Watch
+## 0.6.1 有氧与 Apple Watch
 
 128 个力量/核心动作与 38 种有氧及其他运动类型，支持时长、适用距离、平均配速/速度、独立运动趋势与任意日期日历；不会混入力量组数与容量。原生 Watch App 支持主动开始、暂停和保存，采集系统可用的心率、活动能量和距离，离线保留直到手机确认接收，避免重复导入与健康重复写入。
 
-单次训练显示心率采样图与系统能量估算；可单独授权读取健康已有的血氧和 VO₂ max，注明日期与来源。血氧不连续采集，不从单次心率推算有氧适能；缺失数据不补零。详情、签名步骤、备份隐私及真机验收范围见 [有氧与 Apple Watch](Documentation/CARDIO_AND_WATCH.md)。本轮 Apple SDK 验证结果以 Actions 与 [验证记录](Documentation/VALIDATION.md) 为准，下方 0.5.1 是历史发布记录。
+单次训练显示心率采样图与系统能量估算；可单独授权读取健康已有的血氧和 VO₂ max，注明日期与来源。血氧不连续采集，不从单次心率推算有氧适能；缺失数据不补零。详情、签名步骤、备份隐私及真机验收范围见 [有氧与 Apple Watch](Documentation/CARDIO_AND_WATCH.md)。0.6.0 已通过 83 项自动测试并完成含 Watch 的归档；截图复核发现手表选择控件裁切，0.6.1 改用原生导航与列表选择。最终发布及截图复核结果见 [验证记录](Documentation/VALIDATION.md)。
 
 ## 0.5.1 Apple 健康与原生体验
 

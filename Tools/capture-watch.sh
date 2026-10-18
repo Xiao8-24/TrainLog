@@ -22,4 +22,8 @@ xcrun simctl install "$watch_id" "$app_path"
 xcrun simctl launch "$watch_id" com.trainlog.personal.TrainLogWatch
 sleep 3
 xcrun simctl io "$watch_id" screenshot artifacts/watch/TrainLog-Watch-start.png
+xcrun simctl terminate "$watch_id" com.trainlog.personal.TrainLogWatch
+xcrun simctl launch "$watch_id" com.trainlog.personal.TrainLogWatch --snapshot-activities
+sleep 3
+xcrun simctl io "$watch_id" screenshot artifacts/watch/TrainLog-Watch-activities.png
 echo 'Native watchOS start screen captured. No sensor values were simulated.'

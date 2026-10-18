@@ -26,10 +26,18 @@ xcodebuild -project TrainLog.xcodeproj -scheme TrainLog \
   -destination "platform=iOS Simulator,id=$destination" \
   -derivedDataPath DerivedData -parallel-testing-enabled NO \
   CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build-for-testing 2>&1 | tee artifacts/build-for-testing.log
+test_args=(test-without-building)
+# Xcode's optional simulator diagnostics timed out for 600 seconds after a
+# successful run. Keep xcresult outcomes and explicit screenshots; skip that
+# extra collection only when this Xcode advertises the supported option.
+xcodebuild -help > artifacts/xcodebuild-help.txt 2>&1 || true
+if grep -q -- '-collect-test-diagnostics' artifacts/xcodebuild-help.txt; then
+  test_args+=(-collect-test-diagnostics never)
+fi
 xcodebuild -project TrainLog.xcodeproj -scheme TrainLog \
   -destination "platform=iOS Simulator,id=$destination" \
   -derivedDataPath DerivedData -resultBundlePath "$result_path" \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test-without-building 2>&1 | tee artifacts/ios-tests.log
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- "${test_args[@]}" 2>&1 | tee artifacts/ios-tests.log
 
 # Keep actual simulator screenshots available for visual review on Windows.
 if ! xcrun xcresulttool export attachments --path "$result_path" --output-path artifacts/screenshots; then

@@ -1,4 +1,6 @@
-TrainLog 0.6.0 · 有氧与 Apple Watch 原生训练预览版
+TrainLog 0.6.1 · 有氧与 Apple Watch 原生训练预览版
+
+修正 Watch 启动页运动类型和泳池长度选择控件被压缩、文字裁切的问题，改用原生导航与列表选择，并标注当前选中项。开始按钮采用系统绿色。增加真实 watchOS 运动选择页截图，未模拟传感器数据。
 
 最低 iOS 27 / watchOS 27，使用 Xcode 27。
 
