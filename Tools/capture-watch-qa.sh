@@ -28,11 +28,16 @@ printf '%s\n' "$watch_id" > artifacts/watch/simulator-id.txt
 app_path='DerivedData/Build/Products/Debug-watchsimulator/TrainLogWatch.app'
 test -d "$app_path"
 xcrun simctl install "$watch_id" "$app_path"
+launch_output=$(xcrun simctl launch "$watch_id" com.trainlog.personal.TrainLogWatch --snapshot-activities)
+echo "$launch_output"
+sleep 25
+xcrun simctl io "$watch_id" screenshot artifacts/watch/TrainLog-Watch-activities.png
+app_pid="${launch_output##*: }"
+if [[ "$app_pid" =~ ^[0-9]+$ ]]; then sample "$app_pid" 2 -file artifacts/watch/selection-sample.txt || true; fi
+xcrun simctl spawn "$watch_id" log show --last 3m --style compact --predicate 'process == "TrainLogWatch"' > artifacts/watch/selection-system.log 2>&1 || true
+xcrun simctl terminate "$watch_id" com.trainlog.personal.TrainLogWatch
+sleep 3
 xcrun simctl launch "$watch_id" com.trainlog.personal.TrainLogWatch
 sleep 25
 xcrun simctl io "$watch_id" screenshot artifacts/watch/TrainLog-Watch-start.png
-xcrun simctl terminate "$watch_id" com.trainlog.personal.TrainLogWatch
-xcrun simctl launch "$watch_id" com.trainlog.personal.TrainLogWatch --snapshot-activities
-sleep 25
-xcrun simctl io "$watch_id" screenshot artifacts/watch/TrainLog-Watch-activities.png
 echo 'Captured actual watchOS screens; no sensor data simulated.'
