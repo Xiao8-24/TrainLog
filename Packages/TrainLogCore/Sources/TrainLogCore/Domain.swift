@@ -218,6 +218,8 @@ public struct Settings: Codable, Hashable, Sendable {
     public var restSeconds: Int = 90
     public var notifyRest: Bool = false
     public var representatives: [String: UUID] = [:]
+    public var targetSuggestionsEnabled: Bool?
+    public var showsTargetSuggestions: Bool { targetSuggestionsEnabled ?? true }
     public init() {}
 }
 

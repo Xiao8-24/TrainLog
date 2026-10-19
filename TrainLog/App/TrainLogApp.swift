@@ -47,11 +47,33 @@ import TrainLogCore
             let loaded = try AppStore(inMemory: inMemory)
             #if DEBUG
             if inMemory, ProcessInfo.processInfo.arguments.contains("-ui-linked-watch") { try seedLinkedWatchPreview(loaded) }
+            if inMemory, ProcessInfo.processInfo.arguments.contains("-ui-review-targets") { try seedReviewTargetsPreview(loaded) }
             #endif
             store = loaded; startupError = nil
         } catch { startupError = error.localizedDescription }
     }
     #if DEBUG
+    /// Real app screens and storage, isolated synthetic records; no sensor/health requests.
+    private func seedReviewTargetsPreview(_ store: AppStore) throws {
+        let exercise = ExerciseCatalog.exercises[0]
+        for days in [2, 1] {
+            let start = Date().addingTimeInterval(-Double(days) * 86400)
+            let plan = TrainingPlan(name: "计划复盘验证", scheduledAt: start, items: [TemplateItem(exerciseID: exercise.id, setCount: 2, weightKg: 60, reps: 8)])
+            try store.savePlan(plan)
+            var session = try plan.session(catalog: store.exercises, at: start)
+            if days == 1 { session.id = UUID(uuidString: "81000000-0000-0000-0000-000000000002")! }
+            session.notes = "界面测试数据，非真实运动记录"
+            for index in session.exercises[0].sets.indices { session.exercises[0].sets[index].rpe = 7 }
+            if days == 1 { session.exercises[0].sets[0].reps = 9 }
+            let entry = session.exercises[0].id, first = session.exercises[0].sets[0].id
+            try session.startSet(entryID: entry, setID: first, at: start.addingTimeInterval(5))
+            try session.completeSet(entryID: entry, setID: first, at: start.addingTimeInterval(25))
+            session.exercises[0].sets[1].isCompleted = true; session.finish(at: start.addingTimeInterval(120)); try store.save(session)
+        }
+        var next = TrainingPlan(name: "目标参考验证计划", scheduledAt: Date().addingTimeInterval(86400), items: [TemplateItem(exerciseID: exercise.id, setCount: 2, weightKg: 60, reps: 8)])
+        next.id = UUID(uuidString: "81000000-0000-0000-0000-000000000003")!; try store.savePlan(next)
+        var settings = store.settings; settings.trainingGoal = "提升力量"; try store.updateSettings(settings)
+    }
     /// Synthetic, isolated UI-test data; never requests sensors or HealthKit.
     private func seedLinkedWatchPreview(_ store: AppStore) throws {
         let now = Date()

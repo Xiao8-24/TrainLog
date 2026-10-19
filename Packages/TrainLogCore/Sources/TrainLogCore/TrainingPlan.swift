@@ -4,6 +4,11 @@ public struct TrainingPlanReference: Codable, Hashable, Sendable {
     public var id: UUID
     public var name: String
     public var scheduledAt: Date
+    /// Immutable app-owned start snapshot. Missing in older records; never reconstructed from an edited plan.
+    public var targets: [ExerciseEntry]?
+    public init(id: UUID, name: String, scheduledAt: Date, targets: [ExerciseEntry]? = nil) {
+        self.id = id; self.name = name; self.scheduledAt = scheduledAt; self.targets = targets
+    }
 }
 public struct TrainingPlan: Codable, Hashable, Identifiable, Sendable {
     public var id: UUID = UUID()
@@ -27,6 +32,7 @@ public struct TrainingPlan: Codable, Hashable, Identifiable, Sendable {
                 set.restSeconds = item.restSeconds ?? defaultRest; return set
             })
         }
+        result.plan?.targets = result.exercises
         return result
     }
     public func copied(to date: Date) -> Self {

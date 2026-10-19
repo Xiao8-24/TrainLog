@@ -101,7 +101,13 @@ struct TrainingPlanEditorView: View {
                 }.accessibilityIdentifier("plan.template")
                 Button("配置动作与预设组", systemImage: "slider.horizontal.3") { configuring = true }.accessibilityIdentifier("plan.configure")
                 ForEach(plan.items) { item in
-                    if let exercise = store.exercises.first(where: { $0.id == item.exerciseID }) { LabeledContent(exercise.name, value: "\(item.setCount) 组") }
+                    if let exercise = store.exercises.first(where: { $0.id == item.exerciseID }) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(exercise.name).font(.headline)
+                            Text("\(item.setCount) 组 · " + reviewSetDescription(TrainingSet(weightKg: item.weightKg, reps: item.reps, durationSeconds: item.durationSeconds), exercise: exercise, unit: store.settings.unit))
+                                .font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("plan.itemSummary.\(item.id.uuidString)")
+                        }
+                    }
                 }
             }
             Section { Text("计划只保存安排。开练时自动创建独立训练并开始计时，重量、次数和组数仍可现场调整。").font(.caption).foregroundStyle(.secondary) }

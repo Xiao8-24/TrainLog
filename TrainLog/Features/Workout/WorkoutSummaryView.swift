@@ -20,6 +20,7 @@ struct WorkoutSummaryView: View {
                     if session.mode != .cardio { MuscleMapCard(title: "看见今天的努力", model: MuscleHeatmapViewModel(sessions: reveal ? [session] : [], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { muscle = $0 } }
                     AppCard { SessionMetrics(session: session) }
                     LiveTrainingSummaryCard(session: session)
+                        TrainingReviewCard(session: session)
                     CardioAnalysisCard(session: session)
                     LinkedWatchSummaryCard(session: session)
                     WorkoutHealthCard(session: session)

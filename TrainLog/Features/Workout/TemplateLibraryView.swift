@@ -27,6 +27,7 @@ struct TemplateEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @State var template: TrainingTemplate
     var onSave: ((TrainingTemplate) throws -> Void)? = nil
+    @State private var suggestionRequest: TargetSuggestionRequest?
     @State private var adding = false
     @State private var errorMessage: String?
     var body: some View {
@@ -42,12 +43,17 @@ struct TemplateEditorView: View {
                                 HStack { Text("默认 \(store.settings.unit.rawValue)").font(.caption); OptionalNumberField(title: "可留空", value: Binding(get: { item.weightKg.map(store.settings.unit.display) }, set: { item.weightKg = $0.map(store.settings.unit.kilograms) })) }
                             }
                             if exercise.tracking != .duration {
-                                HStack { Text("默认次数").font(.caption); OptionalNumberField(title: "可留空", value: Binding(get: { item.reps.map(Double.init) }, set: { value in item.reps = value.map { $0.isFinite && (1...1000).contains($0) && $0.rounded() == $0 ? Int($0) : -1 } }), integer: true) }
+                                HStack { Text("默认次数").font(.caption); OptionalNumberField(title: "可留空", value: Binding(get: { item.reps.map(Double.init) }, set: { value in item.reps = value.map { $0.isFinite && (1...1000).contains($0) && $0.rounded() == $0 ? Int($0) : -1 } }), integer: true).accessibilityIdentifier("target.reps.\(item.id.uuidString)") }
                             }
                             if exercise.tracking == .duration {
                                 HStack { Text("目标持续秒数").font(.caption); OptionalNumberField(title: "可留空", value: Binding(get: { item.durationSeconds.map(Double.init) }, set: { value in item.durationSeconds = value.map { $0.isFinite && (1...86400).contains($0) && $0.rounded() == $0 ? Int($0) : -1 } }), integer: true) }
                             }
                             Stepper("组间休息 \(item.restSeconds ?? store.settings.restSeconds) 秒", value: Binding(get: { item.restSeconds ?? store.settings.restSeconds }, set: { item.restSeconds = $0 }), in: 0...3600, step: 15).font(.caption)
+                            if store.settings.showsTargetSuggestions {
+                                Button("查看下次目标建议", systemImage: "sparkles") {
+                                    suggestionRequest = TargetSuggestionRequest(exercise: exercise, item: item, suggestion: TargetSuggestionService.suggest(exercise: exercise, target: item, sessions: store.completed, goal: store.settings.trainingGoal))
+                                }.accessibilityIdentifier("targetSuggestion.\(item.id.uuidString)")
+                            }
                             Button("使用上次重量和次数") {
                                 if let previous = store.completed.lazy.compactMap({ $0.exercises.first { $0.exercise.comparisonKey == exercise.comparisonKey && $0.sets.contains { $0.isCompleted && $0.kind == .working } } }).first?.sets.last(where: { $0.isCompleted && $0.kind == .working }) {
                                     item.weightKg = previous.weightKg; item.reps = previous.reps
@@ -68,6 +74,12 @@ struct TemplateEditorView: View {
                 } catch { errorMessage = error.localizedDescription } } }
             }
             .sheet(isPresented: $adding) { NavigationStack { ExerciseLibraryView { exercise in template.items.append(TemplateItem(exerciseID: exercise.id)); adding = false } } }
+            .sheet(item: $suggestionRequest) { request in NavigationStack {
+                TargetSuggestionView(request: request) { next in
+                    guard let index = template.items.firstIndex(where: { $0.id == request.item.id }), template.items[index] == request.item else { throw ValidationError("当前预设已更改，请重新查看建议。") }
+                    template.items[index] = next
+                }
+            } }
             .errorAlert($errorMessage)
     }
 }

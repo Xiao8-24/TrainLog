@@ -38,6 +38,7 @@ struct HistoryView: View {
             Section("\(results.count) 次训练") {
                 ForEach(results) { session in
                     NavigationLink { SessionDetailView(sessionID: session.id) } label: { SessionRow(session: session) }
+                        .accessibilityIdentifier("history.session.\(session.id.uuidString)")
                         .swipeActions(allowsFullSwipe: false) { Button("删除", role: .destructive) { deleting = session } }
                 }
                 if results.isEmpty { EmptyStateView(title: "暂无对应训练", message: "调整筛选条件，或记录一次新的训练。", symbol: "calendar") }
@@ -83,6 +84,7 @@ struct SessionDetailView: View {
                         }
                         if session.mode != .cardio { MuscleMapCard(title: "本次训练覆盖", model: MuscleHeatmapViewModel(sessions: [session], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { selectedMuscle = $0 } }
                         LiveTrainingSummaryCard(session: session)
+                        TrainingReviewCard(session: session)
                         CardioAnalysisCard(session: session)
                         LinkedWatchSummaryCard(session: session)
                         if session.status == .completed { WorkoutHealthCard(session: session) }

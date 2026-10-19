@@ -4,9 +4,13 @@
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
+## 0.9.0 计划复盘与下次目标参考（验证中）
+
+实现用户新批准的E、G：开练时保留计划目标快照，完成后对照实际记录，可预览并复制实际配置为新计划；模板/计划配置中逐项查看有依据、可编辑确认的下次目标参考，支持关闭。资料不足不生成增加目标，不自动改训练。完整JSON升级版本5并读取旧版，数据库保持V4。详见[使用方法与规则](Documentation/REVIEW_AND_TARGETS.md)，最终原生验证与发布结果见[验证记录](Documentation/VALIDATION.md)。F器械替换仍待批准。
+
 ## 0.8.1 原生动效（验证中）
 
-优化逐组完成、暂停/继续、选项展开和底部训练/休息玻璃浮层，缩小动画作用范围，数字输入与计时独立刷新。系统导航和按钮反馈保持原生，支持减少动态效果。详见[动效说明](Documentation/NATIVE_MOTION.md)；新创新点仅列入[待审批方案](Documentation/PROPOSED_FEATURES.md)，未随本轮开发。最终测试结果见[验证记录](Documentation/VALIDATION.md)。
+优化逐组完成、暂停/继续、选项展开和底部训练/休息玻璃浮层，缩小动画作用范围，数字输入与计时独立刷新。系统导航和按钮反馈保持原生，支持减少动态效果。详见[动效说明](Documentation/NATIVE_MOTION.md)；E、G后来获批准并在0.9.0单独实现，F仍保留为[待审批方案](Documentation/PROPOSED_FEATURES.md)。最终测试结果见[验证记录](Documentation/VALIDATION.md)。
 
 ## 0.8.0 实时逐组训练与计划
 

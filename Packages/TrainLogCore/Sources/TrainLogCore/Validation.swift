@@ -51,6 +51,7 @@ public enum RecordValidator {
         if let plan = session.plan {
             guard session.mode == .detailed, plan.id != session.id, !plan.name.isEmpty, plan.name.count <= 100,
                   plan.scheduledAt.timeIntervalSince1970.isFinite else { throw ValidationError("训练计划来源无效。") }
+            try PlanReviewService.validateTargets(plan.targets)
         }
         let timed = session.exercises.flatMap(\.sets).compactMap(\.timing)
         guard timed.filter({ $0.endedAt == nil }).count <= 1 else { throw ValidationError("同一时间只能计时一组。") }

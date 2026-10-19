@@ -28,12 +28,14 @@ import TrainLogCore
             let store = try AppStore(storeURL: url); try store.savePlan(plan)
             var value = try store.startPlan(plan.id, at: base); sessionID = value.id
             try value.startSet(entryID: value.exercises[0].id, setID: value.exercises[0].sets[0].id, at: base.addingTimeInterval(1))
-            value.pause(at: base.addingTimeInterval(11)); try store.save(value)
+            value.pause(at: base.addingTimeInterval(11)); value.exercises[0].sets[0].weightKg = 65; try store.save(value)
         }
         do {
             let store = try AppStore(storeURL: url), value = try XCTUnwrap(store.draft)
             XCTAssertEqual(store.plans.first?.id, plan.id); XCTAssertEqual(value.id, sessionID)
             XCTAssertEqual(value.plan?.name, plan.name)
+            XCTAssertEqual(value.plan?.targets?[0].sets[0].weightKg, 60)
+            XCTAssertEqual(value.exercises[0].sets[0].weightKg, 65)
             XCTAssertEqual(value.exercises[0].sets[0].timing?.elapsed(), 10)
             XCTAssertNil(value.exercises[0].sets[0].timing?.timerStartedAt)
         }
@@ -65,12 +67,17 @@ import TrainLogCore
         var value = try source.startPlan(plan.id, at: base)
         let entry = value.exercises[0].id, set = value.exercises[0].sets[0].id
         try value.startSet(entryID: entry, setID: set, at: base)
+        value.exercises[0].sets[0].weightKg = 65
+        var preferences = source.settings; preferences.targetSuggestionsEnabled = false; try source.updateSettings(preferences)
         try value.completeSet(entryID: entry, setID: set, at: base.addingTimeInterval(20))
         value.finish(at: base.addingTimeInterval(50)); try source.save(value)
         let target = try AppStore(inMemory: true)
         _ = try target.importBackup(BackupService.decode(BackupService.encode(source.backup)), mode: .replace)
         XCTAssertEqual(target.plans.first?.id, plan.id)
         XCTAssertEqual(target.completed.first?.plan?.id, plan.id)
+        XCTAssertEqual(target.completed.first?.plan?.targets?[0].sets[0].weightKg, 60)
+        XCTAssertEqual(target.completed.first?.exercises[0].sets[0].weightKg, 65)
+        XCTAssertFalse(target.settings.showsTargetSuggestions)
         XCTAssertEqual(target.completed.first?.exercises[0].sets[0].timing?.elapsed(), 20)
     }
     func testDeletingWorkoutRemovesTimingButKeepsPlan() throws {

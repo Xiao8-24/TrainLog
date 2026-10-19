@@ -40,6 +40,11 @@ struct SettingsView: View {
                 Stepper("每周目标 \(store.settings.weeklyGoal) 次", value: binding(\.weeklyGoal), in: 1...14)
                 Picker("训练目标", selection: binding(\.trainingGoal)) { ForEach(["保持规律", "提升力量", "增加肌肉", "记录与观察"], id: \.self) { Text($0).tag($0) } }
                 Picker("外观", selection: binding(\.theme)) { ForEach(ThemePreference.allCases) { Text($0.name).tag($0) } }.accessibilityIdentifier("settings.appearance")
+                Toggle("显示下次目标建议", isOn: Binding(get: { store.settings.showsTargetSuggestions }, set: { enabled in
+                    var next = store.settings; next.targetSuggestionsEnabled = enabled
+                    do { try store.updateSettings(next) } catch { errorMessage = error.localizedDescription }
+                })).accessibilityIdentifier("settings.targetSuggestions")
+                Text("建议在模板或计划的动作配置中逐项查看，只在本机计算，采用前可编辑。").font(.caption).foregroundStyle(.secondary)
                 NavigationLink("体重与历史") { BodyWeightHistoryView() }
             }
             Section("组间休息") {

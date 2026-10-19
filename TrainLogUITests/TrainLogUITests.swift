@@ -1,6 +1,61 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
+    @MainActor func testPlanReviewAndEditableActualCopy() {
+        let app = launch(extraArguments: ["-ui-review-targets"])
+        app.tabBars.buttons["训练"].tap()
+        let history = app.buttons["训练历史"]
+        for _ in 0..<8 where !history.isHittable { app.swipeUp(velocity: .slow) }
+        history.tap()
+        let record = app.descendants(matching: .any)["history.session.81000000-0000-0000-0000-000000000002"].firstMatch
+        for _ in 0..<8 where !record.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(record.exists); record.tap()
+        let details = app.buttons["review.details"]
+        for _ in 0..<10 where !details.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(details.exists); details.tap()
+        XCTAssertTrue(app.navigationBars["计划与实际"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["未计时完成组"].exists)
+        capture(app, name: "Plan versus actual comparison - isolated UI test data")
+        app.navigationBars.buttons.firstMatch.tap()
+        let copy = app.buttons["review.copyActual"]
+        for _ in 0..<6 where !copy.isHittable { app.swipeUp(velocity: .slow) }
+        copy.tap(); XCTAssertTrue(app.navigationBars["编辑计划"].waitForExistence(timeout: 5))
+        let changed = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "plan.itemSummary.", "60 kg × 9 次")).firstMatch
+        let unchanged = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "plan.itemSummary.", "60 kg × 8 次")).firstMatch
+        XCTAssertTrue(changed.exists); XCTAssertTrue(unchanged.exists)
+        capture(app, name: "Actual copy preserves varied targets before saving - UI test data")
+        app.buttons["plan.save"].tap()
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+    }
+    @MainActor func testTargetSuggestionCancelAcceptAndDisable() {
+        let app = launch(extraArguments: ["-ui-review-targets"])
+        app.tabBars.buttons["训练"].tap()
+        let plans = app.buttons["trainingPlans"]
+        for _ in 0..<8 where !plans.isHittable { app.swipeUp(velocity: .slow) }
+        plans.tap()
+        let next = app.descendants(matching: .any)["plan.row.81000000-0000-0000-0000-000000000003"].firstMatch
+        for _ in 0..<8 where !next.isHittable { app.swipeUp(velocity: .slow) }
+        next.tap(); app.buttons["plan.edit"].tap(); app.buttons["plan.configure"].tap()
+        let suggestion = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "targetSuggestion.")).firstMatch
+        for _ in 0..<6 where !suggestion.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(suggestion.exists); suggestion.tap()
+        XCTAssertEqual(app.staticTexts["suggestion.title"].label, "可尝试多一次")
+        XCTAssertEqual(app.textFields["suggestion.reps"].value as? String, "9")
+        capture(app, name: "Explainable target suggestion with source records - UI test data")
+        app.navigationBars.buttons["取消"].tap()
+        let reps = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "target.reps.")).firstMatch
+        XCTAssertEqual(reps.value as? String, "8", "Cancel must not adopt a suggestion")
+        suggestion.tap(); app.buttons["suggestion.apply"].tap()
+        XCTAssertEqual(reps.value as? String, "9")
+        app.navigationBars.buttons["保存"].tap(); app.buttons["plan.save"].tap()
+        app.tabBars.buttons["概览"].tap(); app.buttons["设置"].tap()
+        let toggle = app.switches["settings.targetSuggestions"]
+        XCTAssertTrue(toggle.exists); toggle.tap(); app.navigationBars.buttons["完成"].tap()
+        app.tabBars.buttons["训练"].tap(); app.buttons["plan.edit"].tap(); app.buttons["plan.configure"].tap()
+        XCTAssertEqual(reps.value as? String, "9")
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "targetSuggestion.")).count, 0)
+        capture(app, name: "Accepted item retained while suggestions disabled - UI test data")
+    }
     @MainActor func testSetDetailsAndFloatingControlsPreserveInput() {
         checkSetControls(extraArguments: [], screenshotSuffix: "standard motion")
     }
