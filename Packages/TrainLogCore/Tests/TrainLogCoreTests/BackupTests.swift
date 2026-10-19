@@ -30,14 +30,14 @@ final class BackupTests: XCTestCase {
         let csv = BackupService.csv(data.sessions)
         XCTAssertTrue(csv.contains("\"'=SUM(1,2)\n\"\"胸部\"\"\""))
         XCTAssertTrue(csv.hasPrefix("\u{FEFF}"))
-        XCTAssertEqual(csv.components(separatedBy: "\r\n")[0].components(separatedBy: ",").count, 32)
+        XCTAssertEqual(csv.components(separatedBy: "\r\n")[0].components(separatedBy: ",").count, 40)
         var detailed = Session(mode: .detailed)
         var entry = ExerciseEntry(exercise: ExerciseCatalog.exercises[0], sets: [TrainingSet(weightKg: 60, reps: 8, isCompleted: true)])
         entry.notes = "动作备注"; entry.sets[0].notes = "训练组备注"
         detailed.exercises = [entry]; detailed.finish()
         let details = BackupService.csv([detailed])
         XCTAssertTrue(details.contains("\"动作备注\",\"训练组备注\",\"90\""))
-        XCTAssertEqual(details.components(separatedBy: "\r\n")[1].components(separatedBy: ",").count, 32)
+        XCTAssertEqual(details.components(separatedBy: "\r\n")[1].components(separatedBy: ",").count, 40)
     }
     func testBadWeightAndConflictingDraftsRejectedBeforeImport() {
         var a = backup(); a.bodyWeights = [BodyWeight(weightKg: -1)]

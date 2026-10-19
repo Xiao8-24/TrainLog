@@ -101,8 +101,8 @@ final class CardioTests: XCTestCase {
         let csv = BackupService.csv([workout()])
         let rows = csv.components(separatedBy: "\r\n").filter { !$0.isEmpty }
         XCTAssertEqual(rows.count, 2)
-        XCTAssertEqual(rows[0].components(separatedBy: ",").count, 32)
-        XCTAssertEqual(rows[1].components(separatedBy: ",").count, 32)
+        XCTAssertEqual(rows[0].components(separatedBy: ",").count, 40)
+        XCTAssertEqual(rows[1].components(separatedBy: ",").count, 40)
         XCTAssertTrue(csv.contains("\"outdoorRun\",\"5000.0\""))
         XCTAssertTrue(csv.contains("\"1800\""))
     }

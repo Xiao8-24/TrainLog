@@ -32,17 +32,19 @@ enum ModelCodec {
         timerStartedAt = value.timerStartedAt; manualDurationSeconds = value.manualDurationSeconds
         createdAt = value.createdAt; updatedAt = value.updatedAt
     }
-    func apply(_ value: Session, context: ModelContext) throws {
+    func apply(_ value: Session, context: ModelContext, previous: Session? = nil) throws {
         date = value.date; startTime = value.startTime; endTime = value.endTime
         statusRaw = value.status.rawValue; modeRaw = value.mode.rawValue; intensityRaw = value.intensity?.rawValue
         sessionRPE = value.sessionRPE; notes = value.notes; accumulatedSeconds = value.accumulatedSeconds
         timerStartedAt = value.timerStartedAt; manualDurationSeconds = value.manualDurationSeconds; createdAt = value.createdAt; updatedAt = value.updatedAt
         let oldEntries = Dictionary(uniqueKeysWithValues: exercises.map { ($0.id, $0) })
+        let previousEntries = Dictionary(uniqueKeysWithValues: (previous?.exercises ?? []).map { ($0.id, $0) })
         let keep = Set(value.exercises.map(\.id))
         for old in exercises where !keep.contains(old.id) { context.delete(old) }
         exercises = try value.exercises.enumerated().map { order, entry in
             let model = try oldEntries[entry.id] ?? SessionExercise(entry, order: order)
-            try model.apply(entry, order: order, context: context); model.workoutSession = self
+            if previousEntries[entry.id] != entry || model.order != order { try model.apply(entry, order: order, context: context) }
+            model.workoutSession = self
             return model
         }
         let oldQuick = Dictionary(uniqueKeysWithValues: quickEntries.map { ($0.id, $0) })

@@ -121,7 +121,7 @@ import TrainLogCore
         let model: WorkoutSession
         if let existing = models.first(where: { $0.id == session.id }) { model = existing }
         else { model = WorkoutSession(session); context.insert(model) }
-        try model.apply(session, context: context)
+        try model.apply(session, context: context, previous: sessions.first { $0.id == session.id })
         try upsertActivity(session)
         try upsertWatchMetadata(session)
     }
@@ -129,6 +129,8 @@ import TrainLogCore
         let id = session.id
         let rows = try context.fetch(FetchDescriptor<SessionWatchData>(predicate: #Predicate { $0.id == id }))
         if session.watchLink != nil || session.phoneLink != nil {
+            if let previous = sessions.first(where: { $0.id == id }), !rows.isEmpty,
+               previous.watchLink == session.watchLink, previous.phoneLink == session.phoneLink { return }
             if let old = rows.first { old.payload = try ModelCodec.encode(SessionWatchMetadata(session: session)) }
             else { context.insert(try SessionWatchData(session: session)) }
         } else { for row in rows { context.delete(row) } }
@@ -167,6 +169,7 @@ import TrainLogCore
         let id = session.id
         let rows = try context.fetch(FetchDescriptor<SessionActivityData>(predicate: #Predicate { $0.id == id }))
         if let activity = session.activity {
+            if !rows.isEmpty, sessions.first(where: { $0.id == id })?.activity == activity { return }
             if let old = rows.first { old.payload = try ModelCodec.encode(activity) }
             else { context.insert(try SessionActivityData(id: id, activity: activity)) }
         } else { for row in rows { context.delete(row) } }
@@ -219,8 +222,8 @@ import TrainLogCore
                try context.fetchCount(FetchDescriptor<WatchImportReceipt>(predicate: #Predicate { $0.id == sessionID })) == 0 { context.insert(WatchImportReceipt(id: id)) }
             let descriptor = FetchDescriptor<WorkoutSession>(predicate: #Predicate { $0.id == sessionID })
             for model in try context.fetch(descriptor) { context.delete(model) }
-            for row in try context.fetch(FetchDescriptor<SessionActivityData>()) where row.id == id { context.delete(row) }
-            for row in try context.fetch(FetchDescriptor<SessionWatchData>()) where row.id == id { context.delete(row) }
+            for row in try context.fetch(FetchDescriptor<SessionActivityData>(predicate: #Predicate { $0.id == sessionID })) { context.delete(row) }
+            for row in try context.fetch(FetchDescriptor<SessionWatchData>(predicate: #Predicate { $0.id == sessionID })) { context.delete(row) }
         }
         sessions.removeAll { $0.id == id }
         if completed.contains(where: { $0.id == id }) { completed.removeAll { $0.id == id } }

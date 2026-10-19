@@ -313,7 +313,18 @@ import TrainLogCore
     }
     func discardRecovery() {
         guard session == nil, !running, !recovering else { return }
-        do { try FileManager.default.removeItem(at: activeURL); hasRecovery = false; issue = nil }
+        do {
+            // Abandoning recovery cannot prove that HealthKit has no saved workout.
+            // Retain ownership and reject replay of this request, but allow a new independent workout.
+            if let bytes = try? Data(contentsOf: activeURL), let active = try? JSONDecoder().decode(Session.self, from: bytes),
+               let reference = active.phoneLink {
+                let update = lastLinkUpdate?.reference == reference ? lastLinkUpdate! : WatchLinkUpdate(reference: reference, state: .recording)
+                try persistLink(request: nil, update: update)
+            } else if let request = linkedRequest {
+                try persistLink(request: nil, update: WatchLinkUpdate(reference: request.reference, state: .recording))
+            }
+            try FileManager.default.removeItem(at: activeURL); hasRecovery = false; issue = nil
+        }
         catch { issue = "恢复标记尚未移除：\(error.localizedDescription)" }
     }
     private func publish(force: Bool) {

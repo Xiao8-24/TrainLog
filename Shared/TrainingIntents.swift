@@ -6,15 +6,21 @@ struct TrainingDraftEntity: AppEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "进行中的训练"
     static var defaultQuery = TrainingDraftQuery()
     var id: String
-    var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "正在训练") }
+    var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "所选训练") }
 }
 struct TrainingDraftQuery: EntityQuery {
     func suggestedEntities() async throws -> [TrainingDraftEntity] {
         WidgetSnapshotStorage.read()?.draftID.map { [TrainingDraftEntity(id: $0.uuidString)] } ?? []
     }
     func entities(for identifiers: [String]) async throws -> [TrainingDraftEntity] {
-        try await suggestedEntities().filter { identifiers.contains($0.id) }
+        // Preserve an explicit stale target: never reinterpret it as "current".
+        identifiers.compactMap { value in UUID(uuidString: value).map { TrainingDraftEntity(id: $0.uuidString) } }
     }
+}
+private func trainingReference(_ entity: TrainingDraftEntity?) throws -> UUID? {
+    guard let entity else { return WidgetSnapshotStorage.read()?.draftID }
+    guard let id = UUID(uuidString: entity.id) else { throw ValidationError("所选训练标识无效，请重新选择。") }
+    return id
 }
 struct TrainingTemplateEntity: AppEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "训练模板"
@@ -41,7 +47,7 @@ struct ContinueTrainingIntent: AppIntent {
     init() {}
     init(sessionID: UUID) { workout = TrainingDraftEntity(id: sessionID.uuidString) }
     func perform() async throws -> some IntentResult & OpensIntent {
-        let id = workout.flatMap { UUID(uuidString: $0.id) } ?? WidgetSnapshotStorage.read()?.draftID
+        let id = try trainingReference(workout)
         let route = id.map { WorkoutDeepLink.workout($0) } ?? .training
         return .result(opensIntent: OpenURLIntent(route.url))
     }
@@ -72,7 +78,7 @@ struct EndTrainingRestIntent: AppIntent {
     init() {}
     init(sessionID: UUID) { workout = TrainingDraftEntity(id: sessionID.uuidString) }
     func perform() async throws -> some IntentResult & OpensIntent {
-        let id = workout.flatMap { UUID(uuidString: $0.id) } ?? WidgetSnapshotStorage.read()?.draftID
+        let id = try trainingReference(workout)
         let route = id.map(WorkoutDeepLink.endRest) ?? .training
         return .result(opensIntent: OpenURLIntent(route.url))
     }

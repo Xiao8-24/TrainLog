@@ -43,6 +43,8 @@ struct CardioAnalysisCard: View {
                 }
                 LabeledContent("活动能量", value: activity.activeEnergyKcal.map { "\($0.formattedValue) 千卡" } ?? "未记录")
                 LabeledContent("平均心率", value: activity.averageHeartRate.map { "\($0.formattedValue) 次/分" } ?? "未记录")
+                    .accessibilityLabel("平均心率").accessibilityValue(activity.averageHeartRate.map { "\($0.formattedValue) 次/分" } ?? "未记录")
+                    .accessibilityIdentifier("cardio.averageHeartRate")
                 LabeledContent("最高心率", value: activity.maximumHeartRate.map { "\($0.formattedValue) 次/分" } ?? "未记录")
                 if !activity.heartRate.isEmpty {
                     Chart(Array(activity.heartRate.enumerated()), id: \.offset) { _, point in

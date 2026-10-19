@@ -6,6 +6,7 @@ import UIKit
 /// Notification service IPC can stall even a removal call. Keep it off the UI
 /// thread and finish each operation before applying the next start/cancel.
 final class RestNotificationScheduler: @unchecked Sendable {
+    private static let cancelAllIdentifier = "com.trainlog.cancel-all-rest"
     typealias Completion = @Sendable (String?) -> Void
     typealias Operation = @Sendable (String, Date?, @escaping Completion) -> Void
     static let shared = RestNotificationScheduler()
@@ -27,6 +28,7 @@ final class RestNotificationScheduler: @unchecked Sendable {
             self.drain()
         }
     }
+    func cancelAll() { replace(identifier: Self.cancelAllIdentifier, deadline: nil) { _ in } }
     private func drain() {
         guard !running, !pending.isEmpty else { return }
         running = true
@@ -41,6 +43,7 @@ final class RestNotificationScheduler: @unchecked Sendable {
     }
     private static func apply(identifier: String, deadline: Date?, completion: @escaping Completion) {
         let center = UNUserNotificationCenter.current()
+        if identifier == cancelAllIdentifier { center.removeAllPendingNotificationRequests(); completion(nil); return }
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
         center.removeDeliveredNotifications(withIdentifiers: [identifier])
         // Use the original deadline: delayed IPC must not extend the rest period.

@@ -1,6 +1,37 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
+    @MainActor func testLinkedPhoneWorkoutShowsOneRecordAndWatchSummary() {
+        let app = launch(extraArguments: ["-ui-linked-watch"])
+        app.tabBars.buttons["训练"].tap()
+        let history = app.buttons["训练历史"]
+        for _ in 0..<5 where !history.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(history.exists); history.tap()
+        let row = app.staticTexts["界面测试力量训练"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
+        let attached = app.staticTexts["手表结果已附加到这次训练"]
+        for _ in 0..<8 where !attached.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(attached.waitForExistence(timeout: 5))
+        capture(app, name: "Linked strength record - synthetic isolated UI test data")
+        let average = app.descendants(matching: .any)["cardio.averageHeartRate"].firstMatch
+        for _ in 0..<5 where !average.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(average.exists)
+        XCTAssertEqual(average.value as? String, "120 次/分")
+        capture(app, name: "Linked Watch heart chart - synthetic isolated UI test data")
+    }
+    @MainActor func testShortcutHomeAndStaleLinksDoNotCreateReplacementWorkouts() {
+        let app = launch()
+        openDeepLink(URL(string: "trainlog://training")!)
+        XCTAssertTrue(app.navigationBars["训练"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["cardioWorkout"].exists)
+        openDeepLink(URL(string: "trainlog://workout/\(UUID().uuidString)")!)
+        XCTAssertTrue(app.buttons["cardioWorkout"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["finishWorkout"].exists)
+        openDeepLink(URL(string: "trainlog://template/\(UUID().uuidString)")!)
+        let alert = app.alerts["未能完成操作"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5)); alert.buttons["好"].tap()
+        XCTAssertTrue(app.buttons["cardioWorkout"].exists)
+    }
     @MainActor func testDraftLastEditSurvivesBackgroundAndRelaunch() {
         let app = launch(persistent: true)
         app.tabBars.buttons["训练"].tap(); app.buttons["quickWorkout"].tap()
@@ -103,6 +134,8 @@ final class TrainLogUITests: XCTestCase {
             XCTAssertTrue(end.waitForExistence(timeout: 5))
             XCTAssertTrue(end.isHittable)
             XCTAssertTrue(app.staticTexts["restTimer.remaining"].exists)
+            openDeepLink(URL(string: "trainlog://rest/\(UUID().uuidString)/end")!)
+            XCTAssertTrue(end.waitForExistence(timeout: 5), "A stale shortcut must not end another workout's rest")
             capture(app, name: "Native floating rest controls - \(appearance)")
             end.tap()
             XCTAssertTrue(end.waitForNonExistence(timeout: 5))

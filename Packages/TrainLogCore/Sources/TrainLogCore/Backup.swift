@@ -18,7 +18,9 @@ public enum BackupService {
     public static func encode(_ backup: Backup) throws -> Data {
         try validate(backup)
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]; encoder.dateEncodingStrategy = .iso8601
-        return try encoder.encode(backup)
+        let data = try encoder.encode(backup)
+        guard data.count <= maximumBytes else { throw ValidationError("完整备份超过当前可恢复的 32 MB 限制，未生成不可恢复的备份文件。") }
+        return data
     }
     public static func decode(_ data: Data) throws -> Backup {
         guard data.count <= maximumBytes else { throw ValidationError("备份超过 32 MB，请使用较小的备份文件。") }
@@ -118,6 +120,15 @@ public enum BackupService {
             row[20] = String(Int(session.elapsed())); row[21] = session.notes
             row += [activity.kind.rawValue, number(activity.distanceMeters), number(activity.activeEnergyKcal), number(activity.averageHeartRate), number(activity.maximumHeartRate), activity.source, activity.watchWorkoutID?.uuidString ?? ""]
             rows.append(row)
+        }
+        let linkedColumns = ["linked_watch_session_id", "linked_watch_workout_id", "linked_watch_started_at", "linked_watch_ended_at", "linked_watch_duration_seconds", "linked_watch_active_energy_kcal", "linked_watch_average_heart_rate_bpm", "linked_watch_maximum_heart_rate_bpm"]
+        let linked = sessions.reduce(into: [String: WatchTrainingSummary]()) { result, session in
+            if let summary = session.watchLink?.summary { result[session.id.uuidString] = summary }
+        }
+        rows = rows.enumerated().map { index, row in
+            if index == 0 { return row + linkedColumns }
+            guard let id = row.first, let summary = linked[id] else { return row + Array(repeating: "", count: linkedColumns.count) }
+            return row + [summary.watchSessionID.uuidString, summary.activity.watchWorkoutID?.uuidString ?? "", formatter.string(from: summary.startedAt), formatter.string(from: summary.endedAt), String(summary.duration), number(summary.activity.activeEnergyKcal), number(summary.activity.averageHeartRate), number(summary.activity.maximumHeartRate)]
         }
         return "\u{FEFF}" + rows.map { $0.map(cell).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n"
     }

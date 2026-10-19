@@ -75,4 +75,15 @@ final class WatchLinkTests: XCTestCase {
         summary = try WatchTrainingSummary(workout: watch); summary.duration = 100_000
         XCTAssertThrowsError(try summary.validate())
     }
+    func testLinkedCSVKeepsStrengthColumnsAndAppendsWatchSummary() throws {
+        let (phone, watch) = pair()
+        let linked = try WatchTrainingLink.merging(watch, into: phone)
+        let rows = BackupService.csv([linked]).components(separatedBy: "\r\n").filter { !$0.isEmpty }
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertEqual(rows[0].components(separatedBy: ",").count, 40)
+        XCTAssertEqual(rows[1].components(separatedBy: ",").count, 40)
+        XCTAssertTrue(rows[1].contains("\"60.0\"")); XCTAssertTrue(rows[1].contains("\"110.0\""))
+        XCTAssertTrue(rows[1].contains(try XCTUnwrap(watch.activity?.watchWorkoutID).uuidString))
+        XCTAssertTrue(rows[0].contains("linked_watch_started_at"))
+    }
 }

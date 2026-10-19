@@ -28,6 +28,7 @@ def settings(value):
 
 package = put("core-package", "XCLocalSwiftPackageReference", "relativePath = Packages/TrainLogCore;")
 source_groups = []
+shared_children = []
 product_refs = []
 target_ids = []
 configs = []
@@ -47,7 +48,10 @@ for target, folder, product, product_type in [
     for path in sorted(paths):
         relative = path.relative_to(ROOT).as_posix()
         file_id = ref(relative, "sourcecode.swift")
-        children.append(file_id)
+        if relative.startswith("Shared/"):
+            if file_id not in shared_children: shared_children.append(file_id)
+        else:
+            children.append(file_id)
         sources.append(put("build:" + target + ":" + relative, "PBXBuildFile", f"fileRef = {file_id};"))
     if target == "TrainLog":
         for resource, kind in [("TrainLog/Resources/Assets.xcassets", "folder.assetcatalog"), ("TrainLog/Resources/PrivacyInfo.xcprivacy", "text.xml")]:
@@ -109,6 +113,7 @@ for target, folder, product, product_type in [
     config_list = put("configs:" + target, "XCConfigurationList", f"buildConfigurations = {refs(config_ids)}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;")
     target_ids.append(put("target:" + target, "PBXNativeTarget", f"buildConfigurationList = {config_list}; buildPhases = {refs(phases)}; buildRules = (); dependencies = {refs(dependencies)}; name = {target}; packageProductDependencies = {refs(packages)}; productName = {target}; productReference = {product_ref}; productType = {quote(product_type)};"))
 
+source_groups.append(put("shared-group", "PBXGroup", f"children = {refs(shared_children)}; name = Shared; sourceTree = \"<group>\";"))
 products = put("products", "PBXGroup", f"children = {refs(product_refs)}; name = Products; sourceTree = \"<group>\";")
 docs = put("docs", "PBXGroup", f"children = {refs([ref('README.md', 'net.daringfireball.markdown')])}; name = Documentation; sourceTree = \"<group>\";")
 main_group = put("main-group", "PBXGroup", f"children = {refs(source_groups + [docs, products])}; sourceTree = \"<group>\";")

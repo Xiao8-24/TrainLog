@@ -15,6 +15,8 @@ struct SettingsView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var exporting = false
+    @State private var preparingExport = false
+    @State private var exportTask: Task<Void, Never>?
     @State private var exportDocument: ExportDocument?
     @State private var exportType: UTType = .json
     @State private var exportName = "TrainLog-backup"
@@ -67,9 +69,10 @@ struct SettingsView: View {
             }
             Section("数据备份") {
                 Text("导出文件可能包含手表心率与活动能量，请妥善保管。血氧和有氧适能参考不会导出。").font(.footnote).foregroundStyle(.secondary)
-                Button("导出完整 JSON 备份", systemImage: "square.and.arrow.up") { prepareExport(csv: false) }
-                Button("导出 CSV 训练明细", systemImage: "tablecells") { prepareExport(csv: true) }
-                Button("导入 JSON 备份", systemImage: "square.and.arrow.down") { importing = true }.disabled(reading)
+                Button("导出完整 JSON 备份", systemImage: "square.and.arrow.up") { prepareExport(csv: false) }.disabled(preparingExport || reading)
+                Button("导出 CSV 训练明细", systemImage: "tablecells") { prepareExport(csv: true) }.disabled(preparingExport || reading)
+                Button("导入 JSON 备份", systemImage: "square.and.arrow.down") { importing = true }.disabled(reading || preparingExport)
+                if preparingExport { ProgressView("正在准备导出…") }
                 if reading { ProgressView("正在校验备份…") }
                 if let sharingURL { ShareLink(item: sharingURL) { Label("使用系统分享面板分享最近导出", systemImage: "square.and.arrow.up.on.square") } }
                 if let notice { Text(notice).font(.caption).foregroundStyle(.secondary) }
@@ -94,19 +97,30 @@ struct SettingsView: View {
             }
             .sheet(item: $candidate) { item in NavigationStack { ImportReviewView(incoming: item.backup) } }
             .errorAlert($errorMessage)
+            .onDisappear { exportTask?.cancel() }
     }
     private func prepareExport(csv: Bool) {
-        do {
-            let data = try csv ? Data(BackupService.csv(store.sessions).utf8) : BackupService.encode(store.backup)
-            exportType = csv ? .commaSeparatedText : .json
-            exportName = "TrainLog-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash)))-\(csv ? "details" : "backup")"
-            exportDocument = ExportDocument(data: data)
-            let directory = URL.cachesDirectory.appending(path: "Exports", directoryHint: .isDirectory)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let url = directory.appending(path: exportName + (csv ? ".csv" : ".json"))
-            try data.write(to: url, options: [.atomic, .completeFileProtection]); sharingURL = url
-            exporting = true
-        } catch { errorMessage = error.localizedDescription }
+        guard !preparingExport else { return }
+        let snapshot = store.backup
+        let name = "TrainLog-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash)))-\(csv ? "details" : "backup")"
+        preparingExport = true
+        exportTask = Task { @MainActor in
+            defer { preparingExport = false; exportTask = nil }
+            do {
+                let (data, url) = try await Task.detached(priority: .userInitiated) {
+                    let data = try csv ? Data(BackupService.csv(snapshot.sessions).utf8) : BackupService.encode(snapshot)
+                    let directory = URL.cachesDirectory.appending(path: "Exports", directoryHint: .isDirectory)
+                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                    let url = directory.appending(path: name + (csv ? ".csv" : ".json"))
+                    try data.write(to: url, options: [.atomic, .completeFileProtection])
+                    return (data, url)
+                }.value
+                try Task.checkCancellation()
+                exportType = csv ? .commaSeparatedText : .json; exportName = name
+                exportDocument = ExportDocument(data: data); sharingURL = url; exporting = true
+            } catch is CancellationError { }
+            catch { errorMessage = error.localizedDescription }
+        }
     }
     private func readImport(_ url: URL) {
         reading = true
@@ -126,8 +140,11 @@ struct SettingsView: View {
     }
     private func setNotification(_ enabled: Bool) {
         if !enabled {
-            binding(\.notifyRest).wrappedValue = false
-            UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+            do {
+                var settings = store.settings; settings.notifyRest = false
+                try store.updateSettings(settings)
+                RestNotificationScheduler.shared.cancelAll()
+            } catch { errorMessage = error.localizedDescription }
             return
         }
         Task { @MainActor in
