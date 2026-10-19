@@ -35,6 +35,7 @@ struct WorkoutEditorView: View {
         ScrollView {
             LazyVStack(spacing: 18) {
                 if !editingHistory && session.mode != .quick { sessionTimer }
+                if session.mode == .detailed { detailedExercises }
                 if !editingHistory && session.mode == .detailed {
                     LinkedWatchDraftCard(session: $session) { try draftSave.flush(session, save: store.save) }
                 }
@@ -56,7 +57,7 @@ struct WorkoutEditorView: View {
                 if session.mode == .quick { quickSelection }
                 else if session.mode == .cardio {
                     CardioEditorCard(activity: Binding(get: { session.activity ?? ActivityRecord() }, set: { session.activity = $0 }))
-                } else { detailedExercises }
+                }
                 AppCard {
                     SectionHeader(title: "训练感受", subtitle: "可选 · 缺失信息不会被推算")
                     Picker("主观强度", selection: $session.intensity) {
@@ -64,7 +65,9 @@ struct WorkoutEditorView: View {
                         ForEach(Intensity.allCases) { Text($0.name).tag(Optional($0)) }
                     }
                     HStack { Text("整次训练 RPE"); Spacer(); OptionalNumberField(title: "1–10，可留空", value: $session.sessionRPE).frame(maxWidth: 150) }
-                    HStack { Text("手动时长（分钟）"); Spacer(); OptionalNumberField(title: "使用计时", value: durationMinutes).frame(maxWidth: 140).accessibilityIdentifier("workout.manualMinutes") }
+                    if editingHistory || session.mode != .detailed {
+                        HStack { Text("手动时长（分钟）"); Spacer(); OptionalNumberField(title: "使用计时", value: durationMinutes).frame(maxWidth: 140).accessibilityIdentifier("workout.manualMinutes") }
+                    }
                     TextField("训练备注", text: $session.notes, axis: .vertical).lineLimit(2...5).accessibilityIdentifier("workout.notes")
                 }
                 if !editingHistory {
@@ -82,11 +85,17 @@ struct WorkoutEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { Button(editingHistory ? "取消" : "稍后继续") { close() }.disabled(saving) }
-            ToolbarItem(placement: .confirmationAction) { Button(editingHistory ? "保存" : "完成") { finish() }.disabled(saving).accessibilityIdentifier("finishWorkout") }
+            ToolbarItem(placement: .confirmationAction) { Button(editingHistory ? "保存" : "结束训练") { finish() }.disabled(saving).accessibilityIdentifier("finishWorkout") }
             ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("收起键盘") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
         }
         .nativeBottomBar {
-            if restTimer.deadline != nil { RestTimerBanner(timer: restTimer).padding(.horizontal).padding(.bottom, 8) }
+            if let active = session.activeSet, let entry = session.exercises.first(where: { $0.id == active.entryID }), let set = entry.sets.first(where: { $0.id == active.setID }), let timing = set.timing {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(entry.exercise.name + " · 本组进行中").font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                    let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
+                    layout { SetElapsedLabel(timing: timing).font(.headline); if !dynamicTypeSize.isAccessibilitySize { Spacer() }; Button("结束本组") { setAction(entryID: active.entryID, setID: active.setID, action: .complete) }.accessibilityIdentifier("activeSet.finish") }
+                }.padding().modifier(NativeFloatingSurface()).padding(.horizontal).padding(.bottom, 8)
+            } else if restTimer.deadline != nil { RestTimerBanner(timer: restTimer).padding(.horizontal).padding(.bottom, 8) }
         }
         .sheet(isPresented: $showingLibrary) {
             NavigationStack { ExerciseLibraryView { exercise in
@@ -113,7 +122,7 @@ struct WorkoutEditorView: View {
         .onChange(of: store.draft?.watchLink) { _, link in
             if store.draft?.id == session.id, session.watchLink != link { session.watchLink = link }
         }
-        .onDisappear { draftSave.cancelPending() }
+        .onDisappear { if !editingHistory && !saving { persistDraft(showError: false) }; draftSave.cancelPending() }
         .onChange(of: scenePhase) { _, phase in if phase != .active && !editingHistory && !saving { persistDraft(showError: false) } }
         .onChange(of: restTimer.deadline) { _, _ in
             if !editingHistory && !saving { store.refreshSurfaces() }
@@ -141,11 +150,14 @@ struct WorkoutEditorView: View {
                     }
                     if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                     Button {
-                        if session.timerStartedAt == nil { session.manualDurationSeconds = nil; session.timerStartedAt = Date() }
+                        if session.timerStartedAt == nil { session.resume() }
                         else { session.pause() }
-                    } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时")
+                        persistDraft(showError: true)
+                    } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时").accessibilityIdentifier("workout.toggleTimer")
                 }
             if session.mode == .detailed {
+            let sets = session.exercises.flatMap(\.sets)
+            LabeledContent("已记录组数", value: "\(sets.filter(\.isCompleted).count) / \(sets.count) 组").font(.subheadline).accessibilityIdentifier("workout.setProgress")
             let restLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
             restLayout {
                 Text("组间休息").font(.subheadline)
@@ -173,14 +185,36 @@ struct WorkoutEditorView: View {
     }
     private var detailedExercises: some View {
         LazyVStack(spacing: 18) {
+            if !editingHistory {
+                if let plan = session.plan { Label(plan.name, systemImage: "calendar").font(.headline).frame(maxWidth: .infinity, alignment: .leading) }
+                Text("边练边记：开始本组 → 填写重量与次数 → 结束本组。勾选完成也可直接补记，未计时不会推算用时。")
+                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+            }
             ForEach($session.exercises) { $entry in
-                ExerciseEditorCard(entry: $entry, previous: recentExercises.previous(for: entry.exercise), unit: store.settings.unit, onComplete: { seconds in
-                    if !editingHistory { restTimer.start(seconds: seconds, notify: store.settings.notifyRest) }
+                ExerciseEditorCard(entry: $entry, previous: recentExercises.previous(for: entry.exercise), unit: store.settings.unit, live: !editingHistory, activeSetID: session.activeSet?.setID, onAction: { id, action in
+                    setAction(entryID: entry.id, setID: id, action: action)
                 }, onDelete: { let id = entry.id; session.exercises.removeAll { $0.id == id } })
             }
             if session.exercises.isEmpty { AppCard { EmptyStateView(title: "选择第一个动作", message: "从动作库添加，也可以创建你的专属动作。", symbol: "dumbbell") } }
             Button { showingLibrary = true } label: { Label("添加动作", systemImage: "plus.circle.fill").font(.headline).frame(maxWidth: .infinity, minHeight: 52) }.buttonStyle(.bordered).accessibilityIdentifier("addExercise")
         }
+    }
+    private func setAction(entryID: UUID, setID: UUID, action: TrainingSetAction) {
+        do {
+            var next = session
+            switch action {
+            case .start:
+                try next.startSet(entryID: entryID, setID: setID)
+            case .complete:
+                try next.completeSet(entryID: entryID, setID: setID)
+            }
+            if !editingHistory { try draftSave.flush(next, save: store.save) }
+            session = next
+            if !editingHistory {
+                if case .start = action { restTimer.cancel() }
+                else if let set = next.exercises.first(where: { $0.id == entryID })?.sets.first(where: { $0.id == setID }) { restTimer.start(seconds: set.restSeconds, notify: store.settings.notifyRest) }
+            }
+        } catch { errorMessage = error.localizedDescription }
     }
     private func persistDraft(showError: Bool) {
         guard !editingHistory, !saving, session.status == .draft else { return }
@@ -199,6 +233,7 @@ struct WorkoutEditorView: View {
         catch { errorMessage = error.localizedDescription }
     }
     private func finish() {
+        if !editingHistory && session.activeSet != nil { errorMessage = "请先结束正在计时的本组，再结束整场训练。"; return }
         saving = true
         do {
             var value = session

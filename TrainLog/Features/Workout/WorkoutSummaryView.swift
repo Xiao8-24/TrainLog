@@ -19,6 +19,7 @@ struct WorkoutSummaryView: View {
                     }.padding(.top, 12)
                     if session.mode != .cardio { MuscleMapCard(title: "看见今天的努力", model: MuscleHeatmapViewModel(sessions: reveal ? [session] : [], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { muscle = $0 } }
                     AppCard { SessionMetrics(session: session) }
+                    LiveTrainingSummaryCard(session: session)
                     CardioAnalysisCard(session: session)
                     LinkedWatchSummaryCard(session: session)
                     WorkoutHealthCard(session: session)
@@ -39,6 +40,23 @@ struct WorkoutSummaryView: View {
                 }
                 .sheet(item: $muscle) { value in NavigationStack { MuscleDetailSheet(muscle: value, interval: TimeRange.today.interval(now: session.date), sessionScope: [sessionID]) } }
         } else { ContentUnavailableView("训练不存在", systemImage: "tray").toolbar { Button("关闭") { dismiss() } } }
+    }
+}
+struct LiveTrainingSummaryCard: View {
+    var session: Session
+    var body: some View {
+        if session.mode == .detailed && (session.plan != nil || session.exercises.flatMap(\.sets).contains(where: { $0.timing != nil })) {
+            AppCard {
+                SectionHeader(title: "逐组训练记录", subtitle: "整场用时包含组间休息，暂停时间不计入；本组用时只记录实际开启的计时。")
+                if let plan = session.plan { Label(plan.name, systemImage: "calendar"); Text("原计划：" + plan.scheduledAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary) }
+                ForEach(session.exercises) { entry in
+                    Text(entry.exercise.name).font(.headline)
+                    ForEach(Array(entry.sets.enumerated()), id: \.element.id) { index, set in
+                        LabeledContent("第 \(index + 1) 组 · \(set.isCompleted ? "已完成" : "未完成")", value: set.timing.map { Duration.seconds($0.elapsed()).formatted(.time(pattern: .hourMinuteSecond)) } ?? "未计时")
+                    }
+                }
+            }
+        }
     }
 }
 struct RecordRow: View {

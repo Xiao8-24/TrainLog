@@ -1,11 +1,15 @@
 import SwiftUI
 import TrainLogCore
 
+enum TrainingSetAction { case start, complete }
+
 struct ExerciseEditorCard: View {
     @Binding var entry: ExerciseEntry
     var previous: ExerciseEntry?
     var unit: WeightUnit
-    var onComplete: (Int) -> Void
+    var live = true
+    var activeSetID: UUID?
+    var onAction: (UUID, TrainingSetAction) -> Void
     var onDelete: () -> Void
     @State private var confirmDelete = false
     @State private var confirmReuse = false
@@ -30,7 +34,7 @@ struct ExerciseEditorCard: View {
                 }
             }
             ForEach($entry.sets) { $set in
-                WorkoutSetRow(set: $set, index: (entry.sets.firstIndex { $0.id == set.id } ?? 0) + 1, exercise: entry.exercise, unit: unit, onComplete: onComplete) { let id = set.id; entry.sets.removeAll { $0.id == id } }
+                WorkoutSetRow(set: $set, index: (entry.sets.firstIndex { $0.id == set.id } ?? 0) + 1, exercise: entry.exercise, unit: unit, live: live, otherSetActive: activeSetID != nil && activeSetID != set.id, onAction: { action in onAction(set.id, action) }) { let id = set.id; entry.sets.removeAll { $0.id == id } }
                 if set.id != entry.sets.last?.id { Divider() }
             }
             HStack {
@@ -52,7 +56,9 @@ struct WorkoutSetRow: View {
     var index: Int
     var exercise: Exercise
     var unit: WeightUnit
-    var onComplete: (Int) -> Void
+    var live: Bool
+    var otherSetActive: Bool
+    var onAction: (TrainingSetAction) -> Void
     var onDelete: () -> Void
     @State private var expanded = false
     @State private var deleteConfirmation = false
@@ -71,10 +77,7 @@ struct WorkoutSetRow: View {
                 Spacer(minLength: 0)
                 Button {
                     if set.isCompleted { set.isCompleted = false }
-                    else {
-                        do { try RecordValidator.trainingSet(set, exercise: exercise, requireComplete: true); set.isCompleted = true; onComplete(set.restSeconds) }
-                        catch { errorMessage = error.localizedDescription }
-                    }
+                    else { onAction(.complete) }
                 } label: { Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle").font(.title2).foregroundStyle(set.isCompleted ? .green : .secondary).frame(width: 44, height: 44) }
                     .accessibilityLabel("第 \(index) 组\(set.isCompleted ? "已完成，点击撤销" : "标记完成")").accessibilityIdentifier("completeSet.\(index)")
             }
@@ -84,6 +87,22 @@ struct WorkoutSetRow: View {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 12) { numericFields }
                     VStack(spacing: 12) { numericFields }
+                }
+            }
+            if let timing = set.timing {
+                HStack {
+                    Label(timing.endedAt == nil ? (timing.timerStartedAt == nil ? "本组已暂停" : "本组进行中") : "本组用时", systemImage: "stopwatch")
+                    Spacer()
+                    SetElapsedLabel(timing: timing).accessibilityIdentifier("setTimer.\(index)")
+                }.font(.subheadline).foregroundStyle(timing.endedAt == nil ? .blue : .secondary)
+            }
+            if live && !set.isCompleted {
+                if set.timing != nil && set.timing?.endedAt == nil {
+                    Button("结束本组", systemImage: "checkmark.circle.fill") { onAction(.complete) }
+                        .buttonStyle(.borderedProminent).accessibilityIdentifier("set.finish.\(index)")
+                } else {
+                    Button("开始本组", systemImage: "play.fill") { onAction(.start) }
+                        .buttonStyle(.bordered).disabled(otherSetActive).accessibilityIdentifier("set.start.\(index)")
                 }
             }
             HStack(spacing: 8) {
@@ -126,6 +145,17 @@ struct WorkoutSetRow: View {
             Text("次数").font(.caption).foregroundStyle(.secondary)
             OptionalNumberField(title: "次数", value: integer(\.reps), integer: true).accessibilityIdentifier("setReps.\(index)")
         }.padding(10).background(AppTheme.background, in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+struct SetElapsedLabel: View {
+    var timing: SetTiming
+    var body: some View {
+        Group {
+            if let running = timing.timerStartedAt {
+                let origin = running.addingTimeInterval(-timing.accumulatedSeconds)
+                Text(timerInterval: origin...max(origin, .distantFuture), countsDown: false, showsHours: true)
+            } else { Text(Duration.seconds(timing.elapsed()).formatted(.time(pattern: .hourMinuteSecond))) }
+        }.monospacedDigit()
     }
 }
 func setDescription(_ set: TrainingSet, exercise: Exercise, unit: WeightUnit) -> String {

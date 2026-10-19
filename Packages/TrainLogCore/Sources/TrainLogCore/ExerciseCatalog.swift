@@ -145,7 +145,10 @@ public enum ExerciseCatalog {
         session.exercises = try template.items.map { item in
             guard let exercise = catalog.first(where: { $0.id == item.exerciseID }) else { throw ValidationError("模板中的动作已不存在，请编辑模板。") }
             guard (1...30).contains(item.setCount) else { throw ValidationError("模板默认组数应为 1–30。") }
-            return ExerciseEntry(exercise: exercise, sets: (0..<item.setCount).map { _ in TrainingSet(weightKg: item.weightKg, reps: item.reps) })
+            return ExerciseEntry(exercise: exercise, sets: (0..<item.setCount).map { _ in
+                var set = TrainingSet(weightKg: item.weightKg, reps: item.reps, durationSeconds: item.durationSeconds)
+                set.restSeconds = item.restSeconds ?? 90; return set
+            })
         }
         return session
     }

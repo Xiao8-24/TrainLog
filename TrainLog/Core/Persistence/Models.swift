@@ -181,8 +181,8 @@ enum TrainLogSchemaV2: VersionedSchema {
     init(id: UUID) { self.id = id }
 }
 enum TrainLogMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [TrainLogSchemaV1.self, TrainLogSchemaV2.self, TrainLogSchemaV3.self] }
-    static var stages: [MigrationStage] { [.lightweight(fromVersion: TrainLogSchemaV1.self, toVersion: TrainLogSchemaV2.self), .lightweight(fromVersion: TrainLogSchemaV2.self, toVersion: TrainLogSchemaV3.self)] }
+    static var schemas: [any VersionedSchema.Type] { [TrainLogSchemaV1.self, TrainLogSchemaV2.self, TrainLogSchemaV3.self, TrainLogSchemaV4.self] }
+    static var stages: [MigrationStage] { [.lightweight(fromVersion: TrainLogSchemaV1.self, toVersion: TrainLogSchemaV2.self), .lightweight(fromVersion: TrainLogSchemaV2.self, toVersion: TrainLogSchemaV3.self), .lightweight(fromVersion: TrainLogSchemaV3.self, toVersion: TrainLogSchemaV4.self)] }
 }
 
 @Model final class SessionWatchData {
@@ -193,5 +193,21 @@ enum TrainLogMigrationPlan: SchemaMigrationPlan {
 enum TrainLogSchemaV3: VersionedSchema {
     static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
     static var models: [any PersistentModel.Type] { TrainLogSchemaV2.models + [SessionWatchData.self] }
+}
+
+@Model final class SessionTrainingData {
+    @Attribute(.unique) var id: UUID
+    var payload: Data
+    init(session: Session) throws { id = session.id; payload = try ModelCodec.encode(SessionTrainingMetadata(session: session)) }
+}
+@Model final class PlannedTraining {
+    @Attribute(.unique) var id: UUID
+    var payload: Data
+    init(_ plan: TrainingPlan) throws { id = plan.id; payload = try ModelCodec.encode(plan) }
+    func value() throws -> TrainingPlan { try ModelCodec.decode(TrainingPlan.self, payload) }
+}
+enum TrainLogSchemaV4: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(4, 0, 0) }
+    static var models: [any PersistentModel.Type] { TrainLogSchemaV3.models + [SessionTrainingData.self, PlannedTraining.self] }
 }
 

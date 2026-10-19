@@ -10,6 +10,14 @@ struct SessionRoute: Identifiable { var id: UUID }
     var calendarPresented = false
     var summary: SessionRoute?
     var pendingSummary: UUID?
+    var queuedPlanSession: Session?
+    func startPlan(_ id: UUID, store: AppStore) {
+        do {
+            let session = try store.startPlan(id); tab = .workout
+            if calendarPresented { queuedPlanSession = session; calendarPresented = false }
+            else { editing = session }
+        } catch { store.errorMessage = error.localizedDescription }
+    }
     func start(_ mode: WorkoutMode, store: AppStore, template: TrainingTemplate? = nil) {
         if let draft = store.draft { editing = draft; return }
         do {
@@ -44,7 +52,10 @@ struct RootView: View {
         }
         .environment(router)
         .sheet(isPresented: $settingsPresented, onDismiss: routePendingURL) { NavigationStack { SettingsView() } }
-        .sheet(isPresented: $router.calendarPresented, onDismiss: routePendingURL) { NavigationStack { FitnessCalendarView() } }
+        .sheet(isPresented: $router.calendarPresented, onDismiss: {
+            if let session = router.queuedPlanSession { router.queuedPlanSession = nil; router.editing = session }
+            else { routePendingURL() }
+        }) { NavigationStack { FitnessCalendarView() } }
         .sheet(item: $router.editing, onDismiss: {
             if let id = router.pendingSummary { router.pendingSummary = nil; router.summary = SessionRoute(id: id) }
         }) { session in

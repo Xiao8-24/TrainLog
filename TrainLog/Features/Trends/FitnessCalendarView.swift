@@ -8,6 +8,7 @@ struct FitnessCalendarView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var revealRequest = 0
+    @State private var creatingPlan: TrainingPlan?
     @SceneStorage("fitnessCalendar.selectedDate") private var selectedTimestamp = Date().timeIntervalSince1970
     private var selectedDate: Binding<Date> {
         Binding(get: { Date(timeIntervalSince1970: selectedTimestamp) }, set: { selectedTimestamp = $0.timeIntervalSince1970 })
@@ -17,17 +18,19 @@ struct FitnessCalendarView: View {
         let index = WorkoutCalendarIndex(sessions: store.sessions, calendar: calendar)
         let date = selectedDate.wrappedValue
         let records = index.records(on: date)
+        let plans = store.plans.filter { calendar.isDate($0.scheduledAt, inSameDayAs: date) }
+        let plannedDays = Set(store.plans.filter { plan in !plan.isSkipped && !store.sessions.contains(where: { $0.plan?.id == plan.id }) }.map { calendar.startOfDay(for: $0.scheduledAt) })
         ScrollViewReader { scroll in
         List {
             Section {
-                NativeWorkoutCalendar(selectedDate: selectedDate, index: index, revealRequest: revealRequest)
+                NativeWorkoutCalendar(selectedDate: selectedDate, index: index, plannedDays: plannedDays, revealRequest: revealRequest)
                     .id(String(describing: calendar.identifier) + calendar.timeZone.identifier)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .id("calendar.top")
                 DatePicker("跳转日期", selection: selectedDate, displayedComponents: .date)
                     .accessibilityIdentifier("calendar.datePicker")
             } footer: {
-                Text("圆点表示当天有已完成训练。可查看过去或未来的任意日期，记录按当前时区归属。")
+                Text("蓝点为已完成训练，橙点为待训练计划；同日优先显示蓝点。可查看任意日期，按当前时区归属。")
             }
             Section {
                 HStack {
@@ -52,9 +55,14 @@ struct FitnessCalendarView: View {
                     }
                 }
             } header: { Text("当天训练 · \(records.count) 次").accessibilityIdentifier("calendar.dayCount") }
+            Section("当天计划 · \(plans.count) 项") {
+                ForEach(plans) { plan in NavigationLink { TrainingPlanDetailView(planID: plan.id) } label: { TrainingPlanRow(plan: plan) } }
+                Button("安排这一天的训练", systemImage: "calendar.badge.plus") { creatingPlan = TrainingPlan(scheduledAt: date) }.accessibilityIdentifier("calendar.planDay")
+            }
         }
         .navigationTitle("健身日历")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $creatingPlan) { plan in NavigationStack { TrainingPlanEditorView(plan: plan) } }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() }.accessibilityIdentifier("calendar.close") }
             ToolbarItem(placement: .primaryAction) {
@@ -73,6 +81,7 @@ struct FitnessCalendarView: View {
 struct NativeWorkoutCalendar: UIViewRepresentable {
     @Binding var selectedDate: Date
     var index: WorkoutCalendarIndex
+    var plannedDays: Set<Date> = []
     var revealRequest = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -104,8 +113,9 @@ struct NativeWorkoutCalendar: UIViewRepresentable {
             view.setVisibleDateComponents(components, animated: animated)
         }
         let newDays = index.recordedDays
-        let changed = coordinator.decoratedDays.symmetricDifference(newDays)
+        let changed = coordinator.decoratedDays.symmetricDifference(newDays).union(coordinator.plannedDays.symmetricDifference(plannedDays))
         coordinator.decoratedDays = newDays
+        coordinator.plannedDays = plannedDays
         if !changed.isEmpty {
             view.reloadDecorations(forDateComponents: changed.map { index.calendar.dateComponents([.era, .year, .month, .day], from: $0) }, animated: !reduceMotion)
         }
@@ -119,6 +129,7 @@ struct NativeWorkoutCalendar: UIViewRepresentable {
         var selection: Date?
         var revealRequest = 0
         var decoratedDays: Set<Date> = []
+        var plannedDays: Set<Date> = []
         init(_ parent: NativeWorkoutCalendar) { self.parent = parent }
         func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
             guard let dateComponents, let date = parent.index.calendar.date(from: dateComponents) else { return }
@@ -126,8 +137,9 @@ struct NativeWorkoutCalendar: UIViewRepresentable {
             parent.selectedDate = date
         }
         func calendarView(_ calendarView: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
-            guard let date = parent.index.calendar.date(from: dateComponents), parent.index.count(on: date) > 0 else { return nil }
-            return .default(color: .systemBlue, size: .small)
+            guard let date = parent.index.calendar.date(from: dateComponents) else { return nil }
+            if parent.index.count(on: date) > 0 { return .default(color: .systemBlue, size: .small) }
+            return parent.plannedDays.contains(parent.index.calendar.startOfDay(for: date)) ? .default(color: .systemOrange, size: .small) : nil
         }
     }
 }

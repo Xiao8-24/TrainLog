@@ -9,6 +9,7 @@ import TrainLogCore
     private(set) var draft: Session?
     private(set) var exercises: [Exercise] = []
     private(set) var templates: [TrainingTemplate] = []
+    private(set) var plans: [TrainingPlan] = []
     private(set) var bodyWeights: [BodyWeight] = []
     private(set) var settings = Settings()
     var errorMessage: String?
@@ -20,12 +21,12 @@ import TrainLogCore
     var surfaceIssue: String? { surfaces.issue }
     let container: ModelContainer
     private var context: ModelContext { container.mainContext }
-    var backup: Backup { Backup(sessions: sessions, exercises: exercises, templates: templates, bodyWeights: bodyWeights, settings: settings) }
+    var backup: Backup { Backup(sessions: sessions, exercises: exercises, templates: templates, bodyWeights: bodyWeights, settings: settings, plans: plans) }
 
     init(inMemory: Bool = false, storeURL: URL? = nil) throws {
         publishesSurfaces = !inMemory && storeURL == nil
         health = !inMemory && storeURL == nil ? .production() : .isolated()
-        let schema = Schema(versionedSchema: TrainLogSchemaV3.self)
+        let schema = Schema(versionedSchema: TrainLogSchemaV4.self)
         let config = Self.configuration(schema: schema, inMemory: inMemory, storeURL: storeURL)
         container = try ModelContainer(for: schema, migrationPlan: TrainLogMigrationPlan.self, configurations: [config])
         context.autosaveEnabled = false
@@ -51,17 +52,21 @@ import TrainLogCore
         let activities = try Dictionary(uniqueKeysWithValues: activityRows.map { ($0.id, try ModelCodec.decode(ActivityRecord.self, $0.payload)) })
         let watchRows = try context.fetch(FetchDescriptor<SessionWatchData>())
         let watchMetadata = try Dictionary(uniqueKeysWithValues: watchRows.map { ($0.id, try ModelCodec.decode(SessionWatchMetadata.self, $0.payload)) })
+        let trainingRows = try context.fetch(FetchDescriptor<SessionTrainingData>())
+        let trainingMetadata = try Dictionary(uniqueKeysWithValues: trainingRows.map { ($0.id, try ModelCodec.decode(SessionTrainingMetadata.self, $0.payload)) })
         let newSessions = try context.fetch(FetchDescriptor<WorkoutSession>()).map { model in
             var value = try model.value(); value.activity = activities[value.id]
             value.watchLink = watchMetadata[value.id]?.link; value.phoneLink = watchMetadata[value.id]?.phoneLink
+            if let metadata = trainingMetadata[value.id] { value = metadata.applying(to: value) }
             if value.mode == .cardio && value.activity == nil { throw ValidationError("运动记录的扩展数据暂不可读，原始数据库已保留。") }
             return value
         }.sorted(by: Self.newestFirst)
         let newExercises = try context.fetch(FetchDescriptor<ExerciseDefinition>()).map { try $0.value() }.sorted { $0.name < $1.name }
         let newTemplates = try context.fetch(FetchDescriptor<WorkoutTemplate>()).map { try $0.value() }.sorted { $0.name < $1.name }
+        let newPlans = try context.fetch(FetchDescriptor<PlannedTraining>()).map { try $0.value() }.sorted { $0.scheduledAt < $1.scheduledAt }
         let newWeights = try context.fetch(FetchDescriptor<BodyWeightRecord>()).map { $0.value() }.sorted { $0.date > $1.date }
         let newSettings = try context.fetch(FetchDescriptor<UserSettings>()).first?.value() ?? Settings()
-        sessions = newSessions; exercises = newExercises; templates = newTemplates; bodyWeights = newWeights; settings = newSettings
+        sessions = newSessions; exercises = newExercises; templates = newTemplates; plans = newPlans; bodyWeights = newWeights; settings = newSettings
         completed = newSessions.filter { $0.status == .completed }
         draft = newSessions.first { $0.status == .draft }
         refreshSurfaces()
@@ -124,6 +129,15 @@ import TrainLogCore
         try model.apply(session, context: context, previous: sessions.first { $0.id == session.id })
         try upsertActivity(session)
         try upsertWatchMetadata(session)
+        try upsertTrainingMetadata(session)
+    }
+    private func upsertTrainingMetadata(_ session: Session) throws {
+        let id = session.id, metadata = SessionTrainingMetadata(session: session)
+        let rows = try context.fetch(FetchDescriptor<SessionTrainingData>(predicate: #Predicate { $0.id == id }))
+        if metadata.isEmpty { for row in rows { context.delete(row) }; return }
+        if let previous = sessions.first(where: { $0.id == id }), !rows.isEmpty, SessionTrainingMetadata(session: previous) == metadata { return }
+        if let row = rows.first { row.payload = try ModelCodec.encode(metadata) }
+        else { context.insert(try SessionTrainingData(session: session)) }
     }
     private func upsertWatchMetadata(_ session: Session) throws {
         let id = session.id
@@ -224,6 +238,7 @@ import TrainLogCore
             for model in try context.fetch(descriptor) { context.delete(model) }
             for row in try context.fetch(FetchDescriptor<SessionActivityData>(predicate: #Predicate { $0.id == sessionID })) { context.delete(row) }
             for row in try context.fetch(FetchDescriptor<SessionWatchData>(predicate: #Predicate { $0.id == sessionID })) { context.delete(row) }
+            for row in try context.fetch(FetchDescriptor<SessionTrainingData>(predicate: #Predicate { $0.id == sessionID })) { context.delete(row) }
         }
         sessions.removeAll { $0.id == id }
         if completed.contains(where: { $0.id == id }) { completed.removeAll { $0.id == id } }
@@ -253,6 +268,28 @@ import TrainLogCore
     }
     func deleteTemplate(_ id: UUID) throws {
         try transact { for model in try context.fetch(FetchDescriptor<WorkoutTemplate>()) where model.id == id { context.delete(model) } }
+    }
+    func savePlan(_ plan: TrainingPlan) throws {
+        var check = backup; check.plans = plans.filter { $0.id != plan.id } + [plan]
+        try BackupService.validate(check)
+        try transact {
+            let id = plan.id
+            if let row = try context.fetch(FetchDescriptor<PlannedTraining>(predicate: #Predicate { $0.id == id })).first { row.payload = try ModelCodec.encode(plan) }
+            else { context.insert(try PlannedTraining(plan)) }
+        }
+    }
+    func deletePlan(_ id: UUID) throws {
+        try transact { for row in try context.fetch(FetchDescriptor<PlannedTraining>(predicate: #Predicate { $0.id == id })) { context.delete(row) } }
+    }
+    func startPlan(_ id: UUID, at now: Date = Date()) throws -> Session {
+        guard let plan = plans.first(where: { $0.id == id }) else { throw ValidationError("这个训练计划已不存在。") }
+        if let draft {
+            guard draft.plan?.id == id else { throw ValidationError("另一次训练正在进行，请先完成或放弃，再开始计划。") }
+            return draft
+        }
+        guard !completed.contains(where: { $0.plan?.id == id }) else { throw ValidationError("这个计划已执行，请复制计划安排下一次。") }
+        let value = try plan.session(catalog: exercises, at: now, defaultRest: settings.restSeconds)
+        try save(value); return value
     }
     func updateSettings(_ value: Settings) throws {
         try RecordValidator.settings(value)
@@ -292,12 +329,14 @@ import TrainLogCore
             for model in sessionModels where !sessionIDs.contains(model.id) { context.delete(model) }
             for row in try context.fetch(FetchDescriptor<SessionActivityData>()) where !sessionIDs.contains(row.id) { context.delete(row) }
             for row in try context.fetch(FetchDescriptor<SessionWatchData>()) where !sessionIDs.contains(row.id) { context.delete(row) }
+            for row in try context.fetch(FetchDescriptor<SessionTrainingData>()) where !sessionIDs.contains(row.id) { context.delete(row) }
             for value in next.sessions {
                 let model = existingSessions[value.id] ?? WorkoutSession(value)
                 if existingSessions[value.id] == nil { context.insert(model) }
                 try model.apply(value, context: context)
                 try upsertActivity(value)
                 try upsertWatchMetadata(value)
+                try upsertTrainingMetadata(value)
             }
             let definitions = try context.fetch(FetchDescriptor<ExerciseDefinition>())
             let exerciseIDs = Set(next.exercises.map(\.id))
@@ -314,6 +353,13 @@ import TrainLogCore
                 else { context.insert(try WorkoutTemplate(value)) }
             }
             let weights = try context.fetch(FetchDescriptor<BodyWeightRecord>()), weightIDs = Set(next.bodyWeights.map(\.id))
+            let planIDs = Set((next.plans ?? []).map(\.id))
+            let planRows = try context.fetch(FetchDescriptor<PlannedTraining>())
+            for row in planRows where !planIDs.contains(row.id) { context.delete(row) }
+            for plan in next.plans ?? [] {
+                if let row = planRows.first(where: { $0.id == plan.id }) { row.payload = try ModelCodec.encode(plan) }
+                else { context.insert(try PlannedTraining(plan)) }
+            }
             for old in weights where !weightIDs.contains(old.id) { context.delete(old) }
             for value in next.bodyWeights {
                 if let old = weights.first(where: { $0.id == value.id }) { old.date = value.date; old.weightKg = value.weightKg }

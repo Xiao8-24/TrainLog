@@ -1,15 +1,17 @@
 import Foundation
 
 public struct Backup: Codable, Sendable {
-    public var schemaVersion: Int = 3
+    public var schemaVersion: Int = 4
     public var exportedAt: Date = Date()
     public var sessions: [Session]
     public var exercises: [Exercise]
     public var templates: [TrainingTemplate]
     public var bodyWeights: [BodyWeight]
     public var settings: Settings
-    public init(sessions: [Session], exercises: [Exercise], templates: [TrainingTemplate], bodyWeights: [BodyWeight], settings: Settings) {
+    public var plans: [TrainingPlan]?
+    public init(sessions: [Session], exercises: [Exercise], templates: [TrainingTemplate], bodyWeights: [BodyWeight], settings: Settings, plans: [TrainingPlan] = []) {
         self.sessions = sessions; self.exercises = exercises; self.templates = templates; self.bodyWeights = bodyWeights; self.settings = settings
+        self.plans = plans
     }
 }
 public enum ImportMode { case merge, replace }
@@ -32,7 +34,7 @@ public enum BackupService {
         return backup
     }
     public static func validate(_ backup: Backup) throws {
-        guard (1...3).contains(backup.schemaVersion) else { throw ValidationError("不支持备份版本 \(backup.schemaVersion)，请使用兼容版本。") }
+        guard (1...4).contains(backup.schemaVersion) else { throw ValidationError("不支持备份版本 \(backup.schemaVersion)，请使用兼容版本。") }
         guard backup.sessions.count <= 50_000, backup.exercises.count <= 5_000, backup.templates.count <= 1_000 else { throw ValidationError("备份记录数量超出安全导入范围。") }
         var ids = Set<UUID>()
         func register(_ id: UUID) throws {
@@ -56,8 +58,14 @@ public enum BackupService {
             for item in template.items {
                 try register(item.id)
                 guard let exercise = backup.exercises.first(where: { $0.id == item.exerciseID }), (1...30).contains(item.setCount) else { throw ValidationError("模板动作引用或默认组数无效。") }
-                try RecordValidator.trainingSet(TrainingSet(weightKg: item.weightKg, reps: item.reps), exercise: exercise)
+                var set = TrainingSet(weightKg: item.weightKg, reps: item.reps, durationSeconds: item.durationSeconds); set.restSeconds = item.restSeconds ?? 90
+                try RecordValidator.trainingSet(set, exercise: exercise)
             }
+        }
+        guard (backup.plans?.count ?? 0) <= 10000 else { throw ValidationError("计划数量过多。") }
+        for plan in backup.plans ?? [] {
+            try register(plan.id); try plan.validate(catalog: backup.exercises)
+            for item in plan.items { try register(item.id) }
         }
         for weight in backup.bodyWeights { try register(weight.id); try RecordValidator.bodyWeight(weight) }
         try RecordValidator.settings(backup.settings)
@@ -77,6 +85,7 @@ public enum BackupService {
         result.exercises = merged(current.exercises, imported.exercises)
         result.templates = merged(current.templates, imported.templates)
         result.bodyWeights = merged(current.bodyWeights, imported.bodyWeights)
+        result.plans = merged(current.plans ?? [], imported.plans ?? [])
         try validate(result)
         return result
     }
@@ -129,6 +138,15 @@ public enum BackupService {
             if index == 0 { return row + linkedColumns }
             guard let id = row.first, let summary = linked[id] else { return row + Array(repeating: "", count: linkedColumns.count) }
             return row + [summary.watchSessionID.uuidString, summary.activity.watchWorkoutID?.uuidString ?? "", formatter.string(from: summary.startedAt), formatter.string(from: summary.endedAt), String(summary.duration), number(summary.activity.activeEnergyKcal), number(summary.activity.averageHeartRate), number(summary.activity.maximumHeartRate)]
+        }
+        let trainingColumns = ["plan_id", "plan_name", "planned_at", "set_started_at", "set_ended_at", "set_active_seconds"]
+        let plans = Dictionary(uniqueKeysWithValues: sessions.compactMap { session in session.plan.map { (session.id.uuidString, $0) } })
+        let timings = Dictionary(uniqueKeysWithValues: sessions.flatMap(\.exercises).flatMap(\.sets).compactMap { set in set.timing.map { (set.id.uuidString, $0) } })
+        rows = rows.enumerated().map { index, row in
+            if index == 0 { return row + trainingColumns }
+            let plan = row.first.flatMap { plans[$0] }
+            let timing = row.count > 6 ? timings[row[6]] : nil
+            return row + [plan?.id.uuidString ?? "", plan?.name ?? "", plan.map { formatter.string(from: $0.scheduledAt) } ?? "", timing.map { formatter.string(from: $0.startedAt) } ?? "", timing?.endedAt.map { formatter.string(from: $0) } ?? "", timing.map { String($0.elapsed(at: $0.endedAt ?? Date())) } ?? ""]
         }
         return "\u{FEFF}" + rows.map { $0.map(cell).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n"
     }

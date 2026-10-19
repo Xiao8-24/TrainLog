@@ -1,6 +1,58 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
+    @MainActor func testCreatePlanThenStartAndRecordTimedSet() {
+        let app = launch()
+        app.tabBars.buttons["训练"].tap()
+        let plans = app.buttons["trainingPlans"]
+        for _ in 0..<5 where !plans.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(plans.exists); plans.tap(); app.buttons["plan.new"].tap()
+        app.buttons["plan.template"].tap(); app.buttons["Push · 胸肩三头"].tap()
+        app.buttons["plan.save"].tap()
+        let plan = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "plan.row.")).firstMatch
+        XCTAssertTrue(plan.waitForExistence(timeout: 5)); plan.tap()
+        capture(app, name: "Dated training plan before starting - UI test data")
+        let start = app.buttons["plan.start"]
+        for _ in 0..<6 where !start.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(start.exists); start.tap()
+        XCTAssertTrue(app.navigationBars["正在训练"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["workout.elapsed"].exists)
+        let begin = app.buttons["set.start.1"].firstMatch
+        for _ in 0..<6 where !begin.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(begin.exists); begin.tap()
+        XCTAssertTrue(app.buttons["activeSet.finish"].waitForExistence(timeout: 5))
+        let weight = app.textFields["setWeight.1"].firstMatch
+        weight.tap(); weight.typeText("60")
+        let reps = app.textFields["setReps.1"].firstMatch
+        reps.tap(); reps.typeText("8"); app.buttons["收起键盘"].tap()
+        capture(app, name: "Live set timer and overall timer - UI test data")
+        app.buttons["activeSet.finish"].tap()
+        XCTAssertTrue(app.buttons["restTimer.end"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["completeSet.1"].firstMatch.label.contains("已完成"))
+        app.buttons["finishWorkout"].tap()
+        XCTAssertTrue(app.navigationBars["训练完成"].waitForExistence(timeout: 8))
+    }
+    @MainActor func testRunningSetSurvivesBackgroundAndPausedSetSurvivesRelaunch() {
+        let app = launch(persistent: true)
+        app.tabBars.buttons["训练"].tap()
+        let template = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Push · 胸肩三头")).firstMatch
+        for _ in 0..<8 where !template.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(template.exists); template.tap()
+        let begin = app.buttons["set.start.1"].firstMatch
+        for _ in 0..<6 where !begin.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(begin.exists); begin.tap()
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertTrue(app.buttons["activeSet.finish"].waitForExistence(timeout: 10))
+        let pause = app.buttons["workout.toggleTimer"]
+        for _ in 0..<8 where !pause.isHittable { app.swipeDown(velocity: .slow) }
+        XCTAssertTrue(pause.exists); pause.tap()
+        app.buttons["稍后继续"].tap(); app.terminate(); app.launch()
+        let resume = app.buttons["startWorkout"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10)); resume.tap()
+        XCTAssertTrue(app.buttons["activeSet.finish"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["workout.toggleTimer"].label, "继续计时")
+        capture(app, name: "Paused set restored after relaunch - UI test data")
+    }
     @MainActor func testLinkedPhoneWorkoutShowsOneRecordAndWatchSummary() {
         let app = launch(extraArguments: ["-ui-linked-watch"])
         app.tabBars.buttons["训练"].tap()

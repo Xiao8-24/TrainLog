@@ -82,6 +82,7 @@ struct SessionDetailView: View {
                             if !session.notes.isEmpty { Text(session.notes).font(.subheadline).textSelection(.enabled) }
                         }
                         if session.mode != .cardio { MuscleMapCard(title: "本次训练覆盖", model: MuscleHeatmapViewModel(sessions: [session], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { selectedMuscle = $0 } }
+                        LiveTrainingSummaryCard(session: session)
                         CardioAnalysisCard(session: session)
                         LinkedWatchSummaryCard(session: session)
                         if session.status == .completed { WorkoutHealthCard(session: session) }
@@ -131,7 +132,7 @@ struct SessionMetrics: View {
     var body: some View {
         let totals = WorkoutStatisticsService.totals([session])
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), alignment: .leading)], alignment: .leading, spacing: 16) {
-            item("时长", value: "\(Int(totals.durationSeconds / 60))", unit: "分钟")
+            item("训练用时", value: Duration.seconds(totals.durationSeconds).formatted(.time(pattern: .hourMinuteSecond)), unit: "")
             if session.mode == .detailed {
                 item("动作", value: "\(session.exercises.count)", unit: "个")
                 item("正式组", value: "\(totals.workingSets)", unit: "组")

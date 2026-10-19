@@ -119,11 +119,12 @@ public struct TrainingSet: Codable, Hashable, Identifiable, Sendable {
     public var isCompleted: Bool = false
     public var restSeconds: Int = 90
     public var notes: String = ""
+    public var timing: SetTiming?
     public init(weightKg: Double? = nil, reps: Int? = nil, durationSeconds: Int? = nil, kind: SetKind = .working, rpe: Double? = nil, rir: Double? = nil, isCompleted: Bool = false) {
         self.weightKg = weightKg; self.reps = reps; self.durationSeconds = durationSeconds
         self.kind = kind; self.rpe = rpe; self.rir = rir; self.isCompleted = isCompleted
     }
-    public func copied() -> TrainingSet { var copy = self; copy.id = UUID(); copy.isCompleted = false; return copy }
+    public func copied() -> TrainingSet { var copy = self; copy.id = UUID(); copy.isCompleted = false; copy.timing = nil; return copy }
 }
 public struct ExerciseEntry: Codable, Hashable, Identifiable, Sendable {
     public var id: UUID = UUID()
@@ -154,6 +155,7 @@ public struct Session: Codable, Hashable, Identifiable, Sendable {
     public var activity: ActivityRecord?
     public var watchLink: WatchTrainingLink?
     public var phoneLink: WatchLinkReference?
+    public var plan: TrainingPlanReference?
     public var accumulatedSeconds: TimeInterval = 0
     public var timerStartedAt: Date?
     public var manualDurationSeconds: Int?
@@ -172,9 +174,14 @@ public struct Session: Codable, Hashable, Identifiable, Sendable {
     }
     public mutating func pause(at now: Date = Date()) {
         accumulatedSeconds = elapsed(at: now); timerStartedAt = nil
+        for e in exercises.indices { for s in exercises[e].sets.indices { exercises[e].sets[s].timing?.pause(at: now) } }
     }
     public mutating func finish(at now: Date = Date()) {
-        pause(at: now); endTime = now; status = .completed; updatedAt = now
+        pause(at: now)
+        for e in exercises.indices { for s in exercises[e].sets.indices {
+            if exercises[e].sets[s].timing?.endedAt == nil { exercises[e].sets[s].timing?.finish(at: now) }
+        } }
+        endTime = now; status = .completed; updatedAt = now
     }
 }
 public struct BodyWeight: Codable, Hashable, Identifiable, Sendable {
@@ -189,8 +196,11 @@ public struct TemplateItem: Codable, Hashable, Identifiable, Sendable {
     public var setCount: Int
     public var weightKg: Double?
     public var reps: Int?
-    public init(exerciseID: UUID, setCount: Int = 3, weightKg: Double? = nil, reps: Int? = nil) {
+    public var durationSeconds: Int?
+    public var restSeconds: Int?
+    public init(exerciseID: UUID, setCount: Int = 3, weightKg: Double? = nil, reps: Int? = nil, durationSeconds: Int? = nil, restSeconds: Int? = nil) {
         self.exerciseID = exerciseID; self.setCount = setCount; self.weightKg = weightKg; self.reps = reps
+        self.durationSeconds = durationSeconds; self.restSeconds = restSeconds
     }
 }
 public struct TrainingTemplate: Codable, Hashable, Identifiable, Sendable {

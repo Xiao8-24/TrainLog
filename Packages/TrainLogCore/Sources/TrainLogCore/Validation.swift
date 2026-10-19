@@ -23,6 +23,10 @@ public enum RecordValidator {
         guard !item.allowsEstimate || item.tracking == .weightReps else { throw ValidationError("此记录模式不能估算 1RM。") }
     }
     public static func trainingSet(_ set: TrainingSet, exercise: Exercise, requireComplete: Bool = false) throws {
+        if let timing = set.timing {
+            try timing.validate()
+            if set.isCompleted && timing.endedAt == nil { throw ValidationError("已完成组不能仍在计时。") }
+        }
         if let w = set.weightKg, !w.isFinite || !(0...1500).contains(w) { throw ValidationError("重量应在 0–1500 kg 之间。") }
         if let r = set.reps, !((set.kind == .failed ? 0 : 1)...1000).contains(r) { throw ValidationError("次数应在 1–1000 之间；失败组允许 0 次。") }
         if let d = set.durationSeconds, !(1...86400).contains(d) { throw ValidationError("持续时间应在 1–86400 秒之间。") }
@@ -44,6 +48,18 @@ public enum RecordValidator {
         set.isCompleted && (try? trainingSet(set, exercise: exercise, requireComplete: true)) != nil
     }
     public static func session(_ session: Session) throws {
+        if let plan = session.plan {
+            guard session.mode == .detailed, plan.id != session.id, !plan.name.isEmpty, plan.name.count <= 100,
+                  plan.scheduledAt.timeIntervalSince1970.isFinite else { throw ValidationError("训练计划来源无效。") }
+        }
+        let timed = session.exercises.flatMap(\.sets).compactMap(\.timing)
+        guard timed.filter({ $0.endedAt == nil }).count <= 1 else { throw ValidationError("同一时间只能计时一组。") }
+        for timing in timed {
+            guard timing.startedAt >= session.startTime.addingTimeInterval(-1),
+                  session.endTime.map({ end in timing.endedAt.map { $0 <= end.addingTimeInterval(1) } ?? true }) ?? true else { throw ValidationError("本组时间超出整场训练范围。") }
+            if session.timerStartedAt == nil && timing.timerStartedAt != nil { throw ValidationError("整体暂停时本组也必须暂停。") }
+            if session.status == .completed && timing.endedAt == nil { throw ValidationError("结束训练前请先结束本组计时。") }
+        }
         if let link = session.watchLink {
             guard session.mode == .detailed, session.phoneLink == nil else { throw ValidationError("只有手机逐组力量训练可以关联手表。") }
             try link.validate(phoneSessionID: session.id)

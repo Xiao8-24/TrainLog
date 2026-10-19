@@ -4,6 +4,10 @@
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
+## 0.8.0 实时逐组训练与计划（验证中）
+
+以“开始训练→开始本组→结束本组”为主要流程，开练自动计时，显示每组与整场用时，暂停、后台和冷启动保留状态。支持提前安排日期、动作、预设组、重量和次数，计划开始前不计入训练统计。详见[实时训练与计划](Documentation/LIVE_TRAINING_AND_PLANS.md)。计划提醒与iCloud同步未开启，最终构建结果见[验证记录](Documentation/VALIDATION.md)。
+
 ## 0.7.0 原生体验与已批准功能
 
 优化草稿保存与失败重试、已完成历史刷新、实时活动判重和原生短动效；新增已批准的手机逐组训练/Watch 数据明确关联，以及交互小组件和快捷指令。B 每周安排、C 云同步未获批准，不开发。详见 [优化说明](Documentation/NATIVE_POLISH.md)、[已批准功能与使用边界](Documentation/APPROVED_FEATURES.md)。
