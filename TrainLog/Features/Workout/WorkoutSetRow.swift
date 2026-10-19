@@ -60,6 +60,7 @@ struct WorkoutSetRow: View {
     var otherSetActive: Bool
     var onAction: (TrainingSetAction) -> Void
     var onDelete: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var expanded = false
     @State private var deleteConfirmation = false
     @State private var errorMessage: String?
@@ -78,7 +79,7 @@ struct WorkoutSetRow: View {
                 Button {
                     if set.isCompleted { set.isCompleted = false }
                     else { onAction(.complete) }
-                } label: { Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle").font(.title2).foregroundStyle(set.isCompleted ? .green : .secondary).frame(width: 44, height: 44) }
+                } label: { Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle").nativeSymbolTransition().nativeMotion(value: set.isCompleted).font(.title2).foregroundStyle(set.isCompleted ? .green : .secondary).frame(width: 44, height: 44) }
                     .accessibilityLabel("第 \(index) 组\(set.isCompleted ? "已完成，点击撤销" : "标记完成")").accessibilityIdentifier("completeSet.\(index)")
             }
             if exercise.tracking == .duration {
@@ -89,46 +90,52 @@ struct WorkoutSetRow: View {
                     VStack(spacing: 12) { numericFields }
                 }
             }
-            if let timing = set.timing {
-                HStack {
-                    Label(timing.endedAt == nil ? (timing.timerStartedAt == nil ? "本组已暂停" : "本组进行中") : "本组用时", systemImage: "stopwatch")
-                    Spacer()
-                    SetElapsedLabel(timing: timing).accessibilityIdentifier("setTimer.\(index)")
-                }.font(.subheadline).foregroundStyle(timing.endedAt == nil ? .blue : .secondary)
-            }
-            if live && !set.isCompleted {
-                if set.timing != nil && set.timing?.endedAt == nil {
-                    Button("结束本组", systemImage: "checkmark.circle.fill") { onAction(.complete) }
-                        .buttonStyle(.borderedProminent).accessibilityIdentifier("set.finish.\(index)")
-                } else {
-                    Button("开始本组", systemImage: "play.fill") { onAction(.start) }
-                        .buttonStyle(.bordered).disabled(otherSetActive).accessibilityIdentifier("set.start.\(index)")
+            VStack(alignment: .leading, spacing: 10) {
+                if let timing = set.timing {
+                    HStack {
+                        Label(timing.endedAt == nil ? (timing.timerStartedAt == nil ? "本组已暂停" : "本组进行中") : "本组用时", systemImage: "stopwatch")
+                        Spacer()
+                        SetElapsedLabel(timing: timing).accessibilityIdentifier("setTimer.\(index)")
+                    }.font(.subheadline).foregroundStyle(timing.endedAt == nil ? .blue : .secondary)
                 }
-            }
+                if live && !set.isCompleted {
+                    if set.timing != nil && set.timing?.endedAt == nil {
+                        Button("结束本组", systemImage: "checkmark.circle.fill") { onAction(.complete) }
+                            .buttonStyle(.borderedProminent).accessibilityIdentifier("set.finish.\(index)")
+                    } else {
+                        Button("开始本组", systemImage: "play.fill") { onAction(.start) }
+                            .buttonStyle(.bordered).disabled(otherSetActive).accessibilityIdentifier("set.start.\(index)")
+                    }
+                }
+            }.nativeMotion(value: set.timing != nil).nativeMotion(value: set.isCompleted)
             HStack(spacing: 8) {
                 Text("RPE").font(.caption).foregroundStyle(.secondary)
                 OptionalNumberField(title: "可选 1–10", value: $set.rpe).frame(minWidth: 65)
                 Spacer(minLength: 8)
-                Button { expanded.toggle() } label: { Image(systemName: expanded ? "chevron.up" : "ellipsis").frame(width: 44, height: 44) }.accessibilityLabel("第 \(index) 组更多选项")
+                Button { expanded.toggle() } label: { Image(systemName: expanded ? "chevron.up" : "chevron.down").nativeSymbolTransition().frame(width: 44, height: 44) }.accessibilityLabel("第 \(index) 组更多选项").accessibilityValue(expanded ? "已展开" : "已折叠").accessibilityIdentifier("set.options.\(index)")
             }
             if expanded {
-                HStack { Text("RIR").font(.caption); OptionalNumberField(title: "可选 0–10", value: $set.rir) }
-                Stepper("组间休息 \(set.restSeconds) 秒", value: $set.restSeconds, in: 0...3600, step: 15).font(.caption)
-                TextField("本组备注", text: $set.notes).font(.caption)
-                if exercise.tracking == .weightReps || exercise.tracking == .assistedReps {
-                    HStack {
-                        Button("− 2.5 \(unit.rawValue)") { weight.wrappedValue = max(0, (weight.wrappedValue ?? 0) - 2.5) }
-                        Spacer()
-                        Button("+ 2.5 \(unit.rawValue)") { weight.wrappedValue = (weight.wrappedValue ?? 0) + 2.5 }
-                    }.font(.caption).frame(minHeight: 44)
-                }
-                if exercise.tracking != .duration { Stepper("次数 \(set.reps ?? 0)", value: Binding(get: { set.reps ?? 1 }, set: { set.reps = $0 }), in: 1...1000) }
-                Button("删除本组", role: .destructive) { deleteConfirmation = true }.font(.caption).frame(minHeight: 44)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack { Text("RIR").font(.caption); OptionalNumberField(title: "可选 0–10", value: $set.rir) }
+                    Stepper("组间休息 \(set.restSeconds) 秒", value: $set.restSeconds, in: 0...3600, step: 15).font(.caption)
+                    TextField("本组备注", text: $set.notes).font(.caption).accessibilityIdentifier("set.notes.\(index)")
+                    if exercise.tracking == .weightReps || exercise.tracking == .assistedReps {
+                        HStack {
+                            Button("− 2.5 \(unit.rawValue)") { weight.wrappedValue = max(0, (weight.wrappedValue ?? 0) - 2.5) }
+                            Spacer()
+                            Button("+ 2.5 \(unit.rawValue)") { weight.wrappedValue = (weight.wrappedValue ?? 0) + 2.5 }
+                        }.font(.caption).frame(minHeight: 44)
+                    }
+                    if exercise.tracking != .duration { Stepper("次数 \(set.reps ?? 0)", value: Binding(get: { set.reps ?? 1 }, set: { set.reps = $0 }), in: 1...1000) }
+                    Button("删除本组", role: .destructive) { deleteConfirmation = true }.font(.caption).frame(minHeight: 44)
+                }.transition(.opacity)
             }
         }
-        .padding(10).background(set.isCompleted ? Color.green.opacity(0.045) : .clear, in: RoundedRectangle(cornerRadius: 12))
+        .padding(10)
+        .animation(reduceMotion ? nil : .smooth(duration: 0.22)) { content in
+            content.background(set.isCompleted ? Color.green.opacity(0.045) : .clear, in: RoundedRectangle(cornerRadius: 12))
+        }
         .nativeMotion(value: expanded)
-        .nativeMotion(value: set.isCompleted)
         .transition(.opacity)
         .sensoryFeedback(.success, trigger: set.isCompleted) { _, completed in completed }
         .confirmationDialog("删除第 \(index) 组？", isPresented: $deleteConfirmation, titleVisibility: .visible) { Button("删除本组", role: .destructive, action: onDelete) }
@@ -155,7 +162,7 @@ struct SetElapsedLabel: View {
                 let origin = running.addingTimeInterval(-timing.accumulatedSeconds)
                 Text(timerInterval: origin...max(origin, .distantFuture), countsDown: false, showsHours: true)
             } else { Text(Duration.seconds(timing.elapsed()).formatted(.time(pattern: .hourMinuteSecond))) }
-        }.monospacedDigit()
+        }.monospacedDigit().transaction { $0.animation = nil }
     }
 }
 func setDescription(_ set: TrainingSet, exercise: Exercise, unit: WeightUnit) -> String {

@@ -133,6 +133,7 @@ struct OptionalNumberField: View {
         TextField(title, text: $text)
             .keyboardType(integer ? .numberPad : .decimalPad).multilineTextAlignment(.trailing).monospacedDigit().focused($focused)
             .accessibilityLabel(title)
+            .transaction { $0.animation = nil }
             .onAppear { text = display(value) }
             .onChange(of: value) { _, new in if !focused { text = display(new) } }
             .onChange(of: text) { _, new in

@@ -79,8 +79,6 @@ struct WorkoutEditorView: View {
         }
         .background(AppTheme.background)
         .scrollDismissesKeyboard(.interactively)
-        .nativeMotion(value: session.exercises.map(\.id))
-        .nativeMotion(value: restTimer.deadline != nil)
         .navigationTitle(editingHistory ? "编辑训练" : session.mode == .cardio ? "运动记录" : session.mode == .quick ? "快速记录" : "正在训练")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -89,13 +87,9 @@ struct WorkoutEditorView: View {
             ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("收起键盘") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
         }
         .nativeBottomBar {
-            if let active = session.activeSet, let entry = session.exercises.first(where: { $0.id == active.entryID }), let set = entry.sets.first(where: { $0.id == active.setID }), let timing = set.timing {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(entry.exercise.name + " · 本组进行中").font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                    let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
-                    layout { SetElapsedLabel(timing: timing).font(.headline); if !dynamicTypeSize.isAccessibilitySize { Spacer() }; Button("结束本组") { setAction(entryID: active.entryID, setID: active.setID, action: .complete) }.accessibilityIdentifier("activeSet.finish") }
-                }.padding().modifier(NativeFloatingSurface()).padding(.horizontal).padding(.bottom, 8)
-            } else if restTimer.deadline != nil { RestTimerBanner(timer: restTimer).padding(.horizontal).padding(.bottom, 8) }
+            WorkoutFloatingBar(session: session, timer: restTimer) { entryID, setID in
+                setAction(entryID: entryID, setID: setID, action: .complete)
+            }
         }
         .sheet(isPresented: $showingLibrary) {
             NavigationStack { ExerciseLibraryView { exercise in
@@ -153,11 +147,11 @@ struct WorkoutEditorView: View {
                         if session.timerStartedAt == nil { session.resume() }
                         else { session.pause() }
                         persistDraft(showError: true)
-                    } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时").accessibilityIdentifier("workout.toggleTimer")
+                    } label: { Image(systemName: session.timerStartedAt == nil ? "play.fill" : "pause.fill").nativeSymbolTransition().nativeMotion(value: session.timerStartedAt == nil).frame(width: 44, height: 44) }.buttonStyle(.bordered).accessibilityLabel(session.timerStartedAt == nil ? "继续计时" : "暂停计时").accessibilityIdentifier("workout.toggleTimer")
                 }
             if session.mode == .detailed {
             let sets = session.exercises.flatMap(\.sets)
-            LabeledContent("已记录组数", value: "\(sets.filter(\.isCompleted).count) / \(sets.count) 组").font(.subheadline).accessibilityIdentifier("workout.setProgress")
+            LabeledContent("已记录组数", value: "\(sets.filter(\.isCompleted).count) / \(sets.count) 组").font(.subheadline).nativeNumberTransition(value: "\(sets.filter(\.isCompleted).count)/\(sets.count)").accessibilityIdentifier("workout.setProgress")
             let restLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
             restLayout {
                 Text("组间休息").font(.subheadline)
@@ -197,7 +191,7 @@ struct WorkoutEditorView: View {
             }
             if session.exercises.isEmpty { AppCard { EmptyStateView(title: "选择第一个动作", message: "从动作库添加，也可以创建你的专属动作。", symbol: "dumbbell") } }
             Button { showingLibrary = true } label: { Label("添加动作", systemImage: "plus.circle.fill").font(.headline).frame(maxWidth: .infinity, minHeight: 52) }.buttonStyle(.bordered).accessibilityIdentifier("addExercise")
-        }
+        }.nativeMotion(value: session.exercises.map(\.id))
     }
     private func setAction(entryID: UUID, setID: UUID, action: TrainingSetAction) {
         do {
@@ -256,8 +250,7 @@ struct RestTimerBanner: View {
                 RestCountdownLabel(timer: timer)
                 Button("结束") { timer.cancel() }.frame(minWidth: 44, minHeight: 44)
                     .accessibilityIdentifier("restTimer.end")
-            }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
-                .modifier(NativeFloatingSurface())
+            }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -274,6 +267,7 @@ struct SessionElapsedLabel: View {
                 Text(Duration.seconds(session.elapsed()).formatted(.time(pattern: .hourMinuteSecond)))
             }
         }.font(.title2.weight(.semibold)).monospacedDigit()
+            .transaction { $0.animation = nil }
             .accessibilityIdentifier("workout.elapsed")
     }
 }
@@ -284,8 +278,50 @@ private struct RestCountdownLabel: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             Text("\(timer.remaining(at: context.date)) 秒").font(.headline).monospacedDigit()
                 .accessibilityIdentifier("restTimer.remaining")
+                .transaction { $0.animation = nil }
                 .onChange(of: context.date) { _, now in timer.tick(at: now) }
         }
     }
 }
 
+/// One stable glass surface changes contents between a live set and its rest.
+/// The timer text owns its updates; the editor is never animated on every tick.
+private struct WorkoutFloatingBar: View {
+    var session: Session
+    var timer: RestTimer
+    var finishSet: (UUID, UUID) -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    private var active: (entry: ExerciseEntry, set: TrainingSet)? {
+        guard let ids = session.activeSet,
+              let entry = session.exercises.first(where: { $0.id == ids.entryID }),
+              let set = entry.sets.first(where: { $0.id == ids.setID }) else { return nil }
+        return (entry, set)
+    }
+    // Identity is the visible mode, never elapsed seconds, text input or a new deadline.
+    private var mode: Int { active != nil ? 1 : timer.deadline != nil ? 2 : 0 }
+    var body: some View {
+        VStack(spacing: 0) {
+            if mode != 0 {
+                VStack(alignment: .leading, spacing: 8) {
+                    if let active, let timing = active.set.timing {
+                        Text(active.entry.exercise.name + (timing.timerStartedAt == nil ? " · 本组已暂停" : " · 本组进行中"))
+                            .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("activeSet.status")
+                        let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
+                        layout {
+                            SetElapsedLabel(timing: timing).font(.headline)
+                            if !dynamicTypeSize.isAccessibilitySize { Spacer() }
+                            Button("结束本组") { finishSet(active.entry.id, active.set.id) }
+                                .frame(minHeight: 44).accessibilityIdentifier("activeSet.finish")
+                        }
+                    } else { RestTimerBanner(timer: timer) }
+                }
+                .padding(.horizontal, 20).padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .modifier(NativeFloatingSurface())
+                .padding(.horizontal).padding(.bottom, 8)
+                .transition(.opacity)
+            }
+        }.nativeMotion(value: mode)
+    }
+}

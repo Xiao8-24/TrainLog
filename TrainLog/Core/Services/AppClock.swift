@@ -28,7 +28,16 @@ struct NativeNumberTransition: ViewModifier {
     }
 }
 
+/// Only symbol changes use replacement motion; surrounding labels and fields keep identity.
+struct NativeSymbolTransition: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func body(content: Content) -> some View {
+        content.contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+    }
+}
+
 extension View {
+    func nativeSymbolTransition() -> some View { modifier(NativeSymbolTransition()) }
     func nativeMotion<Value: Equatable>(value: Value) -> some View { modifier(NativeMotion(value: value)) }
     func nativeNumberTransition(value: String) -> some View { modifier(NativeNumberTransition(value: value)) }
 }

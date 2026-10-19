@@ -1,6 +1,67 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
+    @MainActor func testSetDetailsAndFloatingControlsPreserveInput() {
+        checkSetControls(extraArguments: [], screenshotSuffix: "standard motion")
+    }
+    @MainActor func testSetControlsWithReducedMotionAndAccessibilityText() {
+        checkSetControls(extraArguments: ["-ui-reduce-motion", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"], screenshotSuffix: "reduced motion and accessibility text")
+    }
+    @MainActor private func checkSetControls(extraArguments: [String], screenshotSuffix: String) {
+        let app = launch(extraArguments: extraArguments)
+        app.tabBars.buttons["训练"].tap()
+        let template = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label BEGINSWITH %@", "template.start.", "Push · 胸肩三头")).firstMatch
+        for _ in 0..<10 where !template.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(template.exists); template.tap()
+        XCTAssertTrue(app.navigationBars["正在训练"].waitForExistence(timeout: 8))
+        let weight = app.textFields["setWeight.1"].firstMatch
+        for _ in 0..<10 where !weight.isHittable { app.swipeUp(velocity: .slow) }
+        weight.tap(); weight.typeText("60")
+        let reps = app.textFields["setReps.1"].firstMatch
+        for _ in 0..<5 where !reps.isHittable { app.swipeUp(velocity: .slow) }
+        reps.tap(); reps.typeText("8"); app.buttons["收起键盘"].tap()
+        let options = app.buttons["set.options.1"].firstMatch
+        for _ in 0..<10 where !options.isHittable { app.swipeUp(velocity: .slow) }
+        options.tap()
+        XCTAssertEqual(options.value as? String, "已展开")
+        let notes = app.textFields["set.notes.1"].firstMatch
+        for _ in 0..<8 where !notes.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(notes.exists); notes.tap(); notes.typeText("keep this set note")
+        app.buttons["收起键盘"].tap()
+        for _ in 0..<10 where !options.isHittable { app.swipeDown(velocity: .slow) }
+        options.tap(); XCTAssertEqual(options.value as? String, "已折叠")
+        options.tap()
+        for _ in 0..<8 where !notes.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertEqual(notes.value as? String, "keep this set note")
+        for _ in 0..<10 where !options.isHittable { app.swipeDown(velocity: .slow) }
+        options.tap()
+        let begin = app.buttons["set.start.1"].firstMatch
+        for _ in 0..<8 where !begin.isHittable { app.swipeDown(velocity: .slow) }
+        begin.tap()
+        let finish = app.buttons["activeSet.finish"]
+        XCTAssertTrue(finish.waitForExistence(timeout: 5))
+        let pause = app.buttons["workout.toggleTimer"]
+        for _ in 0..<12 where !pause.isHittable { app.swipeDown(velocity: .slow) }
+        pause.tap()
+        XCTAssertTrue(app.staticTexts["activeSet.status"].label.contains("已暂停"))
+        XCTAssertTrue(finish.isHittable)
+        capture(app, name: "Paused floating set - " + screenshotSuffix + " - UI test data")
+        pause.tap()
+        XCTAssertTrue(app.staticTexts["activeSet.status"].label.contains("进行中"))
+        finish.tap()
+        let end = app.buttons["restTimer.end"]
+        XCTAssertTrue(end.waitForExistence(timeout: 5)); XCTAssertTrue(end.isHittable)
+        for control in [app.staticTexts["restTimer.label"], app.staticTexts["restTimer.remaining"], end] {
+            XCTAssertGreaterThanOrEqual(control.frame.minX, app.frame.minX)
+            XCTAssertLessThanOrEqual(control.frame.maxX, app.frame.maxX)
+        }
+        capture(app, name: "Set to rest surface - " + screenshotSuffix + " - UI test data")
+        end.tap(); XCTAssertTrue(end.waitForNonExistence(timeout: 5))
+        for _ in 0..<10 where !weight.isHittable { app.swipeUp(velocity: .slow) }
+        XCTAssertEqual(weight.value as? String, "60")
+        XCTAssertTrue(app.buttons["completeSet.1"].firstMatch.label.contains("已完成"))
+        capture(app, name: "Completed set preserves input - " + screenshotSuffix + " - UI test data")
+    }
     @MainActor func testCreatePlanThenStartAndRecordTimedSet() {
         let app = launch()
         app.tabBars.buttons["训练"].tap()
