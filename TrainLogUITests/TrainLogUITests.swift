@@ -7,7 +7,10 @@ final class TrainLogUITests: XCTestCase {
         let plans = app.buttons["trainingPlans"]
         for _ in 0..<5 where !plans.isHittable { app.swipeUp(velocity: .slow) }
         XCTAssertTrue(plans.exists); plans.tap(); app.buttons["plan.new"].tap()
-        app.buttons["plan.template"].tap(); app.buttons["Push · 胸肩三头"].tap()
+        let menu = app.descendants(matching: .any)["plan.template"].firstMatch
+        menu.tap()
+        let option = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Push · 胸肩三头")).firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 5)); option.tap()
         app.buttons["plan.save"].tap()
         let plan = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "plan.row.")).firstMatch
         XCTAssertTrue(plan.waitForExistence(timeout: 5)); plan.tap()
@@ -35,9 +38,10 @@ final class TrainLogUITests: XCTestCase {
     @MainActor func testRunningSetSurvivesBackgroundAndPausedSetSurvivesRelaunch() {
         let app = launch(persistent: true)
         app.tabBars.buttons["训练"].tap()
-        let template = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Push · 胸肩三头")).firstMatch
+        let template = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label BEGINSWITH %@", "template.start.", "Push · 胸肩三头")).firstMatch
         for _ in 0..<8 where !template.isHittable { app.swipeUp(velocity: .slow) }
         XCTAssertTrue(template.exists); template.tap()
+        XCTAssertTrue(app.navigationBars["正在训练"].waitForExistence(timeout: 8))
         let begin = app.buttons["set.start.1"].firstMatch
         for _ in 0..<6 where !begin.isHittable { app.swipeUp(velocity: .slow) }
         XCTAssertTrue(begin.exists); begin.tap()

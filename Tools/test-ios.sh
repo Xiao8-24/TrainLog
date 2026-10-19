@@ -34,13 +34,17 @@ xcodebuild -help > artifacts/xcodebuild-help.txt 2>&1 || true
 if grep -q -- '-collect-test-diagnostics' artifacts/xcodebuild-help.txt; then
   test_args+=(-collect-test-diagnostics never)
 fi
+set +e
 xcodebuild -project TrainLog.xcodeproj -scheme TrainLog \
   -destination "platform=iOS Simulator,id=$destination" \
   -derivedDataPath DerivedData -resultBundlePath "$result_path" \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- "${test_args[@]}" 2>&1 | tee artifacts/ios-tests.log
+test_status=${PIPESTATUS[0]}
+set -e
 
 # Keep actual simulator screenshots available for visual review on Windows.
 if ! xcrun xcresulttool export attachments --path "$result_path" --output-path artifacts/screenshots; then
   echo "Screenshot export unavailable; attachments remain in the xcresult bundle." >&2
 fi
+exit "$test_status"
 

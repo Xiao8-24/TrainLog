@@ -178,7 +178,7 @@ struct ImportReviewView: View {
             if !finished {
                 Section {
                     Picker("导入方式", selection: $replace) { Text("合并").tag(false); Text("替换全部").tag(true) }.pickerStyle(.segmented)
-                    Text(replace ? "替换当前全部训练、动作、模板、体重及设置。写入前会保存本机恢复副本，并再次确认。" : "保留当前设置；相同 ID 保留本机版本，不重复导入。若双方各有不同草稿，请先完成或放弃其中一份。").font(.subheadline).foregroundStyle(.secondary)
+                    Text(replace ? "替换当前全部训练、计划、动作、模板、体重及设置。写入前会保存本机恢复副本，并再次确认。" : "合并训练与计划，保留当前设置；相同 ID 保留本机版本，不重复导入。若双方各有不同草稿，请先完成或放弃其中一份。").font(.subheadline).foregroundStyle(.secondary)
                     Button(replace ? "替换并导入…" : "合并导入") { if replace { confirming = true } else { runImport() } }
                 }
             } else {

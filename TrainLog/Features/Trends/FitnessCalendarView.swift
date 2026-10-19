@@ -19,7 +19,8 @@ struct FitnessCalendarView: View {
         let date = selectedDate.wrappedValue
         let records = index.records(on: date)
         let plans = store.plans.filter { calendar.isDate($0.scheduledAt, inSameDayAs: date) }
-        let plannedDays = Set(store.plans.filter { plan in !plan.isSkipped && !store.sessions.contains(where: { $0.plan?.id == plan.id }) }.map { calendar.startOfDay(for: $0.scheduledAt) })
+        let startedPlans = Set(store.sessions.compactMap { $0.plan?.id })
+        let plannedDays = Set(store.plans.filter { !$0.isSkipped && !startedPlans.contains($0.id) }.map { calendar.startOfDay(for: $0.scheduledAt) })
         ScrollViewReader { scroll in
         List {
             Section {

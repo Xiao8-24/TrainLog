@@ -90,11 +90,14 @@ struct TrainingPlanEditorView: View {
                 TextField("计划备注（可选）", text: $plan.notes, axis: .vertical)
             }
             Section("训练内容") {
-                Menu("从模板填入") {
+                Menu {
                     ForEach(store.templates) { template in Button(template.name) {
                         plan.name = template.name
                         plan.items = template.items.map { item in var value = item; value.id = UUID(); return value }
                     }.accessibilityIdentifier("plan.template.\(template.id.uuidString)") }
+                } label: {
+                    Label("从模板填入", systemImage: "doc.on.doc")
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
                 }.accessibilityIdentifier("plan.template")
                 Button("配置动作与预设组", systemImage: "slider.horizontal.3") { configuring = true }.accessibilityIdentifier("plan.configure")
                 ForEach(plan.items) { item in

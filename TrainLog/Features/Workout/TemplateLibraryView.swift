@@ -31,7 +31,7 @@ struct TemplateEditorView: View {
     @State private var errorMessage: String?
     var body: some View {
         Form {
-            Section { TextField("模板名称", text: $template.name) }
+            Section { TextField(onSave == nil ? "模板名称" : "计划名称", text: $template.name) }
             Section("动作顺序") {
                 ForEach($template.items) { $item in
                     if let exercise = store.exercises.first(where: { $0.id == item.exerciseID }) {
@@ -58,7 +58,7 @@ struct TemplateEditorView: View {
                 }.onMove { template.items.move(fromOffsets: $0, toOffset: $1) }.onDelete { template.items.remove(atOffsets: $0) }
                 Button("添加动作", systemImage: "plus") { adding = true }
             }
-        }.navigationTitle("编辑模板").navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle(onSave == nil ? "编辑模板" : "配置计划内容").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .primaryAction) { EditButton() }

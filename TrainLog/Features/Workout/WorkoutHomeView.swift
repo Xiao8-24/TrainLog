@@ -22,7 +22,8 @@ struct WorkoutHomeView: View {
                 AppCard {
                     NavigationLink { TrainingPlanLibraryView() } label: { Label("训练计划", systemImage: "calendar.badge.clock").font(.headline).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
                         .accessibilityIdentifier("trainingPlans")
-                    let upcoming = store.plans.filter { plan in !plan.isSkipped && !store.sessions.contains(where: { $0.plan?.id == plan.id }) }.prefix(3)
+                    let startedPlans = Set(store.sessions.compactMap { $0.plan?.id })
+                    let upcoming = store.plans.filter { !($0.isSkipped || startedPlans.contains($0.id)) }.prefix(3)
                     if upcoming.isEmpty { Text("先安排日期、动作与预设组，开练时再自动计时。").font(.subheadline).foregroundStyle(.secondary) }
                     ForEach(Array(upcoming)) { plan in NavigationLink { TrainingPlanDetailView(planID: plan.id) } label: { TrainingPlanRow(plan: plan) } }
                 }
@@ -30,8 +31,9 @@ struct WorkoutHomeView: View {
                     HStack { SectionHeader(title: "从模板开始", subtitle: "模板只是配置，完成后才计入统计"); Spacer(); NavigationLink { TemplateLibraryView() } label: { Image(systemName: "slider.horizontal.3") }.accessibilityLabel("管理训练模板") }
                     ForEach(store.templates) { template in
                         Button { router.start(.detailed, store: store, template: template) } label: {
-                            HStack { VStack(alignment: .leading, spacing: 4) { Text(template.name).font(.headline); Text("\(template.items.count) 个动作").font(.caption).foregroundStyle(.secondary) }; Spacer(); Image(systemName: "play.circle.fill").font(.title2) }.padding(.vertical, 6)
-                        }.buttonStyle(.plain)
+                            HStack { VStack(alignment: .leading, spacing: 4) { Text(template.name).font(.headline); Text("\(template.items.count) 个动作").font(.caption).foregroundStyle(.secondary) }; Spacer(); Image(systemName: "play.circle.fill").font(.title2) }
+                                .padding(.vertical, 6).frame(maxWidth: .infinity).contentShape(Rectangle())
+                        }.buttonStyle(.plain).accessibilityIdentifier("template.start.\(template.id.uuidString)")
                     }
                 }
                 AppCard {
