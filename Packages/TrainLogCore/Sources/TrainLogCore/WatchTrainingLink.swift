@@ -57,6 +57,11 @@ public struct WatchLinkUpdate: Codable, Hashable, Sendable {
     public init(reference: WatchLinkReference, state: WatchLinkState, now: Date = Date()) {
         self.reference = reference; self.state = state; updatedAt = now
     }
+    /// An active journal means sampling may have started even if its status write failed.
+    public static func discardingRecovery(reference: WatchLinkReference, previous: Self?, now: Date = Date()) -> Self {
+        if let previous, previous.reference == reference, previous.state == .finished { return previous }
+        return Self(reference: reference, state: .recording, now: now)
+    }
 }
 public struct WatchTrainingLink: Codable, Hashable, Sendable {
     public var request: WatchTrainingRequest

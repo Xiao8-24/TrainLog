@@ -318,10 +318,10 @@ import TrainLogCore
             // Retain ownership and reject replay of this request, but allow a new independent workout.
             if let bytes = try? Data(contentsOf: activeURL), let active = try? JSONDecoder().decode(Session.self, from: bytes),
                let reference = active.phoneLink {
-                let update = lastLinkUpdate?.reference == reference ? lastLinkUpdate! : WatchLinkUpdate(reference: reference, state: .recording)
+                let update = WatchLinkUpdate.discardingRecovery(reference: reference, previous: lastLinkUpdate)
                 try persistLink(request: nil, update: update)
             } else if let request = linkedRequest {
-                try persistLink(request: nil, update: WatchLinkUpdate(reference: request.reference, state: .recording))
+                try persistLink(request: nil, update: .discardingRecovery(reference: request.reference, previous: lastLinkUpdate))
             }
             try FileManager.default.removeItem(at: activeURL); hasRecovery = false; issue = nil
         }

@@ -2,6 +2,19 @@ import XCTest
 @testable import TrainLogCore
 
 final class WatchLinkTests: XCTestCase {
+    func testDiscardedRecoveryDoesNotReleaseHealthOwnershipAfterStatusWriteFailure() throws {
+        let request = WatchTrainingRequest(phoneSessionID: UUID(), title: "已开始但状态未落盘")
+        let prepared = WatchLinkUpdate(reference: request.reference, state: .prepared)
+        let discarded = WatchLinkUpdate.discardingRecovery(reference: request.reference, previous: prepared)
+        var phone = WatchTrainingLink(request: request)
+        phone = try phone.applying(discarded)
+        phone = try phone.applying(WatchLinkUpdate(reference: request.reference, state: .cancelled))
+        XCTAssertEqual(phone.state, .recording)
+        XCTAssertTrue(phone.ownsHealthRecord)
+        let finished = WatchLinkUpdate(reference: request.reference, state: .finished)
+        XCTAssertEqual(WatchLinkUpdate.discardingRecovery(reference: request.reference, previous: finished), finished)
+        XCTAssertEqual(WatchLinkUpdate.discardingRecovery(reference: request.reference, previous: nil).state, .recording)
+    }
     private func pair() -> (Session, Session) {
         let now = Date()
         var phone = Session(mode: .detailed, date: now.addingTimeInterval(-1800))
