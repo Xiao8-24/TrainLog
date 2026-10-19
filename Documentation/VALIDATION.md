@@ -1,5 +1,33 @@
 # 验证记录
 
+## 0.7.0 已批准 A、D 与原生体验交付
+
+2026-10-19 11:26（上海时间），[Actions #33](https://github.com/Xiao8-24/TrainLog/actions/runs/39193170639) 对提交 `18ff8add916c90001136e128dde54f6be174f2cb` 完成验证并发布 [v0.7.0](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.7.0)。**64 项核心、35 项数据库/服务、12 项原生手机 UI，共111项通过，0失败**。Xcode 27.0 (27A266a)、Swift 6.4 编译器 / Swift 5 语言模式，iPhone Air / iOS 27.0 (24A434)。设备归档含 Widget 和 Watch，均为0.7.0 / build10，最低 iOS/watchOS27.0，使用各自27.0 SDK。
+
+本轮实现已批准的明确关联手机/手表力量训练与原生 App Intents；每周安排/提醒和 iCloud 同步未开发。回归覆盖：同一条力量记录附加传感器摘要、重复接收、旧编辑快照不抹去附件、删除收据、未知请求不另建、乱序状态不回退、V2→V3迁移和冷启动读取、手表管理期间不额外导出手机健康副本、确认取消后恢复手机导出。恢复日志已存在但 recording 状态落盘失败时，放弃恢复仍保留手表管理状态，拒绝旧请求重放，避免误认尚未开始而重复写入。
+
+保存与路由回归覆盖输入合并、关闭时写入、失败重试、非法数字、完成后旧任务不恢复草稿、历史观察隔离、退后台后重启恢复最后备注，以及训练主页、过期草稿、缺失模板和旧休息目标。JSON新导出为版本3并继续读1/2，CSV保留原32列并追加8列关联摘要；完整JSON超出32MB恢复上限会明确拒绝。
+
+**截图复核范围：** 最终诊断附件包含16张手机截图和2张Watch截图。已目视核对关联摘要与平均心率、深色休息浮层、最大辅助字号的休息结束控件，以及 Watch 启动页和运动列表。关联界面由隔离测试种入模拟数据，备注明确为“非真实传感器测量”，没有访问真实健康数据库。名为心率图的截图停在摘要与图表上缘，不能据此声称完整曲线已目视验收。最大辅助字号下连接入口文案的完整呈现、全流程 VoiceOver 与其他辅助字号仍需走查。
+
+Watch Ultra 4 (49mm) / watchOS27.0 (24R362) 上，最终App的值类型路径入口能显示实际运动列表和绿色选中勾，没有替换WindowGroup为另一套预览宿主；该次2秒进程采样中主线程处于系统事件等待。此结果不等于已验证手动选择/返回、真实传感器刷新期间的交互或真机帧率。最终诊断附件SHA256：`2baed13cd44dd229a9fc7efb0fc50c100fec788fa41d49f07f276c89fc1198a2`，已下载校验。
+
+首轮[#31](https://github.com/Xiao8-24/TrainLog/actions/runs/39190034704)为较早快照，99项测试和归档通过；不能替代最终111项结论。[#32](https://github.com/Xiao8-24/TrainLog/actions/runs/39191801831)在复核恢复边界时，经用户明确授权取消，未发布，之前完成的部分测试不能计为一轮全量通过。最终发布只指向#33提交。
+
+五个发布文件的大小、GitHub资产SHA256与发布校验单全部一致；源码ZIP的**127个文件**与测试提交逐字节一致。本地Delivery已更新这五个原生交付文件，Windows预览保持原演示范围。三个产品的版本、最低系统和SDK已核对，均无设备provisioning profile或代码签名。
+
+| 发布文件 | 字节 | SHA256 |
+|---|---:|---|
+| BUILD-ENVIRONMENT.txt | 487 | `09f861dfb41c1f577ca7fc3ad56820db3e935dda44de304fc6fa367424c6b574` |
+| INSTALLATION.txt | 1614 | `9330cba64ab990e8cb73ebc6371d236cf001fc53a1b4d94260949e4a5406be1e` |
+| SHA256SUMS.txt | 349 | `262bcfd309a82fe41ba058efdb59c118a9fb2ef76c2db474aa54a7ddfd6d7147` |
+| TrainLog-iOS-source.zip | 356445 | `fccfae61392a91460f28d5eb3cac386a126f27de1a0d818a8ebe8bf44d854158` |
+| TrainLog-unsigned.ipa | 1988492 | `d976bb2b22e7af5c83f4ff4ca25fc4cb00e486bc863310a41337dbcd81a88e66` |
+
+共享源码现在归入单一Shared工程组，最终日志未出现此前双组引用警告。仍有Text拼接和既有HKWorkout初始化弃用、SwiftData Predicate Sendable、无AppIntents依赖的目标跳过元数据提取等警告。两项UI输入用例出现框架尺寸警告并通过；本轮不是零警告、Swift6语言模式迁移或真机性能验收。
+
+**仍待签名配对真机：** 健康授权、实际心率/距离/系统能量、断线/锁定/后台传输、保存或状态写入失败恢复、Apple健身展示、Siri与快捷指令身份验证、系统交互小组件、锁屏/灵动岛、真实帧率/功耗及大档案峰值内存。手机和手表计时分别保留，手机完成不结束手表。血氧和VO₂ max仅读取系统已有参考。IPA不能直接安装，主App、Widget、Watch需分别签名，健康与App Group能力按[功能说明](APPROVED_FEATURES.md)配置。
+
 ## 0.6.1 手表原生选择与最终交付
 
 2026-10-18 12:08（上海时间），[Actions #24](https://github.com/Xiao8-24/TrainLog/actions/runs/39094961972) 验证提交 `f3955ee905a15c43c3269029408b7e48407f6434` 并发布 [v0.6.1](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.6.1)。52 项核心、22 项数据库/服务、9 项原生手机 UI，共 **83 项通过，0 失败**。Xcode 27.0 (27A266a)、Swift 6.4 编译器 / Swift 5 语言模式、iPhone Air / iOS 27.0 (24A434)；设备归档包含 Widget 与原生 Watch App，三个产品均为 0.6.1 / build 9，最低 iOS/watchOS 27.0，分别使用 iPhoneOS/watchOS 27.0 SDK。

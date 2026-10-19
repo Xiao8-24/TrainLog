@@ -4,15 +4,17 @@
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
-## 0.7.0 原生体验与已批准功能（验证中）
+## 0.7.0 原生体验与已批准功能
 
-优化草稿保存与失败重试、已完成历史刷新、实时活动判重和原生短动效；新增已批准的手机逐组训练/Watch 数据明确关联，以及交互小组件和快捷指令。B 每周安排、C 云同步未获批准，不开发。详见 [优化说明](Documentation/NATIVE_POLISH.md)、[已批准功能与使用边界](Documentation/APPROVED_FEATURES.md)。当前正在原生 SDK 验证，最终结果见 [验证记录](Documentation/VALIDATION.md)。
+优化草稿保存与失败重试、已完成历史刷新、实时活动判重和原生短动效；新增已批准的手机逐组训练/Watch 数据明确关联，以及交互小组件和快捷指令。B 每周安排、C 云同步未获批准，不开发。详见 [优化说明](Documentation/NATIVE_POLISH.md)、[已批准功能与使用边界](Documentation/APPROVED_FEATURES.md)。
+
+**[v0.7.0 预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.7.0)**；[Actions #33](https://github.com/Xiao8-24/TrainLog/actions/runs/39193170639) 通过 **111 项测试**并完成含 Widget、Watch 的设备归档。五个发布文件已下载校验，源码包127个文件与测试提交一致。IPA 未签名，真实传感器、跨设备连接、Siri、系统小组件及帧率仍需配对真机验收。截图与完整结果见 [验证记录](Documentation/VALIDATION.md)。
 
 ## 0.6.1 有氧与 Apple Watch
 
 128 个力量/核心动作与 38 种有氧及其他运动类型，支持时长、适用距离、平均配速/速度、独立运动趋势与任意日期日历；不会混入力量组数与容量。原生 Watch App 支持主动开始、暂停和保存，采集系统可用的心率、活动能量和距离，离线保留直到手机确认接收，避免重复导入与健康重复写入。
 
-单次训练显示心率采样图与系统能量估算；可单独授权读取健康已有的血氧和 VO₂ max，注明日期与来源。血氧不连续采集，不从单次心率推算有氧适能；缺失数据不补零。Watch 独立建立一条运动记录，不与手机已有训练草稿合并，同一次运动请选择一个记录入口。详情、签名步骤、备份隐私及真机验收范围见 [有氧与 Apple Watch](Documentation/CARDIO_AND_WATCH.md)。
+单次训练显示心率采样图与系统能量估算；可单独授权读取健康已有的血氧和 VO₂ max，注明日期与来源。血氧不连续采集，不从单次心率推算有氧适能；缺失数据不补零。0.6.1 的 Watch 入口创建独立记录；0.7.0 可先明确连接手机力量草稿，将采集结果附加到同一场训练。详情、签名步骤、备份隐私及真机验收范围见 [有氧与 Apple Watch](Documentation/CARDIO_AND_WATCH.md)。
 
 **[v0.6.1 预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.6.1)**；[Actions #24](https://github.com/Xiao8-24/TrainLog/actions/runs/39094961972) 通过 83 项自动测试并完成含 Widget 与 Watch 的设备归档。0.6.1 将手表上裁切的选择控件改为原生导航列表。五个发布资产已校验，源码包 112 个文件与测试提交一致；真机传感器、健康展示和交互性能仍待配对设备验证。截图复核范围与运行时限制见 [验证记录](Documentation/VALIDATION.md)。IPA 未签名，需分别配置主 App、Widget、Watch 的有效签名后安装。
 
