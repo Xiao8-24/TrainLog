@@ -76,6 +76,9 @@ struct WorkoutEditorView: View {
                 Text(session.mode == .cardio ? "运动记录计入训练日历、次数和时长，不换算为力量组数、肌群覆盖或 e1RM。" : "仅已完成正式组计入组数、容量与力量统计。递减组只参与肌群覆盖，热身与失败组不参与统计。").font(.caption).foregroundStyle(.secondary)
             }.frame(width: max(0, geometry.size.width - 40)).padding(20)
         }
+        // Keep focused numeric rows above the floating system keyboard toolbar.
+        // This is a scroll safe-area inset, not a keyboard-height observer/timer.
+        .safeAreaPadding(.bottom, 56)
         }
         .background(AppTheme.background)
         .scrollDismissesKeyboard(.interactively)
