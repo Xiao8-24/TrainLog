@@ -50,7 +50,16 @@ final class TrainLogUITests: XCTestCase {
         app.navigationBars.buttons["保存"].tap(); app.buttons["plan.save"].tap()
         app.tabBars.buttons["概览"].tap(); app.buttons["设置"].tap()
         let toggle = app.switches["settings.targetSuggestions"]
-        XCTAssertTrue(toggle.exists); toggle.tap(); app.navigationBars.buttons["完成"].tap()
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        XCTAssertEqual(toggle.value as? String, "1")
+        // SwiftUI exposes the label and trailing switch as one accessibility
+        // frame. Its empty center is not the switch's native touch target.
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5))
+            .withOffset(CGVector(dx: -24, dy: 0)).tap()
+        let disabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "0"), object: toggle)
+        XCTAssertEqual(XCTWaiter.wait(for: [disabled], timeout: 5), .completed)
+        capture(app, name: "Target suggestions switched off in native settings - UI test data")
+        app.navigationBars.buttons["完成"].tap()
         app.tabBars.buttons["训练"].tap(); app.buttons["plan.edit"].tap(); app.buttons["plan.configure"].tap()
         XCTAssertEqual(reps.value as? String, "9")
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "targetSuggestion.")).count, 0)
