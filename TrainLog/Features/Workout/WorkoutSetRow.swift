@@ -46,7 +46,7 @@ struct ExerciseEditorCard: View {
         }
         .confirmationDialog("删除动作及其所有组？", isPresented: $confirmDelete, titleVisibility: .visible) { Button("删除动作", role: .destructive, action: onDelete) }
         .nativeMotion(value: entry.sets.map(\.id))
-        .confirmationDialog("用上次配置替换当前所有组？完成状态会清除。", isPresented: $confirmReuse, titleVisibility: .visible) {
+        .confirmationDialog("用上次配置替换当前所有组？完成状态、计时和RPE/RIR会清除。", isPresented: $confirmReuse, titleVisibility: .visible) {
             Button("替换配置") { if let previous { entry.sets = previous.sets.map { $0.copied() } } }
         }
     }

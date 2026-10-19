@@ -37,19 +37,22 @@ struct TrainingReviewDetailView: View {
                     LabeledContent("预设组", value: "\(review.plannedSets)")
                     LabeledContent("完成正式组", value: "\(review.completedWorkingSets)")
                     LabeledContent("已计时完成组", value: "\(review.timedCompletedSets)")
-                    LabeledContent("未计时完成组", value: "\(review.untimedCompletedSets)")
+                    LabeledContent("未计时完成组", value: "\(review.untimedCompletedSets)").accessibilityElement(children: .ignore).accessibilityIdentifier("review.untimedCount").accessibilityLabel("未计时完成组").accessibilityValue("\(review.untimedCompletedSets)")
                     LabeledContent("已记录组用时合计", value: Duration.seconds(review.recordedSetSeconds).formatted(.time(pattern: .hourMinuteSecond)))
                 } footer: { Text("组用时仅累加真实启动并完成的计时。整场用时与组用时的差额不当作实际休息时间。") }
                 ForEach(review.exercises) { entry in
                     Section {
                         if entry.wasAdded { Label("临时新增动作", systemImage: "plus.circle") }
                         if entry.wasRemoved { Label("训练中移除动作", systemImage: "minus.circle") }
-                        if entry.conventionChanged { Text("动作或负重口径已更改，请分别阅读两种配置。") }
+                        if entry.conventionChanged, let actual = entry.actualExercise { Text("实际动作：" + actual.name + " · " + actual.loading.name).font(.subheadline).foregroundStyle(.secondary) }
                         ForEach(entry.sets) { row in
                             VStack(alignment: .leading, spacing: 7) {
                                 Text("第 \(row.number) 组 · " + (row.target == nil ? "临时新增" : row.actual == nil ? "已移除" : row.changed ? "配置有调整" : "配置未变")).font(.subheadline.weight(.semibold))
                                 Text("计划：" + (row.target.map { reviewSetDescription($0, exercise: entry.exercise, unit: store.settings.unit) } ?? "无预设"))
                                 Text("实际：" + (row.actual.map { reviewSetDescription($0, exercise: entry.actualExercise ?? entry.exercise, unit: store.settings.unit) + ($0.isCompleted ? " · 已完成" : " · 未完成") } ?? "未记录"))
+                                if let target = row.target, let actual = row.actual, target.kind != actual.kind || target.restSeconds != actual.restSeconds {
+                                    Text("计划：\(target.kind.name)组 · 休息目标\(target.restSeconds)秒；实际配置：\(actual.kind.name)组 · 休息目标\(actual.restSeconds)秒").font(.caption).foregroundStyle(.secondary)
+                                }
                                 if let actual = row.actual {
                                     Text("本组计时：" + (actual.timing.flatMap { timing in timing.endedAt.map { _ in Duration.seconds(timing.elapsed()).formatted(.time(pattern: .hourMinuteSecond)) } } ?? "未计时")).foregroundStyle(.secondary)
                                 }
@@ -91,6 +94,7 @@ struct TargetSuggestionView: View {
         Form {
             Section {
                 Text(request.exercise.name).font(.headline)
+                Text(request.exercise.loading.name).font(.caption).foregroundStyle(.secondary)
                 Text(request.suggestion.title).font(.headline).accessibilityIdentifier("suggestion.title")
                 Text("当前目标：" + reviewSetDescription(TrainingSet(weightKg: request.item.weightKg, reps: request.item.reps), exercise: request.exercise, unit: store.settings.unit))
                 ForEach(request.suggestion.reasons, id: \.self) { Text($0).font(.subheadline) }
@@ -115,6 +119,7 @@ struct TargetSuggestionView: View {
                     }.padding(.vertical, 4)
                 }
                 if request.suggestion.evidence.isEmpty { Text("暂无足够的可比记录。") }
+                Text("请确认参考记录中的强度确为当次感受。复制新组不会带入上次RPE/RIR。").font(.caption).foregroundStyle(.secondary)
             }
             Section {
                 Text("这是可关闭的本地计划参考。60天、两次记录及强度门槛属于App规划规则，不是个人恢复或医学结论。").font(.caption).foregroundStyle(.secondary)
@@ -122,7 +127,7 @@ struct TargetSuggestionView: View {
             }
         }.safeAreaPadding(.bottom, 56).navigationTitle("下次目标参考").navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.accessibilityIdentifier("suggestion.cancel") }
                 ToolbarItem(placement: .confirmationAction) {
                     if request.suggestion.canApply {
                         Button("采用此项目标") {

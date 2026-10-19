@@ -42,6 +42,10 @@ final class LiveTrainingTests: XCTestCase {
         try value.startSet(entryID: e, setID: s, at: base)
         try value.completeSet(entryID: e, setID: s, at: base.addingTimeInterval(35))
         XCTAssertEqual(value.exercises[0].sets[0].durationSeconds, 35)
+        value.exercises[0].sets[0].rpe = 7; value.exercises[0].sets[0].rir = 3
+        XCTAssertNil(value.exercises[0].sets[0].copied().rpe)
+        XCTAssertNil(value.exercises[0].sets[0].copied().rir)
+        XCTAssertEqual(value.exercises[0].sets[0].rpe, 7, "Copy must not clear the source observation")
         XCTAssertNil(value.exercises[0].sets[0].copied().timing)
         XCTAssertFalse(value.exercises[0].sets[0].copied().isCompleted)
     }

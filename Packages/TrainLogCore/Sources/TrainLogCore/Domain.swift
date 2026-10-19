@@ -124,7 +124,7 @@ public struct TrainingSet: Codable, Hashable, Identifiable, Sendable {
         self.weightKg = weightKg; self.reps = reps; self.durationSeconds = durationSeconds
         self.kind = kind; self.rpe = rpe; self.rir = rir; self.isCompleted = isCompleted
     }
-    public func copied() -> TrainingSet { var copy = self; copy.id = UUID(); copy.isCompleted = false; copy.timing = nil; return copy }
+    public func copied() -> TrainingSet { var copy = self; copy.id = UUID(); copy.isCompleted = false; copy.timing = nil; copy.rpe = nil; copy.rir = nil; return copy }
 }
 public struct ExerciseEntry: Codable, Hashable, Identifiable, Sendable {
     public var id: UUID = UUID()

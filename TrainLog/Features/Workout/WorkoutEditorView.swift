@@ -121,6 +121,11 @@ struct WorkoutEditorView: View {
         }
         .onDisappear { if !editingHistory && !saving { persistDraft(showError: false) }; draftSave.cancelPending() }
         .onChange(of: scenePhase) { _, phase in if phase != .active && !editingHistory && !saving { persistDraft(showError: false) } }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            // Commit queued text before SwiftUI schedules a later scene update.
+            // Unchanged snapshots are deduplicated by the existing save controller.
+            if !editingHistory && !saving { persistDraft(showError: false) }
+        }
         .onChange(of: restTimer.deadline) { _, _ in
             if !editingHistory && !saving { store.refreshSurfaces() }
         }

@@ -14,7 +14,7 @@ final class TrainLogUITests: XCTestCase {
         for _ in 0..<10 where !details.isHittable { app.swipeUp(velocity: .slow) }
         XCTAssertTrue(details.exists); details.tap()
         XCTAssertTrue(app.navigationBars["计划与实际"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["未计时完成组"].exists)
+        XCTAssertEqual(app.descendants(matching: .any)["review.untimedCount"].firstMatch.value as? String, "1")
         capture(app, name: "Plan versus actual comparison - isolated UI test data")
         app.navigationBars.buttons.firstMatch.tap()
         let copy = app.buttons["review.copyActual"]
@@ -42,7 +42,7 @@ final class TrainLogUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["suggestion.title"].label, "可尝试多一次")
         XCTAssertEqual(app.textFields["suggestion.reps"].value as? String, "9")
         capture(app, name: "Explainable target suggestion with source records - UI test data")
-        app.navigationBars.buttons["取消"].tap()
+        app.buttons["suggestion.cancel"].tap()
         let reps = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "target.reps.")).firstMatch
         XCTAssertEqual(reps.value as? String, "8", "Cancel must not adopt a suggestion")
         suggestion.tap(); app.buttons["suggestion.apply"].tap()
@@ -96,9 +96,11 @@ final class TrainLogUITests: XCTestCase {
         let finish = app.buttons["activeSet.finish"]
         XCTAssertTrue(finish.waitForExistence(timeout: 5))
         let pause = app.buttons["workout.toggleTimer"]
-        for _ in 0..<12 where !pause.isHittable { app.swipeDown(velocity: .slow) }
+        revealTimerToggle(pause, in: app)
         pause.tap()
-        XCTAssertTrue(app.staticTexts["activeSet.status"].label.contains("已暂停"))
+        let paused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "已暂停"), object: app.staticTexts["activeSet.status"])
+        XCTAssertEqual(XCTWaiter.wait(for: [paused], timeout: 5), .completed)
+        XCTAssertEqual(pause.label, "继续计时")
         XCTAssertTrue(finish.isHittable)
         capture(app, name: "Paused floating set - " + screenshotSuffix + " - UI test data")
         pause.tap()
@@ -164,7 +166,7 @@ final class TrainLogUITests: XCTestCase {
         XCUIDevice.shared.press(.home); app.activate()
         XCTAssertTrue(app.buttons["activeSet.finish"].waitForExistence(timeout: 10))
         let pause = app.buttons["workout.toggleTimer"]
-        for _ in 0..<8 where !pause.isHittable { app.swipeDown(velocity: .slow) }
+        revealTimerToggle(pause, in: app)
         XCTAssertTrue(pause.exists); pause.tap()
         app.buttons["稍后继续"].tap(); app.terminate(); app.launch()
         let resume = app.buttons["startWorkout"]
@@ -249,6 +251,20 @@ final class TrainLogUITests: XCTestCase {
         for _ in 0..<5 where !run.exists { app.swipeUp(velocity: .slow) }
         XCTAssertTrue(run.waitForExistence(timeout: 5))
         capture(app, name: "Cardio record in native fitness calendar")
+    }
+    @MainActor private func revealTimerToggle(_ button: XCUIElement, in app: XCUIApplication) {
+        // SwiftUI may expose a clipped control as hittable beneath a glass
+        // navigation bar. Reveal its full frame before synthesizing a center tap.
+        let top = app.navigationBars["正在训练"].frame.maxY + 8
+        let status = app.staticTexts["activeSet.status"]
+        let bottom = status.exists ? min(app.frame.maxY - 50, status.frame.minY - 24) : app.frame.maxY - 50
+        for _ in 0..<16 {
+            if button.exists && button.isHittable && button.frame.minY >= top && button.frame.maxY <= bottom { break }
+            app.swipeDown(velocity: .slow)
+        }
+        XCTAssertTrue(button.exists)
+        XCTAssertGreaterThanOrEqual(button.frame.minY, top)
+        XCTAssertLessThanOrEqual(button.frame.maxY, bottom)
     }
     @MainActor private func launch(extraArguments: [String] = [], persistent: Bool = false) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = ["-ui-testing"] + extraArguments
