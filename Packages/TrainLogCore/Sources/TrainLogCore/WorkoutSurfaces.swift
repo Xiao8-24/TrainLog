@@ -2,6 +2,11 @@ import Foundation
 
 /// A small, read-only projection. Never shares notes, body weight or the database.
 public struct WorkoutWidgetSnapshot: Codable, Equatable, Sendable {
+    public struct Template: Codable, Equatable, Sendable, Identifiable {
+        public var id: UUID
+        public var name: String
+        public init(id: UUID, name: String) { self.id = id; self.name = name }
+    }
     public struct Record: Codable, Equatable, Sendable {
         public var date: Date
         public var minutes: Int
@@ -12,10 +17,14 @@ public struct WorkoutWidgetSnapshot: Codable, Equatable, Sendable {
     public var weeklyGoal: Int
     public var draftID: UUID?
     public var records: [Record]
+    public var templates: [Template]?
+    public var restDeadline: Date?
 
-    public init(sessions: [Session], weeklyGoal: Int, now: Date = Date(), calendar: Calendar = .current) {
+    public init(sessions: [Session], weeklyGoal: Int, now: Date = Date(), calendar: Calendar = .current, templates: [TrainingTemplate] = [], restDeadline: Date? = nil) {
         updatedAt = now; self.weeklyGoal = weeklyGoal
         draftID = sessions.first { $0.status == .draft }?.id
+        self.templates = templates.map { Template(id: $0.id, name: $0.name) }
+        self.restDeadline = draftID == nil ? nil : restDeadline.flatMap { $0 > now ? $0 : nil }
         let cutoff = calendar.date(byAdding: .day, value: -14, to: calendar.startOfDay(for: now)) ?? now
         records = sessions.filter { $0.status == .completed && $0.date >= cutoff }.map {
             Record(date: $0.date, minutes: Int($0.elapsed(at: now) / 60),
@@ -36,7 +45,7 @@ public struct WorkoutWidgetSnapshot: Codable, Equatable, Sendable {
 }
 
 public enum WorkoutDeepLink: Equatable, Sendable {
-    case workout(UUID?), calendar, overview
+    case workout(UUID?), calendar, overview, training, template(UUID), endRest(UUID)
     public init?(url: URL) {
         guard url.scheme == "trainlog", url.user == nil, url.password == nil,
               url.port == nil, url.query == nil, url.fragment == nil else { return nil }
@@ -48,6 +57,9 @@ public enum WorkoutDeepLink: Equatable, Sendable {
             else { return nil }
         case "calendar": guard parts.isEmpty else { return nil }; self = .calendar
         case "overview": guard parts.isEmpty else { return nil }; self = .overview
+        case "training": guard parts.isEmpty else { return nil }; self = .training
+        case "template": guard parts.count == 1, let id = UUID(uuidString: parts[0]) else { return nil }; self = .template(id)
+        case "rest": guard parts.count == 2, let id = UUID(uuidString: parts[0]), parts[1] == "end" else { return nil }; self = .endRest(id)
         default: return nil
         }
     }
@@ -56,6 +68,9 @@ public enum WorkoutDeepLink: Equatable, Sendable {
         case .workout(let id): return URL(string: "trainlog://workout" + (id.map { "/\($0.uuidString)" } ?? ""))!
         case .calendar: return URL(string: "trainlog://calendar")!
         case .overview: return URL(string: "trainlog://overview")!
+        case .training: return URL(string: "trainlog://training")!
+        case .template(let id): return URL(string: "trainlog://template/\(id.uuidString)")!
+        case .endRest(let id): return URL(string: "trainlog://rest/\(id.uuidString)/end")!
         }
     }
 }
@@ -75,14 +90,20 @@ public struct WorkoutLiveState: Codable, Hashable, Sendable {
         updatedAt = now
         workingSets = session.exercises.reduce(0) { $0 + WorkoutStatisticsService.workingSets($1).count }
         elapsedSeconds = Int(session.elapsed(at: now))
-        timerOrigin = session.timerStartedAt != nil && session.manualDurationSeconds == nil
-            ? now.addingTimeInterval(-Double(elapsedSeconds)) : nil
+        timerOrigin = session.manualDurationSeconds == nil
+            ? session.timerStartedAt?.addingTimeInterval(-session.accumulatedSeconds) : nil
         self.restDeadline = restDeadline.flatMap { $0 > now ? $0 : nil }
         if session.status == .completed { phase = .finished; self.restDeadline = nil; timerOrigin = nil }
         else if self.restDeadline != nil { phase = .resting }
         else { phase = timerOrigin == nil ? .paused : .training }
     }
     public var staleDate: Date { restDeadline ?? updatedAt.addingTimeInterval(4 * 3600) }
+    /// Running time is rendered by the system; note/weight edits aren't new content.
+    public func hasSamePresentation(as other: Self) -> Bool {
+        phase == other.phase && workingSets == other.workingSets && activityKind == other.activityKind &&
+        restDeadline == other.restDeadline && timerOrigin == other.timerOrigin &&
+        (timerOrigin != nil || elapsedSeconds == other.elapsedSeconds)
+    }
     public func label(stale: Bool) -> String {
         if phase == .finished { return "训练已完成" }
         if stale { return phase == .resting ? "休息结束" : "打开训练更新状态" }

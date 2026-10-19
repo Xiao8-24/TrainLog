@@ -44,6 +44,14 @@ public enum RecordValidator {
         set.isCompleted && (try? trainingSet(set, exercise: exercise, requireComplete: true)) != nil
     }
     public static func session(_ session: Session) throws {
+        if let link = session.watchLink {
+            guard session.mode == .detailed, session.phoneLink == nil else { throw ValidationError("只有手机逐组力量训练可以关联手表。") }
+            try link.validate(phoneSessionID: session.id)
+        }
+        if let reference = session.phoneLink {
+            guard session.mode == .cardio, session.activity?.kind == .traditionalStrength,
+                  session.activity?.hasWatchMeasurements == true, reference.phoneSessionID != session.id else { throw ValidationError("关联手机训练的手表资料无效。") }
+        }
         for date in [session.date, session.startTime, session.createdAt, session.updatedAt] + [session.endTime, session.timerStartedAt].compactMap({ $0 }) {
             guard date.timeIntervalSince1970.isFinite else { throw ValidationError("训练日期无效。") }
         }

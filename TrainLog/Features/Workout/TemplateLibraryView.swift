@@ -44,7 +44,7 @@ struct TemplateEditorView: View {
                                 HStack { Text("默认次数").font(.caption); OptionalNumberField(title: "可留空", value: Binding(get: { item.reps.map(Double.init) }, set: { value in item.reps = value.map { $0.isFinite && (1...1000).contains($0) && $0.rounded() == $0 ? Int($0) : -1 } }), integer: true) }
                             }
                             Button("使用上次重量和次数") {
-                                if let previous = store.completed.sorted(by: { $0.date > $1.date }).lazy.compactMap({ $0.exercises.first { $0.exercise.comparisonKey == exercise.comparisonKey } }).first?.sets.last(where: { $0.isCompleted && $0.kind == .working }) {
+                                if let previous = store.completed.lazy.compactMap({ $0.exercises.first { $0.exercise.comparisonKey == exercise.comparisonKey && $0.sets.contains { $0.isCompleted && $0.kind == .working } } }).first?.sets.last(where: { $0.isCompleted && $0.kind == .working }) {
                                     item.weightKg = previous.weightKg; item.reps = previous.reps
                                 }
                             }.font(.caption).disabled(!store.completed.contains { $0.exercises.contains { $0.exercise.comparisonKey == exercise.comparisonKey && $0.sets.contains { $0.isCompleted && $0.kind == .working } } })

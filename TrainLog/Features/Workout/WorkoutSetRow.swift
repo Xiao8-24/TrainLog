@@ -3,17 +3,12 @@ import TrainLogCore
 
 struct ExerciseEditorCard: View {
     @Binding var entry: ExerciseEntry
-    var history: [Session]
+    var previous: ExerciseEntry?
     var unit: WeightUnit
     var onComplete: (Int) -> Void
     var onDelete: () -> Void
     @State private var confirmDelete = false
     @State private var confirmReuse = false
-    private var previous: ExerciseEntry? {
-        // AppStore already keeps history newest first; don't sort it twice for
-        // every keystroke in every set row.
-        history.lazy.compactMap { $0.exercises.first { $0.exercise.comparisonKey == entry.exercise.comparisonKey } }.first
-    }
     var body: some View {
         AppCard {
             HStack(alignment: .top) {
@@ -115,6 +110,7 @@ struct WorkoutSetRow: View {
         .padding(10).background(set.isCompleted ? Color.green.opacity(0.045) : .clear, in: RoundedRectangle(cornerRadius: 12))
         .nativeMotion(value: expanded)
         .nativeMotion(value: set.isCompleted)
+        .transition(.opacity)
         .sensoryFeedback(.success, trigger: set.isCompleted) { _, completed in completed }
         .confirmationDialog("删除第 \(index) 组？", isPresented: $deleteConfirmation, titleVisibility: .visible) { Button("删除本组", role: .destructive, action: onDelete) }
         .errorAlert($errorMessage)

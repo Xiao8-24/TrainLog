@@ -179,7 +179,17 @@ enum TrainLogSchemaV2: VersionedSchema {
     init(id: UUID) { self.id = id }
 }
 enum TrainLogMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [TrainLogSchemaV1.self, TrainLogSchemaV2.self] }
-    static var stages: [MigrationStage] { [.lightweight(fromVersion: TrainLogSchemaV1.self, toVersion: TrainLogSchemaV2.self)] }
+    static var schemas: [any VersionedSchema.Type] { [TrainLogSchemaV1.self, TrainLogSchemaV2.self, TrainLogSchemaV3.self] }
+    static var stages: [MigrationStage] { [.lightweight(fromVersion: TrainLogSchemaV1.self, toVersion: TrainLogSchemaV2.self), .lightweight(fromVersion: TrainLogSchemaV2.self, toVersion: TrainLogSchemaV3.self)] }
+}
+
+@Model final class SessionWatchData {
+    @Attribute(.unique) var id: UUID
+    var payload: Data
+    init(session: Session) throws { id = session.id; payload = try ModelCodec.encode(SessionWatchMetadata(session: session)) }
+}
+enum TrainLogSchemaV3: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
+    static var models: [any PersistentModel.Type] { TrainLogSchemaV2.models + [SessionWatchData.self] }
 }
 

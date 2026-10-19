@@ -13,11 +13,13 @@ import Observation
     private var lastSnapshot: WorkoutWidgetSnapshot?
     var issue: String?
 
-    func publish(sessions: [Session], goal: Int) {
-        let snapshot = WorkoutWidgetSnapshot(sessions: sessions, weeklyGoal: goal)
+    func publish(sessions: [Session], goal: Int, templates: [TrainingTemplate] = []) {
+        let deadline = sessions.first { $0.status == .draft }.flatMap { UserDefaults.standard.object(forKey: "rest.\($0.id.uuidString)") as? Date }
+        let snapshot = WorkoutWidgetSnapshot(sessions: sessions, weeklyGoal: goal, templates: templates, restDeadline: deadline)
         // Ignore the creation timestamp when deciding whether widget content changed.
         if let previous = lastSnapshot, previous.records == snapshot.records,
-           previous.draftID == snapshot.draftID, previous.weeklyGoal == snapshot.weeklyGoal { return }
+           previous.draftID == snapshot.draftID, previous.weeklyGoal == snapshot.weeklyGoal,
+           previous.templates == snapshot.templates, previous.restDeadline == snapshot.restDeadline { return }
         do {
             try WidgetSnapshotStorage.write(snapshot)
             lastSnapshot = snapshot
@@ -48,6 +50,9 @@ import Observation
         let content = ActivityContent(state: state, staleDate: state.staleDate)
         if let activity = Activity<WorkoutActivityAttributes>.activities.first(where: { $0.attributes.sessionID == session.id }) {
             guard activity.activityState == .active || activity.activityState == .stale else { return }
+            let previous = activity.content
+            if previous.state.hasSamePresentation(as: state),
+               let expires = previous.staleDate, expires.timeIntervalSinceNow > 300 { return }
             await activity.update(content)
         } else {
             // Respect user-dismissed activities, including after an app relaunch.

@@ -2,6 +2,23 @@ import XCTest
 @testable import TrainLogCore
 
 final class WorkoutSurfaceTests: XCTestCase {
+    func testLivePresentationIgnoresNoteEditsButTracksPauseAndRestWithExactTimerOrigin() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000.123)
+        var session = Session(mode: .detailed, date: now.addingTimeInterval(-10))
+        session.accumulatedSeconds = 2.25
+        let first = WorkoutLiveState(session: session, restDeadline: nil, now: now)
+        session.notes = "仅修改备注"
+        let later = WorkoutLiveState(session: session, restDeadline: nil, now: now.addingTimeInterval(3.789))
+        XCTAssertEqual(first.timerOrigin, session.timerStartedAt?.addingTimeInterval(-2.25))
+        XCTAssertTrue(first.hasSamePresentation(as: later))
+        let resting = WorkoutLiveState(session: session, restDeadline: now.addingTimeInterval(60), now: now)
+        XCTAssertFalse(first.hasSamePresentation(as: resting))
+        session.pause(at: now)
+        let paused = WorkoutLiveState(session: session, restDeadline: nil, now: now)
+        XCTAssertFalse(first.hasSamePresentation(as: paused))
+        session.accumulatedSeconds += 5
+        XCTAssertFalse(paused.hasSamePresentation(as: WorkoutLiveState(session: session, restDeadline: nil, now: now)))
+    }
     private var calendar: Calendar {
         var value = Calendar(identifier: .gregorian)
         value.timeZone = TimeZone(identifier: "America/Los_Angeles")!

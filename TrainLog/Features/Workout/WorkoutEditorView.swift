@@ -9,6 +9,8 @@ struct WorkoutEditorView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var session: Session
     @State private var restTimer: RestTimer
+    @State private var draftSave: DraftSaveController
+    @State private var recentExercises = RecentExerciseIndex(sessions: [])
     private let editingHistory: Bool
     private let originalSession: Session
     var onFinished: (UUID) -> Void
@@ -17,10 +19,10 @@ struct WorkoutEditorView: View {
     @State private var discardConfirmation = false
     @State private var discardEditsConfirmation = false
     @State private var errorMessage: String?
-    @State private var draftStatus = "草稿保存在本机"
     @State private var saving = false
     init(session: Session, onFinished: @escaping (UUID) -> Void) {
         _session = State(initialValue: session); _restTimer = State(initialValue: RestTimer(sessionID: session.id))
+        _draftSave = State(initialValue: DraftSaveController(saved: session))
         editingHistory = session.status == .completed; originalSession = session; self.onFinished = onFinished
     }
     private var selection: Binding<Set<MuscleGroup>> {
@@ -33,6 +35,9 @@ struct WorkoutEditorView: View {
         ScrollView {
             LazyVStack(spacing: 18) {
                 if !editingHistory && session.mode != .quick { sessionTimer }
+                if !editingHistory && session.mode == .detailed {
+                    LinkedWatchDraftCard(session: $session) { try draftSave.flush(session, save: store.save) }
+                }
                 AppCard {
                     if dynamicTypeSize.isAccessibilitySize {
                         Text("训练日期").font(.headline)
@@ -43,7 +48,10 @@ struct WorkoutEditorView: View {
                         DatePicker("训练日期", selection: $session.date, in: ...max(clock.now, session.date), displayedComponents: [.date, .hourAndMinute])
                     }
                     if editingHistory { Text("历史修改只有在点击保存后才生效；返回会保留原记录。").font(.caption).foregroundStyle(.secondary) }
-                    else { Text(draftStatus).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("draftStatus") }
+                    else {
+                        Text(draftSave.message).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("draftStatus")
+                        if case .failed = draftSave.state { Button("重试保存") { persistDraft(showError: true) } }
+                    }
                 }
                 if session.mode == .quick { quickSelection }
                 else if session.mode == .cardio {
@@ -57,7 +65,7 @@ struct WorkoutEditorView: View {
                     }
                     HStack { Text("整次训练 RPE"); Spacer(); OptionalNumberField(title: "1–10，可留空", value: $session.sessionRPE).frame(maxWidth: 150) }
                     HStack { Text("手动时长（分钟）"); Spacer(); OptionalNumberField(title: "使用计时", value: durationMinutes).frame(maxWidth: 140).accessibilityIdentifier("workout.manualMinutes") }
-                    TextField("训练备注", text: $session.notes, axis: .vertical).lineLimit(2...5)
+                    TextField("训练备注", text: $session.notes, axis: .vertical).lineLimit(2...5).accessibilityIdentifier("workout.notes")
                 }
                 if !editingHistory {
                     Button("放弃这份草稿", role: .destructive) { discardConfirmation = true }.frame(minHeight: 44)
@@ -86,24 +94,32 @@ struct WorkoutEditorView: View {
                 session.exercises.append(ExerciseEntry(exercise: exercise, sets: [set])); showingLibrary = false
             } }
         }
-        .confirmationDialog("放弃草稿？已填写但未保存为完成训练的数据将删除。", isPresented: $discardConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(session.watchLink?.ownsHealthRecord == true ? "放弃手机草稿？手表健康记录保留；未结束的采集需在手表结束。" : "放弃草稿？已填写但未保存为完成训练的数据将删除。", isPresented: $discardConfirmation, titleVisibility: .visible) {
             Button("放弃草稿", role: .destructive) {
                 saving = true
-                do { try store.deleteSession(session.id); restTimer.cancel(); dismiss() } catch { errorMessage = error.localizedDescription; saving = false }
+                do { try store.deleteSession(session.id); draftSave.stop(); restTimer.cancel(); dismiss() } catch { errorMessage = error.localizedDescription; saving = false }
             }
         }
         .errorAlert($errorMessage)
         .confirmationDialog("放弃本次修改？原训练记录会保留。", isPresented: $discardEditsConfirmation, titleVisibility: .visible) {
             Button("放弃修改", role: .destructive) { dismiss() }
         }
-        .task(id: session) {
-            guard !editingHistory, !saving else { return }
-            do { try await Task.sleep(for: .milliseconds(500)); try Task.checkCancellation() } catch { return }
-            persistDraft(showError: false)
+        .onAppear {
+            recentExercises = RecentExerciseIndex(sessions: store.completed, excluding: session.id)
+            if !editingHistory && !saving { draftSave.schedule(session, save: store.save) }
         }
+        .onChange(of: session) { _, value in if !editingHistory && !saving { draftSave.schedule(value, save: store.save) } }
+        .onChange(of: store.completed) { _, records in recentExercises = RecentExerciseIndex(sessions: records, excluding: session.id) }
+        .onChange(of: store.draft?.watchLink) { _, link in
+            if store.draft?.id == session.id, session.watchLink != link { session.watchLink = link }
+        }
+        .onDisappear { draftSave.cancelPending() }
         .onChange(of: scenePhase) { _, phase in if phase != .active && !editingHistory && !saving { persistDraft(showError: false) } }
         .onChange(of: restTimer.deadline) { _, _ in
-            if !editingHistory && !saving { persistDraft(showError: false) }
+            if !editingHistory && !saving { store.refreshSurfaces() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: RestTimer.endRequested)) { notification in
+            if notification.object as? UUID == session.id { restTimer.cancel() }
         }
         .onChange(of: session.intensity) { _, value in
             // The global picker explicitly replaces older per-muscle quick intensities when edited.
@@ -158,7 +174,7 @@ struct WorkoutEditorView: View {
     private var detailedExercises: some View {
         LazyVStack(spacing: 18) {
             ForEach($session.exercises) { $entry in
-                ExerciseEditorCard(entry: $entry, history: store.completed.filter { $0.id != session.id }, unit: store.settings.unit, onComplete: { seconds in
+                ExerciseEditorCard(entry: $entry, previous: recentExercises.previous(for: entry.exercise), unit: store.settings.unit, onComplete: { seconds in
                     if !editingHistory { restTimer.start(seconds: seconds, notify: store.settings.notifyRest) }
                 }, onDelete: { let id = entry.id; session.exercises.removeAll { $0.id == id } })
             }
@@ -169,9 +185,8 @@ struct WorkoutEditorView: View {
     private func persistDraft(showError: Bool) {
         guard !editingHistory, !saving, session.status == .draft else { return }
         do {
-            var value = session; value.updatedAt = Date(); try store.save(value); draftStatus = "草稿已保存 · \(Date().formatted(date: .omitted, time: .shortened))"
+            try draftSave.flush(session, save: store.save)
         } catch {
-            draftStatus = "当前修改尚未保存：\(error.localizedDescription)"
             if showError { errorMessage = error.localizedDescription }
         }
     }
@@ -180,7 +195,7 @@ struct WorkoutEditorView: View {
             if session != originalSession { discardEditsConfirmation = true } else { dismiss() }
             return
         }
-        do { var value = session; value.updatedAt = Date(); try store.save(value); dismiss() }
+        do { try draftSave.flush(session, save: store.save); draftSave.stop(); dismiss() }
         catch { errorMessage = error.localizedDescription }
     }
     private func finish() {
@@ -188,7 +203,7 @@ struct WorkoutEditorView: View {
         do {
             var value = session
             if !editingHistory { value.finish() } else { value.updatedAt = Date() }
-            try store.save(value); session = value; restTimer.cancel()
+            try store.save(value); draftSave.stop(); session = value; restTimer.cancel()
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             if editingHistory { dismiss() } else { onFinished(value.id) }
         } catch { errorMessage = error.localizedDescription; saving = false }

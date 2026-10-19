@@ -11,7 +11,7 @@ public struct HealthWorkoutExport: Codable, Equatable, Sendable {
     public var syncIdentifier: String { "com.trainlog.workout.\(sessionID.uuidString)" }
 
     public init(session: Session, now: Date = Date()) throws {
-        guard session.activity?.hasWatchMeasurements != true else { throw ValidationError("Apple Watch 已管理本次健康训练，无需在手机重复写入。") }
+        guard !session.watchManagesHealthRecord else { throw ValidationError("本次健康训练由 Apple Watch 管理，手机不重复写入。") }
         guard session.status == .completed else { throw ValidationError("完成训练后才可写入 Apple 健康。") }
         let duration = session.elapsed(at: session.endTime ?? session.updatedAt)
         guard duration.isFinite, duration > 0, duration <= 604_800 else {

@@ -152,11 +152,14 @@ public struct Session: Codable, Hashable, Identifiable, Sendable {
     public var quickEntries: [QuickEntry] = []
     // Optional additions keep backups created before cardio/Watch readable.
     public var activity: ActivityRecord?
+    public var watchLink: WatchTrainingLink?
+    public var phoneLink: WatchLinkReference?
     public var accumulatedSeconds: TimeInterval = 0
     public var timerStartedAt: Date?
     public var manualDurationSeconds: Int?
     public var createdAt: Date
     public var updatedAt: Date
+    public var watchManagesHealthRecord: Bool { activity?.hasWatchMeasurements == true || watchLink?.ownsHealthRecord == true }
     public init(mode: WorkoutMode, date: Date = Date()) {
         self.mode = mode; self.date = date; self.startTime = date
         self.createdAt = date; self.updatedAt = date

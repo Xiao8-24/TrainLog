@@ -1,9 +1,41 @@
 import XCTest
 import SwiftData
+import Observation
 import TrainLogCore
 @testable import TrainLog
 
 @MainActor final class PersistenceTests: XCTestCase {
+    func testDraftEditsDoNotInvalidateCompletedArchiveAndCompletionReachesBothCollections() throws {
+        let store = try AppStore(inMemory: true)
+        var completed = Session(mode: .quick); completed.quickEntries = [QuickEntry(muscle: .chest)]
+        completed.finish(); try store.save(completed)
+        var draft = Session(mode: .quick); try store.save(draft)
+        var historyChanged = false
+        withObservationTracking { _ = store.completed } onChange: { historyChanged = true }
+        draft.notes = "草稿输入不应刷新已完成历史"; try store.save(draft)
+        XCTAssertFalse(historyChanged)
+        XCTAssertEqual(store.draft?.notes, draft.notes)
+        draft.quickEntries = [QuickEntry(muscle: .upperBack)]; draft.finish(); try store.save(draft)
+        XCTAssertTrue(historyChanged)
+        XCTAssertNil(store.draft)
+        XCTAssertEqual(Set(store.completed.map(\.id)), [completed.id, draft.id])
+        XCTAssertEqual(store.completed, store.sessions.filter { $0.status == .completed })
+    }
+    func testHistoryDateEditKeepsArchiveAndProjectionInSameOrder() throws {
+        let store = try AppStore(inMemory: true)
+        let now = Date()
+        var older = Session(mode: .quick, date: now.addingTimeInterval(-200))
+        older.quickEntries = [QuickEntry(muscle: .chest)]; older.finish(at: now.addingTimeInterval(-190))
+        var newer = Session(mode: .quick, date: now.addingTimeInterval(-100))
+        newer.quickEntries = [QuickEntry(muscle: .upperBack)]; newer.finish(at: now.addingTimeInterval(-90))
+        try store.save(older); try store.save(newer)
+        XCTAssertEqual(store.completed.map(\.id), [newer.id, older.id])
+        newer.date = now.addingTimeInterval(-300); try store.save(newer)
+        XCTAssertEqual(store.completed.map(\.id), [older.id, newer.id])
+        XCTAssertEqual(store.completed, store.sessions)
+        try store.deleteSession(older.id)
+        XCTAssertEqual(store.completed.map(\.id), [newer.id])
+    }
     func testWidgetAppGroupDoesNotRelocateExistingDatabase() throws {
         let schema = Schema(versionedSchema: TrainLogSchemaV1.self)
         let configuration = AppStore.configuration(schema: schema)

@@ -83,6 +83,7 @@ struct SessionDetailView: View {
                         }
                         if session.mode != .cardio { MuscleMapCard(title: "本次训练覆盖", model: MuscleHeatmapViewModel(sessions: [session], interval: .init(start: .distantPast, end: .distantFuture), metric: .coverage)) { selectedMuscle = $0 } }
                         CardioAnalysisCard(session: session)
+                        LinkedWatchSummaryCard(session: session)
                         if session.status == .completed { WorkoutHealthCard(session: session) }
                         if session.mode == .quick {
                             AppCard {

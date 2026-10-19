@@ -4,6 +4,10 @@
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
+## 0.7.0 原生体验与已批准功能（验证中）
+
+优化草稿保存与失败重试、已完成历史刷新、实时活动判重和原生短动效；新增已批准的手机逐组训练/Watch 数据明确关联，以及交互小组件和快捷指令。B 每周安排、C 云同步未获批准，不开发。详见 [优化说明](Documentation/NATIVE_POLISH.md)、[已批准功能与使用边界](Documentation/APPROVED_FEATURES.md)。当前正在原生 SDK 验证，最终结果见 [验证记录](Documentation/VALIDATION.md)。
+
 ## 0.6.1 有氧与 Apple Watch
 
 128 个力量/核心动作与 38 种有氧及其他运动类型，支持时长、适用距离、平均配速/速度、独立运动趋势与任意日期日历；不会混入力量组数与容量。原生 Watch App 支持主动开始、暂停和保存，采集系统可用的心率、活动能量和距离，离线保留直到手机确认接收，避免重复导入与健康重复写入。

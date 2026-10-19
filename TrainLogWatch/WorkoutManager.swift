@@ -22,6 +22,10 @@ import TrainLogCore
     private(set) var startedAt: Date?
     private(set) var pendingCount = 0
     private(set) var hasRecovery = false
+    private(set) var linkedRequest: WatchTrainingRequest?
+    private var lastLinkUpdate: WatchLinkUpdate?
+    private struct LinkStorage: Codable { var request: WatchTrainingRequest?; var update: WatchLinkUpdate? }
+    private let linkURL = URL.applicationSupportDirectory.appending(path: "WatchConnection/link.json")
     private let health = HKHealthStore()
     private var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
@@ -38,6 +42,10 @@ import TrainLogCore
     override init() {
         super.init()
         hasRecovery = FileManager.default.fileExists(atPath: activeURL.path)
+        if let bytes = try? Data(contentsOf: linkURL), let saved = try? JSONDecoder().decode(LinkStorage.self, from: bytes) {
+            linkedRequest = saved.request; lastLinkUpdate = saved.update
+            if linkedRequest != nil { selection = .traditionalStrength }
+        }
         if WCSession.isSupported() { WCSession.default.delegate = self; WCSession.default.activate() }
         refreshPending()
     }
@@ -50,6 +58,7 @@ import TrainLogCore
         }
     }
     func prepare(_ configuration: HKWorkoutConfiguration) {
+        guard linkedRequest == nil else { issue = "已连接手机训练，请开始或取消这次连接。"; return }
         guard session == nil, !busy else { issue = "请先结束当前训练。"; return }
         selection = .matching(configuration)
         // Starting remains an explicit action on the watch, including pool length.
@@ -58,6 +67,10 @@ import TrainLogCore
         guard session == nil, !busy else { return }
         guard !hasRecovery else { issue = "请先恢复上次训练，或确认放弃未完成的恢复标记。"; recover(); return }
         guard HKHealthStore.isHealthDataAvailable() else { issue = "此设备不支持健康训练。"; return }
+        if let linkedRequest {
+            guard Date().timeIntervalSince(linkedRequest.requestedAt) < 86400 else { issue = "连接已过期，请先取消，再由手机重新连接。"; return }
+            selection = .traditionalStrength
+        }
         busy = true; issue = nil
         defer { busy = false }
         do {
@@ -78,6 +91,7 @@ import TrainLogCore
             let start = Date()
             var value = Session(mode: .cardio, date: start)
             value.activity = ActivityRecord(kind: selection); value.activity?.source = "appleWatch"
+            value.phoneLink = linkedRequest?.reference
             try persistActive(value)
             hasRecovery = true
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -99,6 +113,7 @@ import TrainLogCore
                 }
             }
             running = true; paused = false; publish(force: true)
+            if let reference = value.phoneLink { try? persistLink(request: linkedRequest, update: WatchLinkUpdate(reference: reference, state: .recording)) }
         } catch {
             builder?.discardWorkout(); session?.end(); session = nil; builder = nil; record = nil
             running = false; issue = error.localizedDescription
@@ -157,11 +172,16 @@ import TrainLogCore
             let data = try JSONEncoder().encode(envelope)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try data.write(to: directory.appending(path: "\(value.id.uuidString).json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            if let reference = value.phoneLink { try persistLink(request: nil, update: WatchLinkUpdate(reference: reference, state: .finished)) }
             try? FileManager.default.removeItem(at: activeURL)
             hasRecovery = false
             running = false; paused = false; finishing = false; issue = nil
             session = nil; self.builder = nil; record = nil; completedWorkout = nil
-            if WCSession.default.activationState == .activated { try? WCSession.default.updateApplicationContext(["ended": true]) }
+            if WCSession.default.activationState == .activated {
+                var context: [String: Any] = ["ended": true]
+                if let update = lastLinkUpdate, let bytes = try? JSONEncoder().encode(update) { context["linkUpdate"] = bytes }
+                try? WCSession.default.updateApplicationContext(context)
+            }
             flush()
         } catch { issue = "训练尚未完成保存：\(error.localizedDescription)。请保留此页并重试。" }
     }
@@ -185,6 +205,7 @@ import TrainLogCore
                     builder.delegate = self; native.delegate = self; self.builder = builder
                     self.running = true; self.paused = native.state == .paused; self.elapsed = builder.elapsedTime; self.elapsedUpdatedAt = Date()
                     self.issue = "已恢复训练；恢复前的心率明细保留在 Apple 健康，曲线从恢复后继续。"
+                    if let reference = value.phoneLink { try? self.persistLink(request: self.linkedRequest, update: WatchLinkUpdate(reference: reference, state: .recording)) }
                     self.publish(force: true)
                 } catch { self.issue = "训练恢复失败，原始数据已保留：\(error.localizedDescription)" }
             }
@@ -217,6 +238,7 @@ import TrainLogCore
             value.notes = "已从 Apple 健康恢复摘要；完整心率明细请在健康中查看。"
             let envelope = WatchWorkoutEnvelope(session: value); try envelope.validate()
             try JSONEncoder().encode(envelope).write(to: directory.appending(path: "\(value.id.uuidString).json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            if let reference = value.phoneLink { try persistLink(request: nil, update: WatchLinkUpdate(reference: reference, state: .finished)) }
             try FileManager.default.removeItem(at: activeURL)
             hasRecovery = false
             issue = "已恢复保存的健康训练摘要。"; flush()
@@ -243,6 +265,52 @@ import TrainLogCore
         if let distanceType { distance = builder.statistics(for: distanceType)?.sumQuantity()?.doubleValue(for: .meter()) }
         publish(force: false)
     }
+    private func persistLink(request: WatchTrainingRequest?, update: WatchLinkUpdate) throws {
+        try FileManager.default.createDirectory(at: linkURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let bytes = try JSONEncoder().encode(LinkStorage(request: request, update: update))
+        try bytes.write(to: linkURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        linkedRequest = request; lastLinkUpdate = update
+        sendLinkState()
+    }
+    private func sendLinkState() {
+        guard WCSession.default.activationState == .activated, let update = lastLinkUpdate,
+              let bytes = try? JSONEncoder().encode(update) else { return }
+        let message: [String: Any] = ["linkUpdate": bytes]
+        if !WCSession.default.outstandingUserInfoTransfers.contains(where: { $0.userInfo["linkUpdate"] as? Data == bytes }) {
+            WCSession.default.transferUserInfo(message)
+        }
+        var context = WCSession.default.applicationContext; context["linkUpdate"] = bytes
+        try? WCSession.default.updateApplicationContext(context)
+        if WCSession.default.isReachable { WCSession.default.sendMessage(message, replyHandler: nil, errorHandler: nil) }
+    }
+    private func handle(_ command: WatchLinkCommand) throws -> WatchLinkUpdate {
+        try command.request.validate()
+        let reference = command.request.reference
+        if let last = lastLinkUpdate, last.reference == reference,
+           last.state == .recording || last.state == .finished || last.state == .cancelled { return last }
+        switch command.kind {
+        case .prepare:
+            guard session == nil, !busy, !running, !hasRecovery else { throw ValidationError("请先结束或恢复当前手表训练。") }
+            if let linkedRequest, linkedRequest.reference != reference { throw ValidationError("手表已准备另一场手机训练，请先取消。") }
+            let update = WatchLinkUpdate(reference: reference, state: .prepared)
+            try persistLink(request: command.request, update: update); selection = .traditionalStrength; issue = nil
+            return update
+        case .cancel:
+            guard session == nil, !busy, !running, !hasRecovery else { throw ValidationError("训练已经开始，请在手表结束并保存。") }
+            if let linkedRequest, linkedRequest.reference != reference { throw ValidationError("这不是手表当前准备的连接。") }
+            let update = WatchLinkUpdate(reference: reference, state: .cancelled)
+            try persistLink(request: nil, update: update); issue = nil
+            return update
+        case .status:
+            guard let last = lastLinkUpdate, last.reference == reference else { throw ValidationError("手表尚未确认这次连接，请在手机重试连接。") }
+            return last
+        }
+    }
+    func cancelPreparedLink() {
+        guard let linkedRequest else { return }
+        do { _ = try handle(WatchLinkCommand(kind: .cancel, request: linkedRequest)) }
+        catch { issue = error.localizedDescription }
+    }
     func discardRecovery() {
         guard session == nil, !running, !recovering else { return }
         do { try FileManager.default.removeItem(at: activeURL); hasRecovery = false; issue = nil }
@@ -254,9 +322,11 @@ import TrainLogCore
         lastPublished = now
         let freshHeart = heartRateDate.map { now.timeIntervalSince($0) <= 20 } == true ? heartRate : nil
         let snapshot = WatchLiveSnapshot(sessionID: record.id, kind: selection, updatedAt: now, startedAt: startedAt,
-            elapsed: builder?.elapsedTime ?? elapsed, paused: paused, heartRate: paused ? nil : freshHeart, activeEnergyKcal: energy, distanceMeters: distance)
+            elapsed: builder?.elapsedTime ?? elapsed, paused: paused, heartRate: paused ? nil : freshHeart, activeEnergyKcal: energy, distanceMeters: distance, phoneLink: record.phoneLink)
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
-        try? WCSession.default.updateApplicationContext(["live": data])
+        var context: [String: Any] = ["live": data]
+        if let update = lastLinkUpdate, let bytes = try? JSONEncoder().encode(update) { context["linkUpdate"] = bytes }
+        try? WCSession.default.updateApplicationContext(context)
         if WCSession.default.isReachable { WCSession.default.sendMessage(["live": data], replyHandler: nil, errorHandler: nil) }
     }
     private func pendingFiles() -> [URL] {
@@ -284,8 +354,18 @@ import TrainLogCore
     nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) { Task { @MainActor in self.issue = "系统训练发生错误：\(error.localizedDescription)" } }
     nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}
     nonisolated func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) { Task { @MainActor in self.collect(collectedTypes) } }
-    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) { Task { @MainActor in self.flush() } }
-    nonisolated func sessionReachabilityDidChange(_ session: WCSession) { Task { @MainActor in self.flush(); self.publish(force: true) } }
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) { Task { @MainActor in self.flush(); self.sendLinkState() } }
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) { Task { @MainActor in self.flush(); self.publish(force: true); self.sendLinkState() } }
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        guard let bytes = message["linkCommand"] as? Data, bytes.count < 8192 else { replyHandler(["error": "不支持的连接请求。"]); return }
+        Task { @MainActor in
+            do {
+                let command = try JSONDecoder().decode(WatchLinkCommand.self, from: bytes)
+                let update = try self.handle(command)
+                replyHandler(["linkUpdate": try JSONEncoder().encode(update)])
+            } catch { replyHandler(["error": error.localizedDescription]) }
+        }
+    }
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         guard let raw = userInfo["ack"] as? String, let id = UUID(uuidString: raw) else { return }
         Task { @MainActor in

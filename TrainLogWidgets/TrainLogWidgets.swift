@@ -1,5 +1,6 @@
 import SwiftUI
 import WidgetKit
+import AppIntents
 import TrainLogCore
 
 @main struct TrainLogWidgets: WidgetBundle {
@@ -31,7 +32,7 @@ struct TrainingWidget: Widget {
         StaticConfiguration(kind: WidgetSnapshotStorage.kind, provider: TrainingProvider()) { entry in
             TrainingWidgetView(entry: entry)
                 .containerBackground(.background, for: .widget)
-                .widgetURL(entry.snapshot == nil ? WorkoutDeepLink.overview.url : WorkoutDeepLink.workout(entry.snapshot?.draftID).url)
+                .widgetURL(entry.snapshot == nil ? WorkoutDeepLink.overview.url : entry.snapshot?.draftID.map { WorkoutDeepLink.workout($0).url } ?? WorkoutDeepLink.training.url)
         }
         .configurationDisplayName("训练日程")
         .description("查看今日训练、本周进度，或继续未完成的训练。")
@@ -73,8 +74,13 @@ struct TrainingWidgetView: View {
             Text("\(records.reduce(0) { $0 + $1.minutes }) 分钟 · \(records.reduce(0) { $0 + $1.workingSets }) 组")
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
             Spacer(minLength: 0)
-            Label(snapshot.draftID == nil ? "开始训练" : "继续草稿", systemImage: snapshot.draftID == nil ? "plus.circle.fill" : "play.circle.fill")
-                .font(.caption.weight(.semibold)).foregroundStyle(.blue).widgetAccentable()
+            if let id = snapshot.draftID {
+                Button(intent: ContinueTrainingIntent(sessionID: id)) { Label("继续训练", systemImage: "play.fill") }
+                    .buttonStyle(.bordered).font(.caption).tint(.blue)
+            } else {
+                Button(intent: ContinueTrainingIntent()) { Label("打开训练", systemImage: "plus.circle.fill") }
+                    .buttonStyle(.bordered).font(.caption).tint(.blue)
+            }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func week(_ snapshot: WorkoutWidgetSnapshot) -> some View {
@@ -95,7 +101,17 @@ struct TrainingWidgetView: View {
                 }
             }
             Spacer(minLength: 0)
-            Link(destination: WorkoutDeepLink.calendar.url) { Label("健身日历", systemImage: "calendar").font(.caption.weight(.semibold)) }
+            if let id = snapshot.draftID, let end = snapshot.restDeadline, end > entry.date {
+                Button(intent: EndTrainingRestIntent(sessionID: id)) { Label("结束休息", systemImage: "timer") }
+                    .buttonStyle(.bordered).font(.caption).tint(.blue)
+            } else {
+                HStack {
+                    Button(intent: OpenTrainingCalendarIntent()) { Image(systemName: "calendar") }.accessibilityLabel("健身日历")
+                    if snapshot.draftID == nil, let template = snapshot.templates?.first {
+                        Button(intent: StartTrainingTemplateIntent(template: template)) { Text(template.name).lineLimit(1) }
+                    }
+                }.buttonStyle(.bordered).font(.caption).tint(.blue)
+            }
         }.frame(maxWidth: .infinity)
     }
 }

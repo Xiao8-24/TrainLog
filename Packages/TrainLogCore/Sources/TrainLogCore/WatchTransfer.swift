@@ -10,10 +10,12 @@ public struct WatchLiveSnapshot: Codable, Equatable, Sendable {
     public var heartRate: Double?
     public var activeEnergyKcal: Double?
     public var distanceMeters: Double?
-    public init(sessionID: UUID, kind: CardioActivity, updatedAt: Date, startedAt: Date, elapsed: TimeInterval, paused: Bool, heartRate: Double?, activeEnergyKcal: Double?, distanceMeters: Double?) {
+    public var phoneLink: WatchLinkReference?
+    public init(sessionID: UUID, kind: CardioActivity, updatedAt: Date, startedAt: Date, elapsed: TimeInterval, paused: Bool, heartRate: Double?, activeEnergyKcal: Double?, distanceMeters: Double?, phoneLink: WatchLinkReference? = nil) {
         self.sessionID = sessionID; self.kind = kind; self.updatedAt = updatedAt; self.startedAt = startedAt
         self.elapsed = elapsed; self.paused = paused; self.heartRate = heartRate
         self.activeEnergyKcal = activeEnergyKcal; self.distanceMeters = distanceMeters
+        self.phoneLink = phoneLink
     }
     public func isFresh(at now: Date = Date()) -> Bool {
         guard now.timeIntervalSince(updatedAt) >= -5 && now.timeIntervalSince(updatedAt) <= 20,
@@ -30,9 +32,9 @@ public struct WatchLiveSnapshot: Codable, Equatable, Sendable {
 public struct WatchWorkoutEnvelope: Codable, Sendable {
     public var version = 1
     public var session: Session
-    public init(session: Session) { self.session = session }
+    public init(session: Session) { self.session = session; version = session.phoneLink == nil ? 1 : 2 }
     public func validate() throws {
-        guard version == 1, session.mode == .cardio, session.status == .completed,
+        guard (1...2).contains(version), (version == 2 || session.phoneLink == nil), session.mode == .cardio, session.status == .completed,
               session.activity?.hasWatchMeasurements == true, session.activity?.watchWorkoutID != nil else { throw ValidationError("不支持的手表训练数据。") }
         try RecordValidator.session(session)
     }

@@ -1,6 +1,26 @@
 import XCTest
 
 final class TrainLogUITests: XCTestCase {
+    @MainActor func testDraftLastEditSurvivesBackgroundAndRelaunch() {
+        let app = launch(persistent: true)
+        app.tabBars.buttons["训练"].tap(); app.buttons["quickWorkout"].tap()
+        XCTAssertTrue(app.navigationBars["快速记录"].waitForExistence(timeout: 10))
+        let note = app.textFields["workout.notes"]
+        let multilineNote = app.textViews["workout.notes"]
+        for _ in 0..<8 where !note.isHittable && !multilineNote.isHittable { app.swipeUp(velocity: .slow) }
+        let field = note.exists ? note : multilineNote
+        XCTAssertTrue(field.exists); field.tap(); field.typeText("latest note 062")
+        // Background immediately, without an explicit save/close action.
+        XCUIDevice.shared.press(.home)
+        app.terminate(); app.launch()
+        let resume = app.buttons["startWorkout"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10)); resume.tap()
+        XCTAssertTrue(app.navigationBars["快速记录"].waitForExistence(timeout: 10))
+        for _ in 0..<8 where !note.isHittable && !multilineNote.isHittable { app.swipeUp(velocity: .slow) }
+        let restored = note.exists ? note : multilineNote
+        XCTAssertEqual(restored.value as? String, "latest note 062")
+        capture(app, name: "Draft restored after background and cold relaunch")
+    }
     @MainActor func testCardioRecordingSummaryAndCalendar() {
         let app = launch()
         app.tabBars.buttons["训练"].tap()

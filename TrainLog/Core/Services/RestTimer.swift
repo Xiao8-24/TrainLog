@@ -55,6 +55,11 @@ final class RestNotificationScheduler: @unchecked Sendable {
 }
 
 @MainActor @Observable final class RestTimer {
+    static let endRequested = Notification.Name("TrainLog.endRestRequested")
+    static func endCurrentRest(sessionID: UUID) {
+        RestTimer(sessionID: sessionID).cancel()
+        NotificationCenter.default.post(name: endRequested, object: sessionID)
+    }
     var deadline: Date?
     var notificationError: String?
     private let key: String

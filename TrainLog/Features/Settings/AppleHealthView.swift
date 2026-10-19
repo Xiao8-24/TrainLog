@@ -70,7 +70,7 @@ struct WorkoutHealthCard: View {
     var body: some View {
         AppCard {
             Label("Apple 健康", systemImage: "heart.fill").font(.headline).foregroundStyle(.pink)
-            Text(session.activity?.hasWatchMeasurements == true ? "由 Apple Watch 保存到健康，手机不重复写入" : health.status(for: session.id)).font(.subheadline)
+            Text(session.watchManagesHealthRecord ? (session.watchLink != nil && session.watchLink?.summary == nil ? "已关联 Apple Watch，等待手表开始／完成并保存健康记录" : "由 Apple Watch 保存到健康，手机不重复写入") : health.status(for: session.id)).font(.subheadline)
                 .accessibilityIdentifier("health.workoutStatus")
             if let export {
                 Text("\(export.activityKind?.name ?? "传统力量训练") · \(Int(export.duration / 60)) 分钟")

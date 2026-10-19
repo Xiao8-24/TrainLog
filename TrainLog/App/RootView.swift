@@ -89,6 +89,12 @@ struct RootView: View {
         #endif
         guard scenePhase == .active, store.settings.hasOnboarded, let url = pendingURL else { return }
         guard let route = WorkoutDeepLink(url: url) else { pendingURL = nil; return }
+        if case .endRest(let id) = route {
+            pendingURL = nil
+            guard store.draft?.id == id else { return }
+            RestTimer.endCurrentRest(sessionID: id); store.refreshSurfaces()
+            return
+        }
         guard router.editing == nil else { pendingURL = nil; return }
         // Wait for modal dismissal before presenting another destination.
         if settingsPresented { settingsPresented = false; return }
@@ -97,6 +103,14 @@ struct RootView: View {
         pendingURL = nil
         switch route {
         case .overview: router.tab = .overview
+        case .training: router.tab = .workout
+        case .template(let id):
+            router.tab = .workout
+            guard let template = store.templates.first(where: { $0.id == id }) else {
+                store.errorMessage = "这个模板已不存在，请重新选择。"; return
+            }
+            router.start(.detailed, store: store, template: template)
+        case .endRest: break // Handled before modal routing; never dismiss unsaved edits.
         case .calendar:
             // Avoid dismissing an editor with unsaved fields to show a calendar.
             guard router.editing == nil else { return }
