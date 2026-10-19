@@ -4,13 +4,13 @@
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
-## 0.8.0 实时逐组训练与计划（验证中）
+## 0.8.0 实时逐组训练与计划
 
-以“开始训练→开始本组→结束本组”为主要流程，开练自动计时，显示每组与整场用时，暂停、后台和冷启动保留状态。支持提前安排日期、动作、预设组、重量和次数，计划开始前不计入训练统计。详见[实时训练与计划](Documentation/LIVE_TRAINING_AND_PLANS.md)。计划提醒与iCloud同步未开启，最终构建结果见[验证记录](Documentation/VALIDATION.md)。
+以“开始训练→开始本组→结束本组”为主要流程，开练自动计时，显示每组与整场用时，暂停、后台和冷启动保留状态。支持提前安排日期、动作、预设组、重量和次数，计划开始前不计入训练统计。详见[实时训练与计划](Documentation/LIVE_TRAINING_AND_PLANS.md)。**[v0.8.0 预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.8.0)**；[Actions #35](https://github.com/Xiao8-24/TrainLog/actions/runs/39228055603) 通过 **125 项测试**并完成含 Widget、Watch 的设备归档。五个发布文件已校验，源码包133个文件与测试提交一致。IPA 未签名；真机流畅度、健康及跨设备行为仍需验收。计划提醒与iCloud同步未开启，完整结果见[验证记录](Documentation/VALIDATION.md)。
 
 ## 0.7.0 原生体验与已批准功能
 
-优化草稿保存与失败重试、已完成历史刷新、实时活动判重和原生短动效；新增已批准的手机逐组训练/Watch 数据明确关联，以及交互小组件和快捷指令。B 每周安排、C 云同步未获批准，不开发。详见 [优化说明](Documentation/NATIVE_POLISH.md)、[已批准功能与使用边界](Documentation/APPROVED_FEATURES.md)。
+优化草稿保存与失败重试、已完成历史刷新、实时活动判重和原生短动效；新增已批准的手机逐组训练/Watch 数据明确关联，以及交互小组件和快捷指令。当时未开发每周安排/提醒与云同步；本轮用户明确要求的日期计划已在0.8.0实现，提醒和云同步仍未开启。详见 [优化说明](Documentation/NATIVE_POLISH.md)、[已批准功能与使用边界](Documentation/APPROVED_FEATURES.md)。
 
 **[v0.7.0 预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.7.0)**；[Actions #33](https://github.com/Xiao8-24/TrainLog/actions/runs/39193170639) 通过 **111 项测试**并完成含 Widget、Watch 的设备归档。五个发布文件已下载校验，源码包127个文件与测试提交一致。IPA 未签名，真实传感器、跨设备连接、Siri、系统小组件及帧率仍需配对真机验收。截图与完整结果见 [验证记录](Documentation/VALIDATION.md)。
 
