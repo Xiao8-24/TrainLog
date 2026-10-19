@@ -6,7 +6,7 @@ struct FitnessCalendarView: View {
     @Environment(AppStore.self) private var store
     @Environment(AppClock.self) private var clock
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @NativeReducedMotion private var reduceMotion
     @State private var revealRequest = 0
     @State private var creatingPlan: TrainingPlan?
     @SceneStorage("fitnessCalendar.selectedDate") private var selectedTimestamp = Date().timeIntervalSince1970
@@ -84,7 +84,7 @@ struct NativeWorkoutCalendar: UIViewRepresentable {
     var index: WorkoutCalendarIndex
     var plannedDays: Set<Date> = []
     var revealRequest = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @NativeReducedMotion private var reduceMotion
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> UICalendarView {

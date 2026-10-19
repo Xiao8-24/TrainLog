@@ -11,9 +11,7 @@ import TrainLogCore
                 if let store {
                     RootView(pendingURL: $pendingURL).environment(store)
                         #if DEBUG
-                        .transformEnvironment(\.accessibilityReduceMotion) { value in
-                            if ProcessInfo.processInfo.arguments.contains("-ui-testing"), ProcessInfo.processInfo.arguments.contains("-ui-reduce-motion") { value = true }
-                        }
+                        .environment(\.trainLogMotionTestOverride, ProcessInfo.processInfo.arguments.contains("-ui-testing") && ProcessInfo.processInfo.arguments.contains("-ui-reduce-motion"))
                         #endif
                         .preferredColorScheme(store.settings.theme == .system ? nil : store.settings.theme == .dark ? .dark : .light)
                 } else if let startupError {

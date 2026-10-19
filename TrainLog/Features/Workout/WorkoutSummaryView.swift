@@ -4,7 +4,7 @@ import TrainLogCore
 struct WorkoutSummaryView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @NativeReducedMotion private var reduceMotion
     var sessionID: UUID
     @State private var reveal = false
     @State private var muscle: MuscleGroup?

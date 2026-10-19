@@ -11,8 +11,36 @@ import Observation
     }
 }
 
+#if DEBUG
+private struct MotionTestOverrideKey: EnvironmentKey {
+    static let defaultValue = false
+}
+extension EnvironmentValues {
+    var trainLogMotionTestOverride: Bool {
+        get { self[MotionTestOverrideKey.self] }
+        set { self[MotionTestOverrideKey.self] = newValue }
+    }
+}
+#endif
+
+/// Real accessibility preferences always win. Only isolated DEBUG tests may
+/// additionally request reduced application motion; no system setting is written.
+@propertyWrapper struct NativeReducedMotion: DynamicProperty {
+    @Environment(\.accessibilityReduceMotion) private var systemValue
+    #if DEBUG
+    @Environment(\.trainLogMotionTestOverride) private var testValue
+    #endif
+    var wrappedValue: Bool {
+        #if DEBUG
+        systemValue || testValue
+        #else
+        systemValue
+        #endif
+    }
+}
+
 struct NativeMotion<Value: Equatable>: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @NativeReducedMotion private var reduceMotion
     var value: Value
     func body(content: Content) -> some View {
         content.animation(reduceMotion ? nil : .snappy(duration: 0.26, extraBounce: 0), value: value)
@@ -20,7 +48,7 @@ struct NativeMotion<Value: Equatable>: ViewModifier {
 }
 
 struct NativeNumberTransition: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @NativeReducedMotion private var reduceMotion
     var value: String
     func body(content: Content) -> some View {
         content.contentTransition(reduceMotion ? .identity : .numericText())
@@ -30,7 +58,7 @@ struct NativeNumberTransition: ViewModifier {
 
 /// Only symbol changes use replacement motion; surrounding labels and fields keep identity.
 struct NativeSymbolTransition: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @NativeReducedMotion private var reduceMotion
     func body(content: Content) -> some View {
         content.contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
     }

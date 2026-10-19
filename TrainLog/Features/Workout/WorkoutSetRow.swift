@@ -60,7 +60,7 @@ struct WorkoutSetRow: View {
     var otherSetActive: Bool
     var onAction: (TrainingSetAction) -> Void
     var onDelete: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @NativeReducedMotion private var reduceMotion
     @State private var expanded = false
     @State private var deleteConfirmation = false
     @State private var errorMessage: String?
