@@ -4,9 +4,11 @@
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。
 
-## 0.9.1 计划复盘与下次目标参考（验证中）
+## 0.9.1 计划复盘与下次目标参考
 
 实现用户新批准的E、G：开练时保留计划目标快照，完成后对照实际记录，可预览并复制实际配置为新计划；模板/计划配置中逐项查看有依据、可编辑确认的下次目标参考，支持关闭。资料不足不生成增加目标，不自动改训练。完整JSON升级版本5并读取旧版，数据库保持V4。详见[使用方法与规则](Documentation/REVIEW_AND_TARGETS.md)，最终原生验证与发布结果见[验证记录](Documentation/VALIDATION.md)。F器械替换仍待批准。
+
+**[v0.9.1 预览版已发布](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.9.1)**；[Actions #41](https://github.com/Xiao8-24/TrainLog/actions/runs/39276536287) 通过 **141 项测试，0失败**，完成含 Widget、Watch 的设备归档。五个发布文件已下载校验，源码包140个文件与测试提交一致。已复核原生复盘、目标采用/关闭、备注冷启动恢复及普通/最大辅助字号计时截图；真机帧率和传感器仍待设备验收。IPA未签名，三个产品均为0.9.1 / build14，最低系统27.0。
 
 ## 本轮原生动效改进
 
