@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'model.dart';
 import 'store.dart';
 import 'muscle_map.dart';
+import 'generated_tokens.dart';
 part 'editors.dart';
 part 'pages.dart';
 
@@ -39,14 +40,24 @@ class TrainLogApp extends StatelessWidget {
   final TrainingStore store;
   final Json labels;
   @override Widget build(BuildContext context) => ListenableBuilder(listenable: store, builder: (context, _) {
-    ThemeData theme(Brightness brightness) => ThemeData(
+    ThemeData theme(Brightness brightness) {
+      final dark = brightness == Brightness.dark;
+      final accent = dark ? TrainLogTokens.accentDark : TrainLogTokens.accentLight;
+      final background = dark ? TrainLogTokens.groupedBackgroundDark : TrainLogTokens.groupedBackgroundLight;
+      final card = dark ? TrainLogTokens.cardDark : TrainLogTokens.cardLight;
+      return ThemeData(
       useMaterial3: true, brightness: brightness,
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff177c66), brightness: brightness),
+      colorScheme: ColorScheme.fromSeed(seedColor: accent, brightness: brightness).copyWith(primary: accent, surface: card),
+      scaffoldBackgroundColor: background,
       fontFamily: Platform.isWindows ? 'Segoe UI' : null,
       visualDensity: VisualDensity.standard,
-      inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
-      cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
+      inputDecorationTheme: InputDecorationTheme(border: OutlineInputBorder(borderRadius: BorderRadius.circular(14))),
+      cardTheme: CardThemeData(elevation: 0, margin: EdgeInsets.zero, color: card, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(TrainLogTokens.cardRadius))),
+      appBarTheme: AppBarTheme(backgroundColor: background, scrolledUnderElevation: 0),
+      navigationBarTheme: NavigationBarThemeData(backgroundColor: card, elevation: 0),
+      navigationRailTheme: NavigationRailThemeData(backgroundColor: background),
     );
+    }
     return MaterialApp(title: 'TrainLog', debugShowCheckedModeBanner: false,
       locale: const Locale('zh', 'CN'), supportedLocales: const [Locale('zh', 'CN'), Locale('en')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -110,7 +121,7 @@ class _HomeState extends State<Home> {
 class PageBody extends StatelessWidget {
   const PageBody({super.key, required this.children});
   final List<Widget> children;
-  @override Widget build(BuildContext context) => Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1080), child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 32), children: children)));
+  @override Widget build(BuildContext context) => Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1080), child: ListView(padding: const EdgeInsets.fromLTRB(TrainLogTokens.contentSpacing, 12, TrainLogTokens.contentSpacing, 32), children: children)));
 }
 class Section extends StatelessWidget {
   const Section(this.title, {super.key, this.subtitle, required this.child});

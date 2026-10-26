@@ -1,5 +1,7 @@
 # TrainLog
 
+跨平台统一视觉与账户同步的开发状态、外部配置和数据安全设计见 [跨平台账户同步](Documentation/ACCOUNT_SYNC.md)。已发布版本仍以本地记录和 JSON 备份为准，当前没有上线的账户服务。
+
 ## Android 与 Windows 预览版
 
 新增可安装的 Android APK 和 Windows x64 客户端：边练边记录组数、整体与逐组计时、训练计划、任意日期日历、人体肌群分布与本地备份。平台范围、安装包、iOS 备份互通与系统能力说明见 [Android 与 Windows 客户端](Documentation/CROSS_PLATFORM.md)。[v0.10.0 发布页](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.10.0) 在两端测试与备份验证通过后提供下载。

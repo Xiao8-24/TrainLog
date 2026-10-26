@@ -3,8 +3,8 @@ import Charts
 import TrainLogCore
 
 enum AppTheme {
-    static let spacing: CGFloat = 20
-    static let radius: CGFloat = 22
+    static let spacing = TrainLogTokens.contentSpacing
+    static let radius = TrainLogTokens.cardRadius
     static let background = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
     static func heat(_ level: Int, dark: Bool) -> Color {

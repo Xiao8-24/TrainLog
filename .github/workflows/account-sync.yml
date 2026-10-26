@@ -1,0 +1,33 @@
+name: Shared design and account sync core
+on:
+  push:
+    paths:
+      - 'DesignSystem/**'
+      - 'SyncService/**'
+      - 'Tools/generate_design_tokens.py'
+      - 'CrossPlatform/lib/generated_tokens.dart'
+      - 'CrossPlatform/lib/sync_client.dart'
+      - 'Packages/TrainLogCore/Sources/TrainLogCore/SyncTransport.swift'
+      - '.github/workflows/account-sync.yml'
+  pull_request:
+    paths:
+      - 'DesignSystem/**'
+      - 'SyncService/**'
+      - 'Tools/generate_design_tokens.py'
+      - 'CrossPlatform/lib/generated_tokens.dart'
+      - 'CrossPlatform/lib/sync_client.dart'
+      - 'Packages/TrainLogCore/Sources/TrainLogCore/SyncTransport.swift'
+      - '.github/workflows/account-sync.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check generated Swift and Dart brand tokens
+        run: python Tools/generate_design_tokens.py --check
+      - name: Test encrypted storage, auth validation and CAS conflicts
+        working-directory: SyncService
+        run: node --test
