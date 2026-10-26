@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:sembast/sembast_io.dart';
+import 'database.dart';
 import 'model.dart';
 
 class TrainingStore extends ChangeNotifier {
   TrainingStore._(this._db, this._lock, this.data, this.restUntil, this.now);
-  final Database _db;
+  final RecordDatabase _db;
   final RandomAccessFile? _lock;
   final DateTime Function() now;
-  static final _record = stringMapStoreFactory.store('trainlog').record('state');
   Json data;
   String? restUntil;
   bool busy = false;
@@ -18,20 +17,20 @@ class TrainingStore extends ChangeNotifier {
 
   static Future<TrainingStore> open(String path, List<Json> catalog, {DateTime Function()? clock, bool lock = true}) async {
     RandomAccessFile? handle;
-    Database? db;
+    RecordDatabase? db;
     try {
       if (lock) {
         await File(path).parent.create(recursive: true);
         handle = await File('$path.lock').open(mode: FileMode.append);
         await handle.lock(FileLock.exclusive);
       }
-      db = await databaseFactoryIo.openDatabase(path);
-      final record = await _record.get(db);
+      db = await RecordDatabase.open(path);
+      final record = await db.read();
       final current = clock ?? DateTime.now;
       final data = record == null ? initialBackup(catalog, current()) : copy(record['backup'] as Json);
       validateBackup(data, now: current());
       final store = TrainingStore._(db, handle, data, record?['restUntil'] as String?, current);
-      if (record == null) { await _record.put(db, {'backup': data}); }
+      if (record == null) { await db.write({'backup': data}); }
       return store;
     } catch (_) {
       await db?.close();
@@ -60,7 +59,7 @@ class TrainingStore extends ChangeNotifier {
       next['schemaVersion'] = 5; next['exportedAt'] = stamp(now());
       validateBackup(next, now: now());
       final nextRest = clearRest ? null : rest ?? restUntil;
-      await _db.transaction((txn) => _record.put(txn, {'backup': next, if (nextRest != null) 'restUntil': nextRest}));
+      await _db.write({'backup': next, if (nextRest != null) 'restUntil': nextRest});
       data = next; restUntil = nextRest;
       return true;
     } catch (e) {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trainlog/model.dart';
 import 'package:trainlog/store.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   late Directory dir;
@@ -110,9 +111,19 @@ void main() {
     expect(store.exportBackup()['bodyWeights'], backup['bodyWeights']); expect(store.settings, backup['settings']);
   });
   test('corrupt database refuses to open and does not reset original file', () async {
-    await store.close(); final file = File('${dir.path}/training.db'); await file.writeAsString('not a sembast database');
+    await store.close(); final file = File('${dir.path}/training.db'); await file.writeAsString('not a SQLite database');
     await expectLater(TrainingStore.open(file.path, catalog, clock: () => now), throwsA(anything));
-    expect(await file.readAsString(), 'not a sembast database');
+    expect(await file.readAsString(), 'not a SQLite database');
+  });
+  test('failed SQLite write keeps prior data and succeeds after retry', () async {
+    final external = sqlite3.open('${dir.path}/training.db');
+    external.execute("CREATE TRIGGER reject_update BEFORE UPDATE ON state BEGIN SELECT RAISE(FAIL, 'simulated write failure'); END");
+    try {
+      expect(await store.start(), isFalse); expect(store.draft, isNull); expect(store.error, isNotNull);
+      external.execute('DROP TRIGGER reject_update');
+      await reopen(); expect(store.draft, isNull); expect(await store.start(), isTrue);
+      await reopen(); expect(store.draft, isNotNull);
+    } finally { external.close(); }
   });
   test('backup export fixture for native Swift compatibility check', () async {
     final ids = await prepare(); await store.beginSet(ids.$2); now = now.add(const Duration(seconds: 15)); await store.completeSet(ids.$1, ids.$2); await store.finish();

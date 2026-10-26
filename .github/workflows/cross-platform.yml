@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -59,9 +59,12 @@ jobs:
       - name: Analyze
         working-directory: CrossPlatform
         run: flutter analyze --no-fatal-infos
+      - name: Apply TrainLog launcher icons
+        working-directory: CrossPlatform
+        run: dart run flutter_launcher_icons
       - name: Test records, timers, backup safety and adaptive UI
         working-directory: CrossPlatform
-        run: flutter test --reporter expanded
+        run: flutter test --reporter expanded --timeout 2m
       - name: Build Android preview APKs
         if: runner.os == 'Linux'
         working-directory: CrossPlatform
@@ -97,9 +100,44 @@ jobs:
           name: TrainLog-${{ runner.os }}-${{ github.run_number }}
           path: artifacts/cross-delivery/
           if-no-files-found: error
+  backup-interop:
+    needs: clients
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-diagnostics-Linux-${{ github.run_number }}
+          path: .
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
+      - name: Compile actual native backup decoder
+        run: swiftc -parse-as-library Packages/TrainLogCore/Sources/TrainLogCore/*.swift Tools/cross_backup_interop.swift -o artifacts/cross-interop
+      - name: Validate Dart export using Swift
+        run: artifacts/cross-interop validate artifacts/cross-backup-fixture.json artifacts/cross-backup-native.json
+      - name: Generate Swift backup
+        run: artifacts/cross-interop generate unused artifacts/native-fixture.json
+      - name: Verify native backup round trip through Dart database
+        working-directory: CrossPlatform
+        env:
+          CROSS_NATIVE_FIXTURE: ../artifacts/native-fixture.json
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter test test/interop_test.dart --reporter expanded --timeout 2m
+      - name: Validate returned backup using Swift
+        run: artifacts/cross-interop validate artifacts/native-roundtrip.json artifacts/native-roundtrip-validated.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-backup-interop-${{ github.run_number }}
+          path: artifacts/*.json
   publish:
     if: inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release cross v0.10.0'))
-    needs: clients
+    needs: [clients, backup-interop]
     runs-on: ubuntu-latest
     permissions:
       contents: write

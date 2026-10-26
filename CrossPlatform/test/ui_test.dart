@@ -19,18 +19,25 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize); addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(TrainLogApp(store: store, labels: labels)); await tester.pumpAndSettle();
   }
+  Future<void> tap(WidgetTester tester, Finder finder) async {
+    await tester.runAsync(() async {
+      await tester.tap(finder);
+      while (store.busy) { await Future<void>.delayed(const Duration(milliseconds: 10)); }
+    });
+    await tester.pumpAndSettle();
+  }
   testWidgets('phone can start, add an exercise and save a valid set', (tester) async {
     await app(tester, const Size(412, 915));
-    await tester.tap(find.text('力量训练')); await tester.pumpAndSettle();
+    await tap(tester, find.text('力量训练'));
     expect(find.text('正在训练'), findsOneWidget);
-    await tester.tap(find.text('添加动作')); await tester.pumpAndSettle();
-    await tester.tap(find.text('杠铃卧推').first); await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('编辑第 1 组')); await tester.pumpAndSettle();
+    await tap(tester, find.text('添加动作'));
+    await tap(tester, find.text('杠铃卧推').first);
+    await tap(tester, find.byTooltip('编辑第 1 组'));
     await tester.enterText(find.byType(TextFormField).at(0), '40');
     await tester.enterText(find.byType(TextFormField).at(1), '8');
-    await tester.tap(find.text('保存')); await tester.pumpAndSettle();
-    await tester.tap(find.text('开始本组')); await tester.pumpAndSettle();
-    await tester.tap(find.text('完成本组')); await tester.pumpAndSettle();
+    await tap(tester, find.text('保存'));
+    await tap(tester, find.text('开始本组'));
+    await tap(tester, find.text('完成本组'));
     expect(sets(store.draft!).first['isCompleted'], true);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());

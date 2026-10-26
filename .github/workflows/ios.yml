@@ -1,7 +1,17 @@
 name: TrainLog build and release
 on:
   push:
+    paths-ignore:
+      - 'CrossPlatform/**'
+      - 'Tools/*cross*'
+      - '.github/workflows/cross-platform.yml'
+      - 'Documentation/CROSS_PLATFORM.md'
   pull_request:
+    paths-ignore:
+      - 'CrossPlatform/**'
+      - 'Tools/*cross*'
+      - '.github/workflows/cross-platform.yml'
+      - 'Documentation/CROSS_PLATFORM.md'
   workflow_dispatch:
     inputs:
       publish:
