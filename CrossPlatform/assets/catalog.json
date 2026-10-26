@@ -1,0 +1,2397 @@
+{
+  "exercises": [
+    {
+      "id": "544c0100-0000-0000-0000-000000000001",
+      "name": "杠铃卧推",
+      "englishName": "Barbell bench press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps",
+        "frontDeltoid"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000002",
+      "name": "哑铃卧推",
+      "englishName": "Dumbbell bench press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps",
+        "frontDeltoid"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000003",
+      "name": "上斜杠铃卧推",
+      "englishName": "Incline bench press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "frontDeltoid",
+        "triceps"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000004",
+      "name": "俯卧撑",
+      "englishName": "Push-up",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps",
+        "frontDeltoid"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000005",
+      "name": "绳索夹胸",
+      "englishName": "Cable fly",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000006",
+      "name": "蝴蝶机夹胸",
+      "englishName": "Pec deck",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000007",
+      "name": "引体向上",
+      "englishName": "Pull-up",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "upperBack"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000008",
+      "name": "高位下拉",
+      "englishName": "Lat pulldown",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "upperBack"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000009",
+      "name": "杠铃划船",
+      "englishName": "Barbell row",
+      "primary": [
+        "upperBack",
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "rearDeltoid"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000000a",
+      "name": "单臂哑铃划船",
+      "englishName": "One-arm dumbbell row",
+      "primary": [
+        "lats",
+        "upperBack"
+      ],
+      "secondary": [
+        "biceps",
+        "rearDeltoid"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000000b",
+      "name": "坐姿划船",
+      "englishName": "Seated cable row",
+      "primary": [
+        "upperBack",
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "rearDeltoid"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000000c",
+      "name": "直臂下压",
+      "englishName": "Straight-arm pulldown",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000000d",
+      "name": "杠铃推举",
+      "englishName": "Overhead press",
+      "primary": [
+        "frontDeltoid",
+        "sideDeltoid"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000000e",
+      "name": "哑铃肩推",
+      "englishName": "Dumbbell shoulder press",
+      "primary": [
+        "frontDeltoid",
+        "sideDeltoid"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000000f",
+      "name": "哑铃侧平举",
+      "englishName": "Lateral raise",
+      "primary": [
+        "sideDeltoid"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000010",
+      "name": "哑铃前平举",
+      "englishName": "Front raise",
+      "primary": [
+        "frontDeltoid"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000011",
+      "name": "反向飞鸟",
+      "englishName": "Reverse fly",
+      "primary": [
+        "rearDeltoid"
+      ],
+      "secondary": [
+        "upperBack"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000012",
+      "name": "面拉",
+      "englishName": "Face pull",
+      "primary": [
+        "rearDeltoid",
+        "upperBack"
+      ],
+      "secondary": [
+        "trapezius"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000013",
+      "name": "杠铃弯举",
+      "englishName": "Barbell curl",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000014",
+      "name": "哑铃弯举",
+      "englishName": "Dumbbell curl",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000015",
+      "name": "锤式弯举",
+      "englishName": "Hammer curl",
+      "primary": [
+        "biceps",
+        "forearms"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000016",
+      "name": "绳索下压",
+      "englishName": "Triceps pushdown",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000017",
+      "name": "仰卧臂屈伸",
+      "englishName": "Skull crusher",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000018",
+      "name": "杠铃深蹲",
+      "englishName": "Back squat",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000019",
+      "name": "腿举",
+      "englishName": "Leg press",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000001a",
+      "name": "罗马尼亚硬拉",
+      "englishName": "Romanian deadlift",
+      "primary": [
+        "hamstrings",
+        "glutes"
+      ],
+      "secondary": [
+        "lowerBack"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000001b",
+      "name": "保加利亚分腿蹲",
+      "englishName": "Bulgarian split squat",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000001c",
+      "name": "腿屈伸",
+      "englishName": "Leg extension",
+      "primary": [
+        "quadriceps"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000001d",
+      "name": "腿弯举",
+      "englishName": "Leg curl",
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000001e",
+      "name": "器械提踵",
+      "englishName": "Calf raise",
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000001f",
+      "name": "卷腹",
+      "englishName": "Crunch",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000020",
+      "name": "平板支撑",
+      "englishName": "Plank",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "obliques"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "duration",
+      "loading": "timeOnly",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000021",
+      "name": "悬垂举腿",
+      "englishName": "Hanging leg raise",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000022",
+      "name": "绳索卷腹",
+      "englishName": "Cable crunch",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000023",
+      "name": "辅助引体向上",
+      "englishName": "Assisted pull-up",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "upperBack"
+      ],
+      "equipment": "machine",
+      "tracking": "assistedReps",
+      "loading": "assistance",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000024",
+      "name": "传统硬拉",
+      "englishName": "Deadlift",
+      "primary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary": [
+        "lowerBack",
+        "quadriceps",
+        "trapezius"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000025",
+      "name": "上斜哑铃卧推",
+      "englishName": "Incline dumbbell press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "frontDeltoid",
+        "triceps"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000026",
+      "name": "下斜杠铃卧推",
+      "englishName": "Decline barbell bench press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps",
+        "frontDeltoid"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000027",
+      "name": "下斜哑铃卧推",
+      "englishName": "Decline dumbbell press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000028",
+      "name": "哑铃飞鸟",
+      "englishName": "Dumbbell fly",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "frontDeltoid"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000029",
+      "name": "上斜哑铃飞鸟",
+      "englishName": "Incline dumbbell fly",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "frontDeltoid"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000002a",
+      "name": "器械推胸",
+      "englishName": "Machine chest press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps",
+        "frontDeltoid"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000002b",
+      "name": "史密斯卧推",
+      "englishName": "Smith machine bench press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000002c",
+      "name": "上斜史密斯卧推",
+      "englishName": "Incline Smith press",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "frontDeltoid",
+        "triceps"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000002d",
+      "name": "双杠臂屈伸",
+      "englishName": "Parallel bar dip",
+      "primary": [
+        "chest",
+        "triceps"
+      ],
+      "secondary": [
+        "frontDeltoid"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000002e",
+      "name": "辅助双杠臂屈伸",
+      "englishName": "Assisted dip",
+      "primary": [
+        "chest",
+        "triceps"
+      ],
+      "secondary": [
+        "frontDeltoid"
+      ],
+      "equipment": "machine",
+      "tracking": "assistedReps",
+      "loading": "assistance",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000002f",
+      "name": "上斜俯卧撑",
+      "englishName": "Incline push-up",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000030",
+      "name": "下斜俯卧撑",
+      "englishName": "Decline push-up",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "frontDeltoid",
+        "triceps"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000031",
+      "name": "跪姿俯卧撑",
+      "englishName": "Knee push-up",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000032",
+      "name": "反手引体向上",
+      "englishName": "Chin-up",
+      "primary": [
+        "lats",
+        "biceps"
+      ],
+      "secondary": [
+        "upperBack"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000033",
+      "name": "中立握引体向上",
+      "englishName": "Neutral grip pull-up",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "upperBack"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000034",
+      "name": "反向划船",
+      "englishName": "Inverted row",
+      "primary": [
+        "upperBack",
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000035",
+      "name": "胸托哑铃划船",
+      "englishName": "Chest supported dumbbell row",
+      "primary": [
+        "upperBack",
+        "lats"
+      ],
+      "secondary": [
+        "rearDeltoid",
+        "biceps"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000036",
+      "name": "T 杠划船",
+      "englishName": "T-bar row",
+      "primary": [
+        "upperBack",
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000037",
+      "name": "器械划船",
+      "englishName": "Machine row",
+      "primary": [
+        "upperBack",
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "rearDeltoid"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000038",
+      "name": "单臂绳索划船",
+      "englishName": "Single arm cable row",
+      "primary": [
+        "lats",
+        "upperBack"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000039",
+      "name": "宽握高位下拉",
+      "englishName": "Wide grip pulldown",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "upperBack",
+        "biceps"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000003a",
+      "name": "窄握高位下拉",
+      "englishName": "Close grip pulldown",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000003b",
+      "name": "反手高位下拉",
+      "englishName": "Underhand pulldown",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000003c",
+      "name": "单臂高位下拉",
+      "englishName": "Single arm pulldown",
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPull"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000003d",
+      "name": "哑铃上拉",
+      "englishName": "Dumbbell pullover",
+      "primary": [
+        "lats",
+        "chest"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000003e",
+      "name": "杠铃耸肩",
+      "englishName": "Barbell shrug",
+      "primary": [
+        "trapezius"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000003f",
+      "name": "哑铃耸肩",
+      "englishName": "Dumbbell shrug",
+      "primary": [
+        "trapezius"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000040",
+      "name": "背部挺身",
+      "englishName": "Back extension",
+      "primary": [
+        "lowerBack"
+      ],
+      "secondary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000041",
+      "name": "杠铃早安式",
+      "englishName": "Barbell good morning",
+      "primary": [
+        "hamstrings",
+        "glutes"
+      ],
+      "secondary": [
+        "lowerBack"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000042",
+      "name": "阿诺德推举",
+      "englishName": "Arnold press",
+      "primary": [
+        "frontDeltoid",
+        "sideDeltoid"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000043",
+      "name": "器械肩推",
+      "englishName": "Machine shoulder press",
+      "primary": [
+        "frontDeltoid",
+        "sideDeltoid"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000044",
+      "name": "史密斯肩推",
+      "englishName": "Smith shoulder press",
+      "primary": [
+        "frontDeltoid",
+        "sideDeltoid"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000045",
+      "name": "绳索侧平举",
+      "englishName": "Single arm cable lateral raise",
+      "primary": [
+        "sideDeltoid"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000046",
+      "name": "器械侧平举",
+      "englishName": "Machine lateral raise",
+      "primary": [
+        "sideDeltoid"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000047",
+      "name": "绳索前平举",
+      "englishName": "Cable front raise",
+      "primary": [
+        "frontDeltoid"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000048",
+      "name": "蝴蝶机反向飞鸟",
+      "englishName": "Reverse pec deck",
+      "primary": [
+        "rearDeltoid"
+      ],
+      "secondary": [
+        "upperBack"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000049",
+      "name": "绳索反向飞鸟",
+      "englishName": "Cable reverse fly",
+      "primary": [
+        "rearDeltoid"
+      ],
+      "secondary": [
+        "upperBack"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000004a",
+      "name": "单臂地雷管推举",
+      "englishName": "Single arm landmine press",
+      "primary": [
+        "frontDeltoid"
+      ],
+      "secondary": [
+        "triceps",
+        "chest"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000004b",
+      "name": "俯身倒 V 俯卧撑",
+      "englishName": "Pike push-up",
+      "primary": [
+        "frontDeltoid"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "verticalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000004c",
+      "name": "牧师凳杠铃弯举",
+      "englishName": "Preacher curl",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000004d",
+      "name": "单臂集中弯举",
+      "englishName": "Concentration curl",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000004e",
+      "name": "上斜哑铃弯举",
+      "englishName": "Incline dumbbell curl",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000004f",
+      "name": "绳索弯举",
+      "englishName": "Cable curl",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [
+        "forearms"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000050",
+      "name": "器械弯举",
+      "englishName": "Machine curl",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000051",
+      "name": "反握杠铃弯举",
+      "englishName": "Reverse barbell curl",
+      "primary": [
+        "forearms",
+        "biceps"
+      ],
+      "secondary": [],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000052",
+      "name": "腕弯举",
+      "englishName": "Wrist curl",
+      "primary": [
+        "forearms"
+      ],
+      "secondary": [],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000053",
+      "name": "反向腕弯举",
+      "englishName": "Reverse wrist curl",
+      "primary": [
+        "forearms"
+      ],
+      "secondary": [],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000054",
+      "name": "窄握杠铃卧推",
+      "englishName": "Close grip bench press",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [
+        "chest",
+        "frontDeltoid"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "horizontalPush"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000055",
+      "name": "绳索过顶臂屈伸",
+      "englishName": "Overhead cable triceps extension",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000056",
+      "name": "单臂哑铃过顶臂屈伸",
+      "englishName": "Single arm overhead triceps extension",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000057",
+      "name": "双手哑铃过顶臂屈伸",
+      "englishName": "Two hand dumbbell overhead extension",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000058",
+      "name": "单臂哑铃后踢",
+      "englishName": "Dumbbell triceps kickback",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000059",
+      "name": "器械臂屈伸",
+      "englishName": "Machine triceps extension",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000005a",
+      "name": "前蹲",
+      "englishName": "Front squat",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [
+        "abs"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000005b",
+      "name": "高脚杯深蹲",
+      "englishName": "Goblet squat",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [
+        "abs"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000005c",
+      "name": "史密斯深蹲",
+      "englishName": "Smith squat",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000005d",
+      "name": "哈克深蹲",
+      "englishName": "Hack squat",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000005e",
+      "name": "徒手深蹲",
+      "englishName": "Bodyweight squat",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000005f",
+      "name": "相扑硬拉",
+      "englishName": "Sumo deadlift",
+      "primary": [
+        "glutes",
+        "quadriceps"
+      ],
+      "secondary": [
+        "hamstrings",
+        "lowerBack"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": true,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000060",
+      "name": "陷阱杠硬拉",
+      "englishName": "Trap bar deadlift",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "lowerBack"
+      ],
+      "equipment": "other",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000061",
+      "name": "哑铃罗马尼亚硬拉",
+      "englishName": "Dumbbell Romanian deadlift",
+      "primary": [
+        "hamstrings",
+        "glutes"
+      ],
+      "secondary": [
+        "lowerBack"
+      ],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "perHand",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000062",
+      "name": "单腿罗马尼亚硬拉",
+      "englishName": "Single leg Romanian deadlift",
+      "primary": [
+        "hamstrings",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000063",
+      "name": "杠铃臀推",
+      "englishName": "Barbell hip thrust",
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "equipment": "barbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000064",
+      "name": "器械臀推",
+      "englishName": "Machine hip thrust",
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000065",
+      "name": "臀桥",
+      "englishName": "Glute bridge",
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000066",
+      "name": "单腿臀桥",
+      "englishName": "Single leg glute bridge",
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000067",
+      "name": "单侧哑铃弓步蹲",
+      "englishName": "Dumbbell forward lunge",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000068",
+      "name": "单侧反向弓步蹲",
+      "englishName": "Reverse lunge",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000069",
+      "name": "单侧哑铃登阶",
+      "englishName": "Dumbbell step-up",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "dumbbell",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000006a",
+      "name": "单腿腿举",
+      "englishName": "Single leg press",
+      "primary": [
+        "quadriceps",
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "squat"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000006b",
+      "name": "坐姿腿弯举",
+      "englishName": "Seated leg curl",
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000006c",
+      "name": "俯卧腿弯举",
+      "englishName": "Lying leg curl",
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000006d",
+      "name": "北欧腿弯举",
+      "englishName": "Nordic hamstring curl",
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000006e",
+      "name": "器械髋外展",
+      "englishName": "Hip abduction",
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000006f",
+      "name": "单腿绳索后踢",
+      "englishName": "Cable glute kickback",
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000070",
+      "name": "绳索拉臀",
+      "englishName": "Cable pull through",
+      "primary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false,
+      "pattern": "hinge"
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000071",
+      "name": "坐姿提踵",
+      "englishName": "Seated calf raise",
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000072",
+      "name": "单腿自重提踵",
+      "englishName": "Single leg calf raise",
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000073",
+      "name": "胫骨前肌抬脚",
+      "englishName": "Tibialis raise",
+      "primary": [
+        "tibialis"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000074",
+      "name": "靠墙静蹲",
+      "englishName": "Wall sit",
+      "primary": [
+        "quadriceps"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "duration",
+      "loading": "timeOnly",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000075",
+      "name": "侧平板支撑",
+      "englishName": "Side plank",
+      "primary": [
+        "obliques"
+      ],
+      "secondary": [
+        "abs"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "duration",
+      "loading": "timeOnly",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000076",
+      "name": "死虫式",
+      "englishName": "Dead bug",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "obliques"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000077",
+      "name": "鸟狗式",
+      "englishName": "Bird dog",
+      "primary": [
+        "lowerBack",
+        "abs"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000078",
+      "name": "反向卷腹",
+      "englishName": "Reverse crunch",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000079",
+      "name": "自行车卷腹",
+      "englishName": "Bicycle crunch",
+      "primary": [
+        "abs",
+        "obliques"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000007a",
+      "name": "仰卧举腿",
+      "englishName": "Lying leg raise",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000007b",
+      "name": "健腹轮",
+      "englishName": "Ab wheel rollout",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "obliques",
+        "lats"
+      ],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000007c",
+      "name": "绳索抗旋转推",
+      "englishName": "Pallof press",
+      "primary": [
+        "obliques",
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000007d",
+      "name": "绳索伐木",
+      "englishName": "Cable wood chop",
+      "primary": [
+        "obliques"
+      ],
+      "secondary": [
+        "abs"
+      ],
+      "equipment": "cable",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000007e",
+      "name": "器械卷腹",
+      "englishName": "Machine crunch",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "machine",
+      "tracking": "weightReps",
+      "loading": "total",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-00000000007f",
+      "name": "中空支撑",
+      "englishName": "Hollow body hold",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "duration",
+      "loading": "timeOnly",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    },
+    {
+      "id": "544c0100-0000-0000-0000-000000000080",
+      "name": "悬垂屈膝举腿",
+      "englishName": "Hanging knee raise",
+      "primary": [
+        "abs"
+      ],
+      "secondary": [],
+      "equipment": "bodyweight",
+      "tracking": "bodyweightReps",
+      "loading": "bodyweight",
+      "allowsEstimate": false,
+      "isCustom": false,
+      "isFavorite": false,
+      "isArchived": false
+    }
+  ],
+  "muscles": {
+    "chest": "胸部",
+    "trapezius": "斜方肌",
+    "upperBack": "中上背",
+    "lats": "背阔肌",
+    "frontDeltoid": "前肩",
+    "sideDeltoid": "侧肩",
+    "rearDeltoid": "后肩",
+    "biceps": "肱二头肌",
+    "triceps": "肱三头肌",
+    "forearms": "前臂",
+    "abs": "腹直肌",
+    "obliques": "腹外斜肌",
+    "lowerBack": "下背部",
+    "glutes": "臀部",
+    "quadriceps": "股四头肌",
+    "hamstrings": "腘绳肌",
+    "calves": "小腿后侧",
+    "tibialis": "小腿前侧"
+  },
+  "activities": {
+    "outdoorRun": "户外跑步",
+    "indoorRun": "室内跑步",
+    "outdoorWalk": "户外步行",
+    "indoorWalk": "室内步行",
+    "outdoorCycle": "户外骑行",
+    "indoorCycle": "室内单车",
+    "swimming": "泳池游泳",
+    "openWaterSwimming": "开放水域游泳",
+    "rowing": "figure.rower",
+    "elliptical": "椭圆机",
+    "stairClimbing": "爬楼机",
+    "jumpRope": "跳绳",
+    "hiking": "徒步",
+    "hiit": "高强度间歇训练",
+    "mixedCardio": "混合有氧",
+    "dance": "健身舞",
+    "kickboxing": "搏击健身",
+    "boxing": "拳击",
+    "crossTraining": "交叉训练",
+    "yoga": "figure.yoga",
+    "pilates": "普拉提",
+    "flexibility": "柔韧性训练",
+    "coreTraining": "核心训练",
+    "functionalStrength": "功能性力量训练",
+    "traditionalStrength": "传统力量训练",
+    "badminton": "羽毛球",
+    "tennis": "网球",
+    "tableTennis": "乒乓球",
+    "basketball": "篮球",
+    "football": "足球",
+    "volleyball": "排球",
+    "squash": "壁球",
+    "skating": "滑冰与轮滑",
+    "crossCountrySkiing": "越野滑雪",
+    "downhillSkiing": "高山滑雪",
+    "snowboarding": "单板滑雪",
+    "climbing": "攀岩",
+    "paddling": "桨类运动"
+  }
+}

@@ -10,4 +10,11 @@ xcuserdata/
 artifacts/
 Delivery/
 __pycache__/
+CrossPlatform/.dart_tool/
+CrossPlatform/build/
+CrossPlatform/android/
+CrossPlatform/windows/
+CrossPlatform/.metadata
+CrossPlatform/*.iml
+CrossPlatform/.flutter-plugins*
 

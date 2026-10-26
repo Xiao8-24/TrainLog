@@ -1,0 +1,123 @@
+name: Android and Windows
+on:
+  push:
+    paths:
+      - 'CrossPlatform/**'
+      - 'Tools/*cross*'
+      - '.github/workflows/cross-platform.yml'
+      - 'Packages/TrainLogCore/Sources/TrainLogCore/ExerciseCatalog.swift'
+      - 'Packages/TrainLogCore/Sources/TrainLogCore/Domain.swift'
+      - 'Packages/TrainLogCore/Sources/TrainLogCore/Cardio.swift'
+  pull_request:
+    paths:
+      - 'CrossPlatform/**'
+      - 'Tools/*cross*'
+      - '.github/workflows/cross-platform.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish verified Android and Windows preview packages
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  clients:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
+      - name: Record tools and generate catalog
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          flutter --version > artifacts/flutter-version.txt
+          git rev-parse HEAD > artifacts/source-commit.txt
+          python Tools/generate_cross_catalog.py
+          git diff --exit-code -- CrossPlatform/assets/catalog.json
+      - name: Generate native runners
+        working-directory: CrossPlatform
+        run: flutter create --platforms=android,windows --project-name trainlog --org app.trainlog --no-pub .
+      - name: Configure runners
+        run: python Tools/bootstrap_cross_platform.py
+      - name: Resolve dependencies
+        working-directory: CrossPlatform
+        run: flutter pub get
+      - name: Analyze
+        working-directory: CrossPlatform
+        run: flutter analyze --no-fatal-infos
+      - name: Test records, timers, backup safety and adaptive UI
+        working-directory: CrossPlatform
+        run: flutter test --reporter expanded
+      - name: Build Android preview APKs
+        if: runner.os == 'Linux'
+        working-directory: CrossPlatform
+        run: flutter build apk --release --split-per-abi
+      - name: Check APK signing
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          for apk in CrossPlatform/build/app/outputs/flutter-apk/*-release.apk; do "$apksigner" verify --verbose --print-certs "$apk"; done
+      - name: Build Windows
+        if: runner.os == 'Windows'
+        working-directory: CrossPlatform
+        run: flutter build windows --release
+      - name: Package Android
+        if: runner.os == 'Linux'
+        run: python Tools/package_cross_platform.py --platform android
+      - name: Package Windows and VC++ runtime
+        if: runner.os == 'Windows'
+        run: python Tools/package_cross_platform.py --platform windows
+      - name: Preserve diagnostics and lockfile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-diagnostics-${{ runner.os }}-${{ github.run_number }}
+          path: |
+            artifacts/*.txt
+            artifacts/cross-backup-fixture.json
+            CrossPlatform/pubspec.lock
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TrainLog-${{ runner.os }}-${{ github.run_number }}
+          path: artifacts/cross-delivery/
+          if-no-files-found: error
+  publish:
+    if: inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release cross v0.10.0'))
+    needs: clients
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: TrainLog-*
+          path: delivery
+          merge-multiple: true
+      - name: Package tested source and checksums
+        run: |
+          git archive --format=zip HEAD -o delivery/TrainLog-v0.10.0-source.zip
+          cp Documentation/CROSS_PLATFORM.md delivery/README.md
+          cd delivery
+          sha256sum *.zip *.apk README.md > SHA256SUMS.txt
+      - name: Publish preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.10.0 --target "$GITHUB_SHA" --prerelease --title 'TrainLog v0.10.0 · Android & Windows 预览版' --notes-file Documentation/CROSS_PLATFORM.md delivery/*
