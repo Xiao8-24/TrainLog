@@ -50,15 +50,38 @@ class _CalendarPageState extends State<CalendarPage> {
         final hasHistory = widget.store.history.any((s) => sameDay(date(s['date']).toLocal(), day));
         final hasPlan = widget.store.plans.any((p) => p['isSkipped'] != true && sameDay(date(p['scheduledAt']).toLocal(), day));
         final isSelected = sameDay(day, selected);
-        return SizedBox(width: box.maxWidth / 7, height: 60, child: Semantics(label: '${dayLabel(day)}${hasHistory ? '，有训练' : ''}${hasPlan ? '，有计划' : ''}', selected: isSelected, child: Padding(padding: const EdgeInsets.all(2), child: Material(color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent, borderRadius: BorderRadius.circular(12), child: InkWell(borderRadius: BorderRadius.circular(12), onTap: () => setState(() => selected = day), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text('$n', style: TextStyle(fontWeight: sameDay(day, widget.store.now()) ? FontWeight.bold : FontWeight.normal)), const SizedBox(height: 4), Row(mainAxisAlignment: MainAxisAlignment.center, children: [if (hasHistory) Icon(Icons.circle, size: 6, color: Theme.of(context).colorScheme.primary), if (hasPlan) const Padding(padding: EdgeInsets.only(left: 3), child: Icon(Icons.circle_outlined, size: 7))])])))));
+        return SizedBox(
+          width: box.maxWidth / 7, height: 60,
+          child: Semantics(
+            label: '${dayLabel(day)}${hasHistory ? '，有训练' : ''}${hasPlan ? '，有计划' : ''}', selected: isSelected,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Material(
+                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12), onTap: () => setState(() => selected = day),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text('$n', style: TextStyle(fontWeight: sameDay(day, widget.store.now()) ? FontWeight.bold : FontWeight.normal)),
+                    const SizedBox(height: 4),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      if (hasHistory) Icon(Icons.circle, size: 6, color: Theme.of(context).colorScheme.primary),
+                      if (hasPlan) const Padding(padding: EdgeInsets.only(left: 3), child: Icon(Icons.circle_outlined, size: 7)),
+                    ]),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+        );
       }))),
       const SizedBox(height: 10), Row(children: [const Expanded(child: Text('● 已训练   ◯ 有计划')), TextButton(onPressed: () => setState(() { selected = widget.store.now(); month = DateTime(selected.year, selected.month); }), child: const Text('今天'))]),
       const Divider(), const SizedBox(height: 12),
       Section(dayLabel(selected), child: Column(children: [
         for (final p in plans) Card(child: ListTile(title: Text(p['name'] as String), subtitle: Text('${(p['items'] as List).length} 个动作${widget.store.history.any((s) => s['plan']?['id'] == p['id']) ? ' · 已有完成记录' : ''}'), onTap: () => editPlan(context, widget.store, widget.labels, plan: p), trailing: PopupMenuButton<String>(onSelected: (value) async {
           if (value == 'start') { widget.onStart(p); }
-          if (value == 'edit' && mounted) { await editPlan(context, widget.store, widget.labels, plan: p); }
-          if (value == 'delete' && mounted && await confirm(context, '删除这项计划？', '历史训练中的计划快照仍会保留。', '删除计划')) { await widget.perform(() => widget.store.deletePlan(p['id'] as String)); }
+          if (value == 'edit' && context.mounted) { await editPlan(context, widget.store, widget.labels, plan: p); }
+          if (value == 'delete' && context.mounted && await confirm(context, '删除这项计划？', '历史训练中的计划快照仍会保留。', '删除计划')) { await widget.perform(() => widget.store.deletePlan(p['id'] as String)); }
         }, itemBuilder: (_) => const [PopupMenuItem(value: 'start', child: Text('按计划训练')), PopupMenuItem(value: 'edit', child: Text('编辑计划')), PopupMenuItem(value: 'delete', child: Text('删除计划'))]))),
         for (final s in history) SessionTile(session: s, labels: widget.labels, store: widget.store, perform: widget.perform),
         if (plans.isEmpty && history.isEmpty) const EmptyState(Icons.event_note_outlined, '这一天没有记录', '任何时候都可以查看日历或提前安排训练。'),
