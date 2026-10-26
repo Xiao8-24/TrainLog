@@ -7,6 +7,7 @@ import { afterEach, test } from 'node:test';
 import { AppleIdentity } from '../apple.mjs';
 import { createSyncServer } from '../server.mjs';
 import { SyncStorage } from '../storage.mjs';
+import { WeChatIdentity } from '../wechat.mjs';
 
 const resources = [];
 afterEach(async () => {
@@ -90,4 +91,43 @@ test('HTTP login never trusts account IDs; snapshot conflicts and sign-out prote
   assert.equal((await api('/v1/account', { method: 'DELETE', token: other.value.token })).status, 428);
   assert.equal((await api('/v1/account', { method: 'DELETE', token: other.value.token, headers: { 'x-confirm-delete': 'DELETE' } })).status, 200);
   assert.equal((await api('/v1/account', { token: other.value.token })).status, 401);
+});
+
+test('WeChat login requires a UnionID shared by approved apps', async () => {
+  const requests = [];
+  const wechat = new WeChatIdentity({ mobileAppId: 'mobile-id', mobileSecret: 'mobile-secret', webAppId: 'web-id', webSecret: 'web-secret', fetcher: async url => {
+    requests.push(url);
+    return { ok: true, json: async () => url.pathname.endsWith('/access_token')
+      ? { access_token: 'short-lived', openid: url.searchParams.get('appid') + '-open-id' }
+      : { openid: 'mobile-id-open-id', unionid: 'shared-union-id' } };
+  } });
+  assert.equal((await wechat.authenticate({ client: 'mobile', code: 'one-time-code' })).subject, 'shared-union-id');
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].searchParams.get('appid'), 'mobile-id');
+  await assert.rejects(wechat.authenticate({ client: 'unknown', code: 'code' }));
+  const noUnionID = new WeChatIdentity({ mobileAppId: 'mobile-id', mobileSecret: 'mobile-secret', fetcher: async url => ({ ok: true, json: async () => url.pathname.endsWith('/access_token') ? { access_token: 'x', openid: 'openid' } : { openid: 'openid' } }) });
+  await assert.rejects(noUnionID.authenticate({ client: 'mobile', code: 'code' }), /UnionID/);
+});
+
+test('provider linking requires current account authorization and never merges existing accounts', async () => {
+  const { storage } = await fixture();
+  const apple = { authenticate: async body => ({ subject: body.identityToken, refreshToken: 'refresh-' + body.identityToken }), revoke: async () => {} };
+  const wechat = { available: () => true, authenticate: async body => ({ subject: body.code, refreshToken: null }) };
+  const server = createSyncServer({ storage, apple, wechat });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  resources.at(-1).server = server;
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const call = async (path, body, token) => {
+    const response = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+    return { status: response.status, value: await response.json() };
+  };
+  const challenge = async () => (await call('/v1/auth/challenge', {})).value.nonce;
+  const owner = await call('/v1/auth/apple', { nonce: await challenge(), identityToken: 'apple-owner', authorizationCode: 'code' });
+  const other = await call('/v1/auth/wechat', { nonce: await challenge(), client: 'mobile', code: 'already-owned' });
+  assert.notEqual(owner.value.accountId, other.value.accountId);
+  assert.equal((await call('/v1/account/link/wechat', { nonce: await challenge(), client: 'mobile', code: 'already-owned' }, owner.value.token)).status, 409);
+  assert.equal((await call('/v1/account/link/wechat', { nonce: await challenge(), client: 'mobile', code: 'new-identity' }, owner.value.token)).status, 200);
+  const second = await call('/v1/auth/wechat', { nonce: await challenge(), client: 'web', code: 'new-identity' });
+  assert.equal(second.value.accountId, owner.value.accountId);
+  assert.equal((await call('/v1/account/link/wechat', { nonce: await challenge(), client: 'mobile', code: 'unlinked' })).status, 401);
 });

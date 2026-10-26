@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { AppleIdentity } from './apple.mjs';
 import { SyncStorage } from './storage.mjs';
+import { WeChatIdentity } from './wechat.mjs';
 
 const maximumBody = 32 * 1024 * 1024;
 
@@ -30,13 +31,13 @@ function sessionAccount(request, storage) {
   return match ? storage.accountFromSession(match[1]) : null;
 }
 
-export function createSyncServer({ storage, apple = null }) {
+export function createSyncServer({ storage, apple = null, wechat = null }) {
   return createServer(async (request, response) => {
     try {
       const path = new URL(request.url, 'http://localhost').pathname;
       if (request.method === 'GET' && path === '/health') return send(response, 200, { status: 'ok' });
       if (request.method === 'POST' && path === '/v1/auth/challenge') {
-        if (!apple) return send(response, 503, { error: 'Apple login is not configured' });
+        if (!apple && !wechat) return send(response, 503, { error: 'Login is not configured' });
         return send(response, 200, { nonce: storage.challenge(), expiresInSeconds: 300 });
       }
       if (request.method === 'POST' && path === '/v1/auth/apple') {
@@ -51,9 +52,34 @@ export function createSyncServer({ storage, apple = null }) {
         const account = storage.accountFor('apple', identity.subject, identity.refreshToken);
         return send(response, 200, { accountId: account, ...storage.issueSession(account) });
       }
+      if (request.method === 'POST' && path === '/v1/auth/wechat') {
+        if (!wechat) return send(response, 503, { error: 'WeChat login is not configured' });
+        const body = await readJSON(request);
+        if (!body || typeof body !== 'object' || typeof body.nonce !== 'string' || !wechat.available(body.client)) return send(response, 400, { error: 'Invalid WeChat authorization' });
+        if (!storage.consumeChallenge(body.nonce)) return send(response, 401, { error: 'Challenge expired or reused' });
+        let identity;
+        try { identity = await wechat.authenticate(body); }
+        catch { return send(response, 401, { error: 'WeChat authorization was not verified' }); }
+        const account = storage.accountFor('wechat', identity.subject, null);
+        return send(response, 200, { accountId: account, ...storage.issueSession(account) });
+      }
       const account = sessionAccount(request, storage);
       if (!account) return send(response, 401, { error: 'Sign in required' });
       if (request.method === 'GET' && path === '/v1/account') return send(response, 200, { accountId: account, providers: storage.identities(account) });
+      if (request.method === 'POST' && (path === '/v1/account/link/apple' || path === '/v1/account/link/wechat')) {
+        const provider = path.endsWith('/apple') ? 'apple' : 'wechat';
+        const verifier = provider === 'apple' ? apple : wechat;
+        if (!verifier) return send(response, 503, { error: 'Login provider is not configured' });
+        const body = await readJSON(request);
+        if (!body || typeof body !== 'object' || typeof body.nonce !== 'string' || provider === 'wechat' && !wechat.available(body.client)) return send(response, 400, { error: 'Invalid provider authorization' });
+        if (!storage.consumeChallenge(body.nonce)) return send(response, 401, { error: 'Challenge expired or reused' });
+        let identity;
+        try { identity = await verifier.authenticate(body); }
+        catch { return send(response, 401, { error: 'Provider authorization was not verified' }); }
+        if (provider === 'apple' && !identity.refreshToken && !storage.hasIdentity(provider, identity.subject)) return send(response, 401, { error: 'Apple refresh token is required' });
+        if (!storage.linkIdentity(account, provider, identity.subject, identity.refreshToken)) return send(response, 409, { error: 'This provider is linked to another account' });
+        return send(response, 200, { accountId: account, providers: storage.identities(account) });
+      }
       if (request.method === 'POST' && path === '/v1/auth/logout') {
         storage.revokeSession(request.headers.authorization.slice(7));
         return send(response, 200, { signedOut: true });
@@ -69,9 +95,8 @@ export function createSyncServer({ storage, apple = null }) {
       }
       if (request.method === 'DELETE' && path === '/v1/account') {
         if (request.headers['x-confirm-delete'] !== 'DELETE') return send(response, 428, { error: 'Explicit deletion confirmation required' });
-        if (!apple) return send(response, 503, { error: 'Provider revocation is unavailable' });
         for (const provider of storage.refreshTokens(account)) {
-          if (provider.provider !== 'apple') return send(response, 503, { error: 'Provider revocation is unavailable' });
+          if (provider.provider !== 'apple' || !apple) return send(response, 503, { error: 'Provider revocation is unavailable' });
           await apple.revoke(provider.token);
         }
         storage.deleteAccount(account);
@@ -96,8 +121,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   }
   const apple = ['APPLE_CLIENT_ID', 'APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY_P8'].every(name => process.env[name])
     ? new AppleIdentity({ clientId: process.env.APPLE_CLIENT_ID, teamId: process.env.APPLE_TEAM_ID, keyId: process.env.APPLE_KEY_ID, privateKey: process.env.APPLE_PRIVATE_KEY_P8 }) : null;
+  const wechat = (process.env.WECHAT_MOBILE_APP_ID && process.env.WECHAT_MOBILE_SECRET || process.env.WECHAT_WEB_APP_ID && process.env.WECHAT_WEB_SECRET)
+    ? new WeChatIdentity({ mobileAppId: process.env.WECHAT_MOBILE_APP_ID, mobileSecret: process.env.WECHAT_MOBILE_SECRET,
+      webAppId: process.env.WECHAT_WEB_APP_ID, webSecret: process.env.WECHAT_WEB_SECRET }) : null;
   const storage = new SyncStorage(process.env.SYNC_DB_PATH ?? './trainlog-sync.db', key);
   const host = process.env.SYNC_BIND_HOST ?? '127.0.0.1';
   const port = Number(process.env.PORT ?? '8787');
-  createSyncServer({ storage, apple }).listen(port, host, () => console.log(`TrainLog sync listening on ${host}:${port}`));
+  createSyncServer({ storage, apple, wechat }).listen(port, host, () => console.log(`TrainLog sync listening on ${host}:${port}`));
 }

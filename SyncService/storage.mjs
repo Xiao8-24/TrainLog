@@ -52,6 +52,16 @@ export class SyncStorage {
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
   hasIdentity(provider, subject) { return !!this.db.prepare('SELECT 1 FROM identities WHERE provider=? AND subject=?').get(provider, subject); }
+  linkIdentity(account, provider, subject, refreshToken = null) {
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const owner = this.db.prepare('SELECT account_id FROM identities WHERE provider=? AND subject=?').get(provider, subject)?.account_id;
+      if (owner && owner !== account) { this.db.exec('ROLLBACK'); return false; }
+      if (!owner) this.db.prepare('INSERT INTO identities VALUES (?,?,?)').run(provider, subject, account);
+      if (refreshToken) this.db.prepare('INSERT OR REPLACE INTO provider_tokens VALUES (?,?,?)').run(provider, subject, this.seal(Buffer.from(refreshToken)));
+      this.db.exec('COMMIT'); return true;
+    } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+  }
   issueSession(account) {
     const token = randomBytes(32).toString('base64url');
     const expiresAt = Date.now() + 30 * 24 * 3600_000;
