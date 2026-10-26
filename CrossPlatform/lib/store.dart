@@ -158,6 +158,7 @@ class TrainingStore extends ChangeNotifier {
   Future<bool> endRest() => change((_) {}, clearRest: true);
   Future<bool> importBackup(Json imported) => change((next) {
     require(draft == null, '请先结束或舍弃当前训练，再导入备份');
+    validateBackup(imported, now: now());
     next.clear(); next.addAll(copy(imported));
   }, clearRest: true);
   Json exportBackup() { final result = copy(data); result['schemaVersion'] = 5; result['exportedAt'] = stamp(now()); validateBackup(result, now: now()); return result; }

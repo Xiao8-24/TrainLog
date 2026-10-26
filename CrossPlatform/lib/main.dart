@@ -8,6 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'model.dart';
 import 'store.dart';
+import 'muscle_map.dart';
 part 'editors.dart';
 part 'pages.dart';
 
@@ -148,6 +149,7 @@ class Dashboard extends StatelessWidget {
     return PageBody(children: [
       Section('每一组，都算数', subtitle: dayLabel(now), child: Card(color: Theme.of(context).colorScheme.primaryContainer, child: Padding(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('本周 ${week.length} 次 / 目标 ${store.settings['weeklyGoal']} 次', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 12), LinearProgressIndicator(value: (week.length / (store.settings['weeklyGoal'] as int)).clamp(0, 1), minHeight: 7, borderRadius: BorderRadius.circular(6)), const SizedBox(height: 12), Text('累计训练 ${(week.fold<double>(0, (sum, s) => sum + elapsed(s, now)) / 60).floor()} 分钟 · 已完成 ${week.fold<int>(0, (sum, s) => sum + sets(s).where((v) => v['isCompleted'] == true).length)} 组')])))),
       Section('开始今天的训练', child: Wrap(spacing: 12, runSpacing: 12, children: [FilledButton.icon(onPressed: store.busy ? null : store.draft != null ? onResume : () => onStart(), icon: const Icon(Icons.fitness_center), label: Text(store.draft != null ? '继续训练' : '力量训练')), FilledButton.tonalIcon(onPressed: store.busy ? null : onCardio, icon: const Icon(Icons.directions_run), label: const Text('有氧与其他运动')), OutlinedButton.icon(onPressed: store.busy ? null : onPlan, icon: const Icon(Icons.event_available_outlined), label: const Text('安排训练'))])),
+      if (labels['regions'] != null) Section('肌群分布', child: MuscleMap(labels: labels, sessions: store.history, now: now)),
       Section('训练安排', subtitle: '计划不会随实际记录一起改变。随时可在日历中查看。', child: upcoming.isEmpty ? const EmptyState(Icons.event_note_outlined, '还没有训练计划', '先选动作和目标组数，再安排日期。') : Column(children: upcoming.take(5).map((p) => Card(child: ListTile(title: Text(p['name'] as String), subtitle: Text('${dayLabel(date(p['scheduledAt']).toLocal())} · ${(p['items'] as List).length} 个动作'), trailing: const Icon(Icons.play_arrow), onTap: store.busy ? null : () => onStart(plan: p)))).toList())),
       Section('最近训练', child: store.history.isEmpty ? const EmptyState(Icons.insights_outlined, '从第一组开始', '完成的训练会保存在这里，不会预填演示记录。') : Column(children: store.history.take(8).map((s) => SessionTile(session: s, labels: labels, store: store, perform: perform)).toList())),
     ]);
