@@ -1,5 +1,9 @@
 # TrainLog
 
+## Android 与 Windows 预览版
+
+新增可安装的 Android APK 和 Windows x64 客户端：边练边记录组数、整体与逐组计时、训练计划、任意日期日历、人体肌群分布与本地备份。平台范围、安装包、iOS 备份互通与系统能力说明见 [Android 与 Windows 客户端](Documentation/CROSS_PLATFORM.md)。[v0.10.0 发布页](https://github.com/Xiao8-24/TrainLog/releases/tag/v0.10.0) 在两端测试与备份验证通过后提供下载。
+
 记录每一次训练，看见每一点进步。
 
 面向力量、有氧与日常运动的本地优先 iPhone / Apple Watch 应用。使用 **SwiftUI、SwiftData、Swift Charts、SF Symbols、HealthKit、WatchConnectivity**；最低 **iOS 27.0 / watchOS 27.0**。无服务器、无账号、无第三方运行时依赖。

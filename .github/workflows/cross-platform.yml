@@ -5,6 +5,8 @@ on:
       - 'CrossPlatform/**'
       - 'Tools/*cross*'
       - '.github/workflows/cross-platform.yml'
+      - 'Documentation/CROSS_PLATFORM.md'
+      - 'README.md'
       - 'Packages/TrainLogCore/Sources/TrainLogCore/ExerciseCatalog.swift'
       - 'Packages/TrainLogCore/Sources/TrainLogCore/Domain.swift'
       - 'Packages/TrainLogCore/Sources/TrainLogCore/Cardio.swift'
@@ -13,6 +15,8 @@ on:
       - 'CrossPlatform/**'
       - 'Tools/*cross*'
       - '.github/workflows/cross-platform.yml'
+      - 'Documentation/CROSS_PLATFORM.md'
+      - 'README.md'
   workflow_dispatch:
     inputs:
       publish:
@@ -155,10 +159,6 @@ jobs:
           flutter-version: '3.47.8'
           channel: stable
           cache: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: TrainLog-Linux-${{ github.run_number }}
-          path: artifacts/apks
       - name: Prepare Android host
         working-directory: CrossPlatform
         run: flutter create --platforms=android,windows --project-name trainlog --org app.trainlog --no-pub .
@@ -172,14 +172,36 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: bash Tools/test_cross_android.sh
+  android-release:
+    needs: clients
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: TrainLog-Linux-${{ github.run_number }}
+          path: artifacts/apks
+      - name: Enable emulator acceleration
+        run: sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install artifacts/apks/TrainLog-v0.10.0-Android-x86_64-preview.apk
+            adb shell am start -W -n app.trainlog.trainlog/.MainActivity
+            python Tools/check_cross_android_start.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cross-android-device-${{ github.run_number }}
+          name: cross-android-release-${{ github.run_number }}
           path: artifacts/android-*
   publish:
     if: inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release cross v0.10.0'))
-    needs: [clients, backup-interop, android-device]
+    needs: [clients, backup-interop, android-device, android-release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -190,12 +212,17 @@ jobs:
           pattern: TrainLog-*
           path: delivery
           merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-diagnostics-Windows-${{ github.run_number }}
+          path: native-previews
       - name: Package tested source and checksums
         run: |
           git archive --format=zip HEAD -o delivery/TrainLog-v0.10.0-source.zip
           cp Documentation/CROSS_PLATFORM.md delivery/README.md
+          cp native-previews/artifacts/native-ui/*.png delivery/
           cd delivery
-          sha256sum *.zip *.apk README.md > SHA256SUMS.txt
+          sha256sum *.zip *.apk *.json *.png README.md > SHA256SUMS.txt
       - name: Publish preview
         env:
           GH_TOKEN: ${{ github.token }}

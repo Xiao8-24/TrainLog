@@ -85,11 +85,13 @@ void validateSet(Json s, Json exercise, {bool complete = false}) {
   }
   if (s['timing'] != null) {
     final t = s['timing'] as Json;
-    date(t['startedAt']);
+    final start = date(t['startedAt']);
+    final limit = DateTime.now().add(const Duration(minutes: 1));
+    require(!start.isAfter(limit), '本组开始时间不能在未来');
     require(number(t['accumulatedSeconds'], -1) >= 0 && number(t['accumulatedSeconds']) <= 604800, '本组计时无效');
-    if (t['endedAt'] != null) { require(!date(t['endedAt']).isBefore(date(t['startedAt'])) && t['timerStartedAt'] == null, '本组结束时间无效'); }
+    if (t['endedAt'] != null) { final end = date(t['endedAt']); require(!end.isBefore(start) && !end.isAfter(limit) && t['timerStartedAt'] == null && number(t['accumulatedSeconds']) <= end.difference(start).inMilliseconds / 1000 + 1, '本组结束时间无效'); }
     require(s['isCompleted'] != true || t['endedAt'] != null, '已完成的组仍在计时');
-    if (t['timerStartedAt'] != null) { date(t['timerStartedAt']); }
+    if (t['timerStartedAt'] != null) { final timer = date(t['timerStartedAt']); require(!timer.isBefore(start) && !timer.isAfter(limit), '本组计时起点无效'); }
   }
 }
 

@@ -56,4 +56,4 @@ flutter build windows --release
 
 `.github/workflows/cross-platform.yml` 分别在 Linux 和 Windows 上执行分析、数据/恢复/交互测试及 release 构建，检查 APK 签名，Windows 打包完整运行目录。普通提交只构建；以 `Release cross v0.10.0` 开头的主分支提交，或手动选择 publish，才会在两端通过后发布预览版。
 
-当前新增客户端仍在首次云端编译验证阶段，尚未确认 APK / EXE 可运行。测试源码不代表测试已经通过；真实手机、系统文档选择器、桌面性能和安装兼容性需实际运行后再记录结果。
+发布门槛包括 Linux 和 Windows 构建、自动记录测试、Windows 原生窗口的逐组记录与数据库重启测试、Android 模拟器交互和 release APK 启动、以及 Swift 与 Dart 的双向备份解码。发布资产附带 Windows 真实测试窗口截图，文件名包含 `test-data`。真实手机和电脑的安装、系统文档选择器及主观流畅度仍需设备体验验证。
