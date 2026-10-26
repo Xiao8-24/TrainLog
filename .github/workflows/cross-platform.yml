@@ -79,6 +79,10 @@ jobs:
         if: runner.os == 'Windows'
         working-directory: CrossPlatform
         run: flutter build windows --release
+      - name: Run actual Windows host interaction and persistence test
+        if: runner.os == 'Windows'
+        working-directory: CrossPlatform
+        run: flutter test integration_test/native_smoke_test.dart -d windows --reporter expanded --timeout 3m --dart-define="TRAINLOG_ARTIFACT_DIR=${{ github.workspace }}/artifacts/native-ui"
       - name: Package Android
         if: runner.os == 'Linux'
         run: python Tools/package_cross_platform.py --platform android
@@ -93,6 +97,7 @@ jobs:
           path: |
             artifacts/*.txt
             artifacts/cross-backup-fixture.json
+            artifacts/native-ui/
             CrossPlatform/pubspec.lock
           retention-days: 14
       - uses: actions/upload-artifact@v4
@@ -135,9 +140,46 @@ jobs:
         with:
           name: cross-backup-interop-${{ github.run_number }}
           path: artifacts/*.json
+  android-device:
+    needs: clients
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: TrainLog-Linux-${{ github.run_number }}
+          path: artifacts/apks
+      - name: Prepare Android host
+        working-directory: CrossPlatform
+        run: flutter create --platforms=android,windows --project-name trainlog --org app.trainlog --no-pub .
+      - run: python Tools/bootstrap_cross_platform.py
+      - name: Enable emulator acceleration
+        run: sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: bash Tools/test_cross_android.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-android-device-${{ github.run_number }}
+          path: artifacts/android-*
   publish:
     if: inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release cross v0.10.0'))
-    needs: [clients, backup-interop]
+    needs: [clients, backup-interop, android-device]
     runs-on: ubuntu-latest
     permissions:
       contents: write
