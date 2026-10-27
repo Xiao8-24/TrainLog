@@ -77,8 +77,8 @@ class _HomeState extends State<Home> {
   TrainingStore get store => widget.store;
   int page = 0;
   bool workout = false;
-  final names = const ['训练', '日历', '动作', '设置'];
-  final icons = const [Icons.fitness_center, Icons.calendar_month_outlined, Icons.search, Icons.settings_outlined];
+  final names = const ['概览', '日历', '动作', '设置'];
+  final icons = const [Icons.space_dashboard_outlined, Icons.calendar_month_outlined, Icons.search, Icons.settings_outlined];
   Future<void> perform(Future<bool> Function() action) async {
     final ok = await action();
     if (!ok && mounted && store.error != null) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(store.error!))); }

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -28,6 +28,7 @@ export class SyncStorage {
     decipher.setAuthTag(sealed.subarray(12, 28));
     return Buffer.concat([decipher.update(sealed.subarray(28)), decipher.final()]);
   }
+  subjectKey(provider, subject) { return createHmac('sha256', this.key).update(provider).update('\0').update(subject).digest('hex'); }
   challenge() {
     const nonce = randomBytes(32).toString('base64url');
     this.db.prepare('INSERT INTO challenges VALUES (?, ?)').run(hash(nonce), Date.now() + 300_000);
@@ -38,27 +39,29 @@ export class SyncStorage {
     return result.changes === 1;
   }
   accountFor(provider, subject, refreshToken) {
+    const identifier = this.subjectKey(provider, subject);
     this.db.exec('BEGIN IMMEDIATE');
     try {
-      let account = this.db.prepare('SELECT account_id FROM identities WHERE provider=? AND subject=?').get(provider, subject)?.account_id;
+      let account = this.db.prepare('SELECT account_id FROM identities WHERE provider=? AND subject=?').get(provider, identifier)?.account_id;
       if (!account) {
         account = randomUUID();
         this.db.prepare('INSERT INTO accounts VALUES (?, ?)').run(account, Date.now());
-        this.db.prepare('INSERT INTO identities VALUES (?, ?, ?)').run(provider, subject, account);
+        this.db.prepare('INSERT INTO identities VALUES (?, ?, ?)').run(provider, identifier, account);
       }
-      if (refreshToken) this.db.prepare('INSERT OR REPLACE INTO provider_tokens VALUES (?, ?, ?)').run(provider, subject, this.seal(Buffer.from(refreshToken)));
+      if (refreshToken) this.db.prepare('INSERT OR REPLACE INTO provider_tokens VALUES (?, ?, ?)').run(provider, identifier, this.seal(Buffer.from(refreshToken)));
       this.db.exec('COMMIT');
       return account;
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
-  hasIdentity(provider, subject) { return !!this.db.prepare('SELECT 1 FROM identities WHERE provider=? AND subject=?').get(provider, subject); }
+  hasIdentity(provider, subject) { return !!this.db.prepare('SELECT 1 FROM identities WHERE provider=? AND subject=?').get(provider, this.subjectKey(provider, subject)); }
   linkIdentity(account, provider, subject, refreshToken = null) {
+    const identifier = this.subjectKey(provider, subject);
     this.db.exec('BEGIN IMMEDIATE');
     try {
-      const owner = this.db.prepare('SELECT account_id FROM identities WHERE provider=? AND subject=?').get(provider, subject)?.account_id;
+      const owner = this.db.prepare('SELECT account_id FROM identities WHERE provider=? AND subject=?').get(provider, identifier)?.account_id;
       if (owner && owner !== account) { this.db.exec('ROLLBACK'); return false; }
-      if (!owner) this.db.prepare('INSERT INTO identities VALUES (?,?,?)').run(provider, subject, account);
-      if (refreshToken) this.db.prepare('INSERT OR REPLACE INTO provider_tokens VALUES (?,?,?)').run(provider, subject, this.seal(Buffer.from(refreshToken)));
+      if (!owner) this.db.prepare('INSERT INTO identities VALUES (?,?,?)').run(provider, identifier, account);
+      if (refreshToken) this.db.prepare('INSERT OR REPLACE INTO provider_tokens VALUES (?,?,?)').run(provider, identifier, this.seal(Buffer.from(refreshToken)));
       this.db.exec('COMMIT'); return true;
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }

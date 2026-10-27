@@ -36,6 +36,7 @@ test('encrypted snapshots use compare-and-swap, isolate accounts, and survive re
   assert.equal(storage.snapshot(a).backup.sessions[0].marker, 'private-heart-rate');
   assert.equal(storage.snapshot(b).backup, null);
   assert.equal((await readFile(path)).includes(Buffer.from('private-heart-rate')), false);
+  assert.equal((await readFile(path)).includes(Buffer.from('subject-a')), false);
   storage.close(); resources.at(-1).storage = null;
   const reopened = new SyncStorage(path, Buffer.alloc(32, 7)); resources.at(-1).storage = reopened;
   assert.equal(reopened.snapshot(a).backup.sessions[0].marker, 'private-heart-rate');
