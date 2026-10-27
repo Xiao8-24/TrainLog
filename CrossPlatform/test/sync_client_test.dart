@@ -37,6 +37,10 @@ void main() {
       expect((await client.pull()).revision, 1);
       expect((await client.pull()).backup!['schemaVersion'], 5);
       expect(revision, 1);
+      final sensitive = copy(backup);
+      sensitive['bodyWeights'] = [{'id': 'c0323723-6979-4275-9435-9e84c7b50a36', 'date': stamp(DateTime.now()), 'weightKg': 70.0}];
+      await expectLater(client.push(sensitive, expectedRevision: 1), throwsA(isA<StateError>()));
+      expect(revision, 1, reason: 'Health data must not be uploaded without an explicit choice.');
     } finally {
       client.close(); await service.cancel(); await server.close(force: true);
     }
