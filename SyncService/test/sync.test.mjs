@@ -35,14 +35,31 @@ test('encrypted snapshots use compare-and-swap, isolate accounts, and survive re
   assert.deepEqual(storage.putSnapshot(a, 0, backup('stale')), { conflict: true, revision: 1 });
   assert.equal(storage.snapshot(a).backup.sessions[0].marker, 'private-heart-rate');
   assert.equal(storage.snapshot(b).backup, null);
-  assert.equal((await readFile(path)).includes(Buffer.from('private-heart-rate')), false);
-  assert.equal((await readFile(path)).includes(Buffer.from('subject-a')), false);
+  for (const file of [path, `${path}-wal`]) {
+    const bytes = await readFile(file);
+    for (const secret of ['private-heart-rate', 'subject-a', 'refresh-a']) {
+      assert.equal(bytes.includes(Buffer.from(secret)), false, `${file} contains plaintext ${secret}`);
+    }
+  }
   storage.close(); resources.at(-1).storage = null;
   const reopened = new SyncStorage(path, Buffer.alloc(32, 7)); resources.at(-1).storage = reopened;
   assert.equal(reopened.snapshot(a).backup.sessions[0].marker, 'private-heart-rate');
   reopened.deleteAccount(a);
   assert.equal(reopened.snapshot(a).backup, null);
   assert.deepEqual(reopened.refreshTokens(a), []);
+});
+
+test('encrypted snapshots cannot be copied across accounts or revisions', async () => {
+  const { storage } = await fixture();
+  const a = storage.accountFor('apple', 'owner-a', 'refresh-a');
+  const b = storage.accountFor('apple', 'owner-b', 'refresh-b');
+  storage.putSnapshot(a, 0, backup('first'));
+  storage.putSnapshot(b, 0, backup('second'));
+  const encrypted = storage.db.prepare('SELECT cipher FROM snapshots WHERE account_id=?').get(a).cipher;
+  storage.db.prepare('UPDATE snapshots SET cipher=? WHERE account_id=?').run(encrypted, b);
+  assert.throws(() => storage.snapshot(b));
+  storage.db.prepare('UPDATE snapshots SET revision=2 WHERE account_id=?').run(a);
+  assert.throws(() => storage.snapshot(a));
 });
 
 test('Apple token verification checks signature, audience, issuer, expiry and nonce', async () => {
