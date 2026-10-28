@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 import 'model.dart';
 import 'store.dart';
 import 'muscle_map.dart';
+import 'generated_tokens.dart';
+import 'statistics.dart';
 part 'editors.dart';
 part 'pages.dart';
 
@@ -39,14 +41,24 @@ class TrainLogApp extends StatelessWidget {
   final TrainingStore store;
   final Json labels;
   @override Widget build(BuildContext context) => ListenableBuilder(listenable: store, builder: (context, _) {
-    ThemeData theme(Brightness brightness) => ThemeData(
+    ThemeData theme(Brightness brightness) {
+      final dark = brightness == Brightness.dark;
+      final accent = dark ? TrainLogTokens.accentDark : TrainLogTokens.accentLight;
+      final background = dark ? TrainLogTokens.groupedBackgroundDark : TrainLogTokens.groupedBackgroundLight;
+      final card = dark ? TrainLogTokens.cardDark : TrainLogTokens.cardLight;
+      return ThemeData(
       useMaterial3: true, brightness: brightness,
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff177c66), brightness: brightness),
+      colorScheme: ColorScheme.fromSeed(seedColor: accent, brightness: brightness).copyWith(primary: accent, surface: card),
+      scaffoldBackgroundColor: background,
       fontFamily: Platform.isWindows ? 'Segoe UI' : null,
       visualDensity: VisualDensity.standard,
-      inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
-      cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
+      inputDecorationTheme: InputDecorationTheme(border: OutlineInputBorder(borderRadius: BorderRadius.circular(14))),
+      cardTheme: CardThemeData(elevation: 0, margin: EdgeInsets.zero, color: card, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(TrainLogTokens.cardRadius))),
+      appBarTheme: AppBarTheme(backgroundColor: background, scrolledUnderElevation: 0),
+      navigationBarTheme: NavigationBarThemeData(backgroundColor: card, elevation: 0),
+      navigationRailTheme: NavigationRailThemeData(backgroundColor: background),
     );
+    }
     return MaterialApp(title: 'TrainLog', debugShowCheckedModeBanner: false,
       locale: const Locale('zh', 'CN'), supportedLocales: const [Locale('zh', 'CN'), Locale('en')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -66,8 +78,8 @@ class _HomeState extends State<Home> {
   TrainingStore get store => widget.store;
   int page = 0;
   bool workout = false;
-  final names = const ['训练', '日历', '动作', '设置'];
-  final icons = const [Icons.fitness_center, Icons.calendar_month_outlined, Icons.search, Icons.settings_outlined];
+  final names = const ['概览', '日历', '动作', '设置'];
+  final icons = const [Icons.space_dashboard_outlined, Icons.calendar_month_outlined, Icons.search, Icons.settings_outlined];
   Future<void> perform(Future<bool> Function() action) async {
     final ok = await action();
     if (!ok && mounted && store.error != null) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(store.error!))); }
@@ -110,7 +122,7 @@ class _HomeState extends State<Home> {
 class PageBody extends StatelessWidget {
   const PageBody({super.key, required this.children});
   final List<Widget> children;
-  @override Widget build(BuildContext context) => Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1080), child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 32), children: children)));
+  @override Widget build(BuildContext context) => Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1080), child: ListView(padding: const EdgeInsets.fromLTRB(TrainLogTokens.contentSpacing, 12, TrainLogTokens.contentSpacing, 32), children: children)));
 }
 class Section extends StatelessWidget {
   const Section(this.title, {super.key, this.subtitle, required this.child});
@@ -145,15 +157,25 @@ class Dashboard extends StatelessWidget {
     final now = store.now();
     final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
     final week = store.history.where((s) => !date(s['date']).toLocal().isBefore(monday) && date(s['date']).toLocal().isBefore(monday.add(const Duration(days: 7)))).toList();
+    final today = store.history.where((s) { final day = date(s['date']).toLocal(); return day.year == now.year && day.month == now.month && day.day == now.day; }).length;
+    final trainingDays = week.map((s) { final day = date(s['date']).toLocal(); return '${day.year}-${day.month}-${day.day}'; }).toSet().length;
+    final totalMinutes = (week.fold<double>(0, (sum, s) => sum + elapsed(s, now)) / 60).floor();
+    final completedSets = week.fold<int>(0, (sum, s) => sum + workingSets(s).length);
     final upcoming = store.plans.where((p) => p['isSkipped'] != true && !store.history.any((s) => s['plan']?['id'] == p['id'])).toList()..sort((a, b) => date(a['scheduledAt']).compareTo(date(b['scheduledAt'])));
     return PageBody(children: [
-      Section('每一组，都算数', subtitle: dayLabel(now), child: Card(color: Theme.of(context).colorScheme.primaryContainer, child: Padding(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('本周 ${week.length} 次 / 目标 ${store.settings['weeklyGoal']} 次', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 12), LinearProgressIndicator(value: (week.length / (store.settings['weeklyGoal'] as int)).clamp(0, 1), minHeight: 7, borderRadius: BorderRadius.circular(6)), const SizedBox(height: 12), Text('累计训练 ${(week.fold<double>(0, (sum, s) => sum + elapsed(s, now)) / 60).floor()} 分钟 · 已完成 ${week.fold<int>(0, (sum, s) => sum + sets(s).where((v) => v['isCompleted'] == true).length)} 组')])))),
+      Padding(padding: const EdgeInsets.fromLTRB(0, 8, 0, 20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(dayLabel(now), style: Theme.of(context).textTheme.bodyMedium), const SizedBox(height: 6), Text(today == 0 ? '今天准备练什么？' : '每一次记录，都在积累。', style: Theme.of(context).textTheme.headlineSmall), const SizedBox(height: 6), Text(today == 0 ? '专注当下，让进步慢慢清晰。' : '今天已完成 $today 次训练。')])),
+      Section('本周训练', subtitle: '周一开始 · 次数与训练天数分别统计', child: Card(child: Padding(padding: const EdgeInsets.all(TrainLogTokens.contentSpacing), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${week.length} / ${store.settings['weeklyGoal']} 次', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontFeatures: const [FontFeature.tabularFigures()])), const SizedBox(height: 12), LinearProgressIndicator(value: (week.length / (store.settings['weeklyGoal'] as int)).clamp(0, 1), minHeight: 7, borderRadius: BorderRadius.circular(6)), const SizedBox(height: 16), Row(children: [Expanded(child: _WeekMetric('训练天数', '$trainingDays 天')), Expanded(child: _WeekMetric('总时长', '$totalMinutes 分钟')), Expanded(child: _WeekMetric('正式组数', '$completedSets 组'))])])))),
       Section('开始今天的训练', child: Wrap(spacing: 12, runSpacing: 12, children: [FilledButton.icon(onPressed: store.busy ? null : store.draft != null ? onResume : () => onStart(), icon: const Icon(Icons.fitness_center), label: Text(store.draft != null ? '继续训练' : '力量训练')), FilledButton.tonalIcon(onPressed: store.busy ? null : onCardio, icon: const Icon(Icons.directions_run), label: const Text('有氧与其他运动')), OutlinedButton.icon(onPressed: store.busy ? null : onPlan, icon: const Icon(Icons.event_available_outlined), label: const Text('安排训练'))])),
-      if (labels['regions'] != null) Section('肌群分布', child: MuscleMap(labels: labels, sessions: store.history, now: now)),
+      if (labels['regions'] != null) Section('本周肌群分布', child: MuscleMap(labels: labels, sessions: store.history, now: now)),
       Section('训练安排', subtitle: '计划不会随实际记录一起改变。随时可在日历中查看。', child: upcoming.isEmpty ? const EmptyState(Icons.event_note_outlined, '还没有训练计划', '先选动作和目标组数，再安排日期。') : Column(children: upcoming.take(5).map((p) => Card(child: ListTile(title: Text(p['name'] as String), subtitle: Text('${dayLabel(date(p['scheduledAt']).toLocal())} · ${(p['items'] as List).length} 个动作'), trailing: const Icon(Icons.play_arrow), onTap: store.busy ? null : () => onStart(plan: p)))).toList())),
       Section('最近训练', child: store.history.isEmpty ? const EmptyState(Icons.insights_outlined, '从第一组开始', '完成的训练会保存在这里，不会预填演示记录。') : Column(children: store.history.take(8).map((s) => SessionTile(session: s, labels: labels, store: store, perform: perform)).toList())),
     ]);
   }
+}
+class _WeekMetric extends StatelessWidget {
+  const _WeekMetric(this.title, this.value);
+  final String title, value;
+  @override Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: Theme.of(context).textTheme.bodySmall), const SizedBox(height: 5), Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]))]);
 }
 class EmptyState extends StatelessWidget {
   const EmptyState(this.icon, this.title, this.message, {super.key});

@@ -101,13 +101,10 @@ class SessionDetail extends StatelessWidget {
   final Json session, labels; final TrainingStore store; final Future<void> Function(Future<bool> Function()) perform;
   @override Widget build(BuildContext context) {
     final targets = session['plan']?['targets'] as List?;
-    double volume = 0;
-    for (final e in (session['exercises'] as List).cast<Json>()) {
-      if (e['exercise']['tracking'] == 'weightReps') { for (final s in (e['sets'] as List).cast<Json>().where((s) => s['isCompleted'] == true)) { volume += number(s['weightKg']) * number(s['reps']) * (e['exercise']['loading'] == 'perHand' ? 2 : 1); } }
-    }
+    final volume = workoutVolumeKg(session);
     return AlertDialog(title: Text(titleFor(session, labels)), content: SizedBox(width: 680, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('${dayLabel(date(session['date']).toLocal())} · ${clock(elapsed(session, store.now()))}'), const SizedBox(height: 12),
-      if (session['mode'] == 'detailed') Text('已完成 ${sets(session).where((s) => s['isCompleted'] == true).length} 组 · 外部负重容量 ${volume.toStringAsFixed(1)} kg'),
+      if (session['mode'] == 'detailed') Text('正式组 ${workingSets(session).length} 组 · 外部负重容量 ${volume == null ? '未知' : '${volume.toStringAsFixed(1)} kg'}'),
       if (session['plan'] != null) Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(targets == null ? '这份历史记录没有保存计划快照，不从现有计划重建目标。' : '计划与实际 · 目标取自开练时保存的快照。', style: Theme.of(context).textTheme.titleMedium)),
       for (final e in (session['exercises'] as List).cast<Json>()) ...[
         const Divider(), Text(e['exercise']['name'] as String, style: Theme.of(context).textTheme.titleMedium),
