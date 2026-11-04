@@ -80,7 +80,7 @@ struct WorkoutEditorView: View {
         // This is a scroll safe-area inset, not a keyboard-height observer/timer.
         .safeAreaPadding(.bottom, 56)
         }
-        .background(AppTheme.background)
+        .appCanvas()
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle(editingHistory ? "编辑训练" : session.mode == .cardio ? "运动记录" : session.mode == .quick ? "快速记录" : "正在训练")
         .navigationBarTitleDisplayMode(.inline)

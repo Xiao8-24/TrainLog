@@ -53,7 +53,7 @@ struct TrendsView: View {
                 AppCard { AnnualHeatmap(sessions: store.completed) }
                 NavigationLink { HistoryView() } label: { Label("筛选与管理全部记录", systemImage: "clock.arrow.circlepath").font(.headline).frame(maxWidth: .infinity, minHeight: 50) }.buttonStyle(.bordered)
             }.padding(20)
-        }.background(AppTheme.background).navigationTitle("趋势")
+        }.appCanvas().navigationTitle("趋势")
             .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: interval) } }
     }
     private func statValue(_ stat: MuscleStatistics) -> String {

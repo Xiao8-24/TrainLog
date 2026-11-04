@@ -42,7 +42,7 @@ struct WorkoutHomeView: View {
                     NavigationLink { HistoryView() } label: { Label("训练历史", systemImage: "clock.arrow.circlepath").font(.headline).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
                 }
             }.padding(20)
-        }.background(AppTheme.background).navigationTitle("训练")
+        }.appCanvas().navigationTitle("训练")
     }
 }
 

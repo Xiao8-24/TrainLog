@@ -15,7 +15,11 @@ enum AppTheme {
 }
 struct AppCard<Content: View>: View {
     @ViewBuilder var content: Content
-    var body: some View { VStack(alignment: .leading, spacing: 16) { content }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(AppTheme.card, in: RoundedRectangle(cornerRadius: AppTheme.radius, style: .continuous)) }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) { content }
+            .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+            .modifier(PearlContentSurface())
+    }
 }
 struct SectionHeader: View {
     var title: String

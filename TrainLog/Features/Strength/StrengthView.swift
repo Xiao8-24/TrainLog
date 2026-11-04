@@ -74,7 +74,7 @@ struct StrengthView: View {
                 }
                 NavigationLink { DataRulesView() } label: { Label("了解力量与统计的计算方式", systemImage: "info.circle").font(.subheadline).frame(minHeight: 44) }
             }.padding(20)
-        }.background(AppTheme.background).navigationTitle("我的力量")
+        }.appCanvas().navigationTitle("我的力量")
             .sheet(item: $choosingPattern) { pattern in NavigationStack { RepresentativePicker(pattern: pattern) } }
             .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: TimeRange.quarter.interval(now: clock.now, calendar: clock.calendar)) } }
     }

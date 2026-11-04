@@ -78,7 +78,7 @@ class _CalendarPageState extends State<CalendarPage> {
       const SizedBox(height: 10), Row(children: [const Expanded(child: Text('● 已训练   ◯ 有计划')), TextButton(onPressed: () => setState(() { selected = widget.store.now(); month = DateTime(selected.year, selected.month); }), child: const Text('今天'))]),
       const Divider(), const SizedBox(height: 12),
       Section(dayLabel(selected), child: Column(children: [
-        for (final p in plans) Card(child: ListTile(title: Text(p['name'] as String), subtitle: Text('${(p['items'] as List).length} 个动作${widget.store.history.any((s) => s['plan']?['id'] == p['id']) ? ' · 已有完成记录' : ''}'), onTap: () => editPlan(context, widget.store, widget.labels, plan: p), trailing: PopupMenuButton<String>(onSelected: (value) async {
+        for (final p in plans) GlassCard(child: ListTile(title: Text(p['name'] as String), subtitle: Text('${(p['items'] as List).length} 个动作${widget.store.history.any((s) => s['plan']?['id'] == p['id']) ? ' · 已有完成记录' : ''}'), onTap: () => editPlan(context, widget.store, widget.labels, plan: p), trailing: PopupMenuButton<String>(onSelected: (value) async {
           if (value == 'start') { widget.onStart(p); }
           if (value == 'edit' && context.mounted) { await editPlan(context, widget.store, widget.labels, plan: p); }
           if (value == 'delete' && context.mounted && await confirm(context, '删除这项计划？', '历史训练中的计划快照仍会保留。', '删除计划')) { await widget.perform(() => widget.store.deletePlan(p['id'] as String)); }
@@ -94,7 +94,7 @@ class _CalendarPageState extends State<CalendarPage> {
 class SessionTile extends StatelessWidget {
   const SessionTile({super.key, required this.session, required this.labels, required this.store, required this.perform});
   final Json session, labels; final TrainingStore store; final Future<void> Function(Future<bool> Function()) perform;
-  @override Widget build(BuildContext context) => Card(child: ListTile(leading: Icon(session['mode'] == 'cardio' ? Icons.directions_run : Icons.fitness_center), title: Text(titleFor(session, labels)), subtitle: Text('${dayLabel(date(session['date']).toLocal())} · ${clock(elapsed(session, store.now()))}${session['mode'] == 'detailed' ? ' · ${sets(session).where((s) => s['isCompleted'] == true).length} 组' : ''}'), trailing: const Icon(Icons.chevron_right), onTap: () => showDialog<void>(context: context, builder: (_) => SessionDetail(session: session, store: store, labels: labels, perform: perform))));
+  @override Widget build(BuildContext context) => GlassCard(child: ListTile(leading: Icon(session['mode'] == 'cardio' ? Icons.directions_run : Icons.fitness_center), title: Text(titleFor(session, labels)), subtitle: Text('${dayLabel(date(session['date']).toLocal())} · ${clock(elapsed(session, store.now()))}${session['mode'] == 'detailed' ? ' · ${sets(session).where((s) => s['isCompleted'] == true).length} 组' : ''}'), trailing: const Icon(Icons.chevron_right), onTap: () => showDialog<void>(context: context, builder: (_) => SessionDetail(session: session, store: store, labels: labels, perform: perform))));
 }
 class SessionDetail extends StatelessWidget {
   const SessionDetail({super.key, required this.session, required this.labels, required this.store, required this.perform});

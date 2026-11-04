@@ -95,7 +95,7 @@ class _PlanEditorState extends State<PlanEditor> {
       final value = await showDatePicker(context: context, initialDate: scheduled, firstDate: DateTime(1900), lastDate: DateTime(2200, 12, 31));
       if (value != null) { setState(() => scheduled = value); }
     }),
-    for (final (index, item) in items.indexed) Card(child: ListTile(title: Text(exercise(item)['name'] as String), subtitle: Text('${item['setCount']} 组 · ${setLabel(item, exercise(item))}'), trailing: IconButton(tooltip: '移除动作', onPressed: saving ? null : () => setState(() => items.removeAt(index)), icon: const Icon(Icons.remove_circle_outline)), onTap: saving ? null : () async {
+    for (final (index, item) in items.indexed) GlassCard(child: ListTile(title: Text(exercise(item)['name'] as String), subtitle: Text('${item['setCount']} 组 · ${setLabel(item, exercise(item))}'), trailing: IconButton(tooltip: '移除动作', onPressed: saving ? null : () => setState(() => items.removeAt(index)), icon: const Icon(Icons.remove_circle_outline)), onTap: saving ? null : () async {
       final result = await showDialog<Json>(context: context, builder: (_) => ValuesEditor(title: '动作目标', initial: item, exercise: exercise(item), plan: true));
       if (result != null) { setState(() { for (final k in ['setCount', 'weightKg', 'reps', 'durationSeconds', 'restSeconds']) { if (result[k] != null) { item[k] = result[k]; } else { item.remove(k); } } }); }
     })),

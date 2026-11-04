@@ -27,7 +27,7 @@ struct OnboardingView: View {
                 HStack(spacing: 6) { ForEach(0..<3) { i in Capsule().fill(i == step ? Color.blue : Color(uiColor: .systemGray4)).frame(width: i == step ? 24 : 8, height: 5) } }.accessibilityLabel("第 \(step + 1) 步，共 3 步")
                 PrimaryActionButton(title: step == 2 ? "开始记录" : "继续", symbol: "arrow.right") { if step < 2 { step += 1 } else { finish() } }.accessibilityIdentifier("onboardingNext")
             }.padding(28).frame(maxWidth: .infinity, alignment: .leading)
-            }.background(AppTheme.background)
+            }.appCanvas()
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) { Button("跳过") { finish() }.accessibilityIdentifier("skipOnboarding") }
                     if step > 0 { ToolbarItem(placement: .topBarLeading) { Button("上一步") { step -= 1 } } }

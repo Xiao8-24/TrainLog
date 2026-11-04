@@ -20,6 +20,14 @@ abstract final class TrainLogTokens {
   static const Color heat2Dark = Color(0xff2969a8);
   static const Color heat3Dark = Color(0xff4796eb);
   static const Color heat4Dark = Color(0xff8cc2ff);
-  static const double cardRadius = 22;
+  static const Color ambientBlueLight = Color(0xffdceaff);
+  static const Color ambientBlueDark = Color(0xff152c49);
+  static const Color ambientMintLight = Color(0xffe0f2ef);
+  static const Color ambientMintDark = Color(0xff102e30);
+  static const Color ambientLilacLight = Color(0xffeee5fa);
+  static const Color ambientLilacDark = Color(0xff29213a);
+  static const Color glassEdgeLight = Color(0xffffffff);
+  static const Color glassEdgeDark = Color(0xff64748b);
+  static const double cardRadius = 26;
   static const double contentSpacing = 20;
 }
