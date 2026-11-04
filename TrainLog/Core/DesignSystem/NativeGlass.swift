@@ -14,7 +14,7 @@ struct NativeFloatingSurface: ViewModifier {
     @ViewBuilder func body(content: Content) -> some View {
         if reduceTransparency || contrast == .increased {
             content.background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 24))
-                .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(.primary.opacity(0.2)) }
+                .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(.primary.opacity(0.2)).allowsHitTesting(false).accessibilityHidden(true) }
         } else {
             content.glassEffect(.regular, in: .rect(cornerRadius: 24))
         }
@@ -35,7 +35,7 @@ struct PearlContentSurface: ViewModifier {
                 shape.fill(LinearGradient(colors: [.white.opacity(scheme == .dark ? 0.06 : 0.4), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))
             }
         }
-        .overlay { shape.strokeBorder(opaque ? Color.primary.opacity(0.2) : (scheme == .dark ? TrainLogTokens.glassEdgeDark.opacity(0.5) : .white.opacity(0.85)), lineWidth: 1) }
+        .overlay { shape.strokeBorder(opaque ? Color.primary.opacity(0.2) : (scheme == .dark ? TrainLogTokens.glassEdgeDark.opacity(0.5) : .white.opacity(0.85)), lineWidth: 1).allowsHitTesting(false).accessibilityHidden(true) }
         .shadow(color: .black.opacity(opaque ? 0 : (scheme == .dark ? 0.15 : 0.04)), radius: 14, y: 6)
     }
 }
