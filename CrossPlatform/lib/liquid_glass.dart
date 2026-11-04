@@ -52,7 +52,10 @@ class GlassCanvas extends StatelessWidget {
                                     ? TrainLogTokens.ambientMintDark
                                     : TrainLogTokens.ambientMintLight)
                                 .withValues(alpha: 0.7),
-                            Colors.transparent,
+                            (dark
+                                    ? TrainLogTokens.ambientMintDark
+                                    : TrainLogTokens.ambientMintLight)
+                                .withValues(alpha: 0),
                           ],
                         ),
                       ),
