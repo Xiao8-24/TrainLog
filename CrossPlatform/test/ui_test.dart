@@ -59,7 +59,7 @@ void main() {
   });
 
   testWidgets('floating navigation leaves the resume control visible and tappable', (tester) async {
-    await store.start();
+    await tester.runAsync(() => store.start());
     await app(tester, const Size(320, 740));
     final resume = find.text('继续当前训练');
     expect(tester.getBottomLeft(resume).dy, lessThan(tester.getTopLeft(find.byType(NavigationBar)).dy));
@@ -72,10 +72,10 @@ void main() {
   testWidgets('high contrast and reduced motion retain usable dark navigation', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(highContrast: true, disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await store.change((next) => next['settings']['theme'] = 'dark');
+    await tester.runAsync(() => store.change((next) => next['settings']['theme'] = 'dark'));
     await app(tester, const Size(320, 740));
     expect(find.byType(BackdropFilter), findsNothing);
-    await tester.tap(find.text('日历')); await tester.pump();
+    await tester.tap(find.text('日历')); await tester.pumpAndSettle();
     expect(find.text('安排这一天的训练'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
