@@ -32,6 +32,7 @@ struct RootView: View {
     @State private var router = AppRouter()
     @State private var clock = AppClock()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
     @State private var settingsPresented = false
     var body: some View {
         @Bindable var store = store
@@ -50,6 +51,7 @@ struct RootView: View {
                 NavigationStack { StrengthView().fitnessCalendarAccess() }
             }
         }
+        .tint(colorScheme == .dark ? TrainLogTokens.accentDark : TrainLogTokens.accentLight)
         .environment(router)
         .sheet(isPresented: $settingsPresented, onDismiss: routePendingURL) { NavigationStack { SettingsView() } }
         .sheet(isPresented: $router.calendarPresented, onDismiss: {

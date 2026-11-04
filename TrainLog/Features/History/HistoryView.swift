@@ -117,7 +117,7 @@ struct SessionDetailView: View {
                         }
                         Button("删除训练", role: .destructive) { deleting = true }.frame(minHeight: 44)
                     }.padding(20)
-                }.background(AppTheme.background)
+                }.appCanvas()
                     .toolbar { if session.activity?.hasWatchMeasurements != true { Button("编辑") { editing = session }.accessibilityIdentifier("editWorkout") } }
             } else { ContentUnavailableView("训练记录已删除", systemImage: "tray") }
         }.navigationTitle("训练详情").navigationBarTitleDisplayMode(.inline)

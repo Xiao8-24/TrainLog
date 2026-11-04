@@ -1,0 +1,7 @@
+{
+  "name": "trainlog-sync-service",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": { "test": "node --test", "start": "node server.mjs" }
+}

@@ -34,7 +34,7 @@ struct WorkoutSummaryView: View {
                     }
                     PrimaryActionButton(title: "完成", symbol: "checkmark") { dismiss() }.accessibilityIdentifier("closeSummary")
                 }.padding(20)
-            }.background(AppTheme.background).navigationTitle("训练完成").navigationBarTitleDisplayMode(.inline)
+            }.appCanvas().navigationTitle("训练完成").navigationBarTitleDisplayMode(.inline)
                 .toolbar { Button("关闭") { dismiss() } }
                 .task {
                     withAnimation(reduceMotion ? nil : .smooth(duration: 0.35)) { reveal = true }

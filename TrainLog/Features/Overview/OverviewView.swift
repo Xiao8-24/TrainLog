@@ -64,7 +64,7 @@ struct OverviewView: View {
                 }
                 Text("记录每一次训练，看见每一点进步。").font(.caption).foregroundStyle(.tertiary).frame(maxWidth: .infinity).padding(.vertical, 8)
             }.padding(20)
-        }.background(AppTheme.background).navigationTitle("概览")
+        }.appCanvas().navigationTitle("概览")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button(action: showSettings) { Image(systemName: "gearshape") }.accessibilityLabel("设置") } }
             .sheet(item: $selectedMuscle) { muscle in NavigationStack { MuscleDetailSheet(muscle: muscle, interval: week) } }
     }

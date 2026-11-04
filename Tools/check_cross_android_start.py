@@ -9,7 +9,7 @@ for attempt in range(20):
     subprocess.run(['adb', 'shell', 'uiautomator', 'dump', '/sdcard/trainlog-window.xml'], check=True, capture_output=True)
     xml = subprocess.check_output(['adb', 'shell', 'cat', '/sdcard/trainlog-window.xml'])
     (out / 'android-release-window.xml').write_bytes(xml)
-    if b'TrainLog' in xml and '每一组'.encode() in xml:
+    if b'TrainLog' in xml and '本周训练'.encode() in xml and '开始今天的训练'.encode() in xml:
         break
     time.sleep(1)
 else:

@@ -55,8 +55,17 @@ void main() {
       await capture('windows-active-workout-test-data');
       await tap(find.byTooltip('返回，训练继续计时'));
       await tap(find.text('日历'));
-      expect(find.text('安排这一天的训练'), findsOneWidget);
+      expect(find.byType(CalendarPage), findsOneWidget);
+      // On a short desktop window the month grid and resumed workout leave
+      // the selected-day actions below the fold. Exercise the real scroll path.
+      final createPlan = find.text('安排这一天的训练');
+      await tester.scrollUntilVisible(createPlan, 180,
+        scrollable: find.descendant(of: find.byType(CalendarPage), matching: find.byType(Scrollable)).first);
+      await tester.pumpAndSettle();
       await capture('windows-calendar-test-data');
+      await tap(createPlan);
+      expect(find.byType(PlanEditor), findsOneWidget);
+      await tap(find.text('取消'));
       await tester.pumpWidget(const SizedBox());
       await store.close();
       store = await TrainingStore.open('${dir.path}/training.db', objects(labels['exercises']));

@@ -3,19 +3,23 @@ import Charts
 import TrainLogCore
 
 enum AppTheme {
-    static let spacing: CGFloat = 20
-    static let radius: CGFloat = 22
+    static let spacing = TrainLogTokens.contentSpacing
+    static let radius = TrainLogTokens.cardRadius
     static let background = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
     static func heat(_ level: Int, dark: Bool) -> Color {
-        let light: [Color] = [Color(uiColor: .systemGray5), Color(red: 0.80, green: 0.90, blue: 1), Color(red: 0.47, green: 0.73, blue: 0.98), .blue, Color(red: 0.04, green: 0.25, blue: 0.65)]
-        let night: [Color] = [Color(uiColor: .systemGray5), Color(red: 0.12, green: 0.25, blue: 0.38), Color(red: 0.16, green: 0.41, blue: 0.66), Color(red: 0.28, green: 0.59, blue: 0.92), Color(red: 0.55, green: 0.76, blue: 1)]
+        let light: [Color] = [TrainLogTokens.heat0Light, TrainLogTokens.heat1Light, TrainLogTokens.heat2Light, TrainLogTokens.heat3Light, TrainLogTokens.heat4Light]
+        let night: [Color] = [TrainLogTokens.heat0Dark, TrainLogTokens.heat1Dark, TrainLogTokens.heat2Dark, TrainLogTokens.heat3Dark, TrainLogTokens.heat4Dark]
         return (dark ? night : light)[max(0, min(level, 4))]
     }
 }
 struct AppCard<Content: View>: View {
     @ViewBuilder var content: Content
-    var body: some View { VStack(alignment: .leading, spacing: 16) { content }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(AppTheme.card, in: RoundedRectangle(cornerRadius: AppTheme.radius, style: .continuous)) }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) { content }
+            .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+            .modifier(PearlContentSurface())
+    }
 }
 struct SectionHeader: View {
     var title: String

@@ -78,7 +78,7 @@ class _CalendarPageState extends State<CalendarPage> {
       const SizedBox(height: 10), Row(children: [const Expanded(child: Text('● 已训练   ◯ 有计划')), TextButton(onPressed: () => setState(() { selected = widget.store.now(); month = DateTime(selected.year, selected.month); }), child: const Text('今天'))]),
       const Divider(), const SizedBox(height: 12),
       Section(dayLabel(selected), child: Column(children: [
-        for (final p in plans) Card(child: ListTile(title: Text(p['name'] as String), subtitle: Text('${(p['items'] as List).length} 个动作${widget.store.history.any((s) => s['plan']?['id'] == p['id']) ? ' · 已有完成记录' : ''}'), onTap: () => editPlan(context, widget.store, widget.labels, plan: p), trailing: PopupMenuButton<String>(onSelected: (value) async {
+        for (final p in plans) GlassCard(child: ListTile(title: Text(p['name'] as String), subtitle: Text('${(p['items'] as List).length} 个动作${widget.store.history.any((s) => s['plan']?['id'] == p['id']) ? ' · 已有完成记录' : ''}'), onTap: () => editPlan(context, widget.store, widget.labels, plan: p), trailing: PopupMenuButton<String>(onSelected: (value) async {
           if (value == 'start') { widget.onStart(p); }
           if (value == 'edit' && context.mounted) { await editPlan(context, widget.store, widget.labels, plan: p); }
           if (value == 'delete' && context.mounted && await confirm(context, '删除这项计划？', '历史训练中的计划快照仍会保留。', '删除计划')) { await widget.perform(() => widget.store.deletePlan(p['id'] as String)); }
@@ -94,20 +94,17 @@ class _CalendarPageState extends State<CalendarPage> {
 class SessionTile extends StatelessWidget {
   const SessionTile({super.key, required this.session, required this.labels, required this.store, required this.perform});
   final Json session, labels; final TrainingStore store; final Future<void> Function(Future<bool> Function()) perform;
-  @override Widget build(BuildContext context) => Card(child: ListTile(leading: Icon(session['mode'] == 'cardio' ? Icons.directions_run : Icons.fitness_center), title: Text(titleFor(session, labels)), subtitle: Text('${dayLabel(date(session['date']).toLocal())} · ${clock(elapsed(session, store.now()))}${session['mode'] == 'detailed' ? ' · ${sets(session).where((s) => s['isCompleted'] == true).length} 组' : ''}'), trailing: const Icon(Icons.chevron_right), onTap: () => showDialog<void>(context: context, builder: (_) => SessionDetail(session: session, store: store, labels: labels, perform: perform))));
+  @override Widget build(BuildContext context) => GlassCard(child: ListTile(leading: Icon(session['mode'] == 'cardio' ? Icons.directions_run : Icons.fitness_center), title: Text(titleFor(session, labels)), subtitle: Text('${dayLabel(date(session['date']).toLocal())} · ${clock(elapsed(session, store.now()))}${session['mode'] == 'detailed' ? ' · ${sets(session).where((s) => s['isCompleted'] == true).length} 组' : ''}'), trailing: const Icon(Icons.chevron_right), onTap: () => showDialog<void>(context: context, builder: (_) => SessionDetail(session: session, store: store, labels: labels, perform: perform))));
 }
 class SessionDetail extends StatelessWidget {
   const SessionDetail({super.key, required this.session, required this.labels, required this.store, required this.perform});
   final Json session, labels; final TrainingStore store; final Future<void> Function(Future<bool> Function()) perform;
   @override Widget build(BuildContext context) {
     final targets = session['plan']?['targets'] as List?;
-    double volume = 0;
-    for (final e in (session['exercises'] as List).cast<Json>()) {
-      if (e['exercise']['tracking'] == 'weightReps') { for (final s in (e['sets'] as List).cast<Json>().where((s) => s['isCompleted'] == true)) { volume += number(s['weightKg']) * number(s['reps']) * (e['exercise']['loading'] == 'perHand' ? 2 : 1); } }
-    }
+    final volume = workoutVolumeKg(session);
     return AlertDialog(title: Text(titleFor(session, labels)), content: SizedBox(width: 680, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('${dayLabel(date(session['date']).toLocal())} · ${clock(elapsed(session, store.now()))}'), const SizedBox(height: 12),
-      if (session['mode'] == 'detailed') Text('已完成 ${sets(session).where((s) => s['isCompleted'] == true).length} 组 · 外部负重容量 ${volume.toStringAsFixed(1)} kg'),
+      if (session['mode'] == 'detailed') Text('正式组 ${workingSets(session).length} 组 · 外部负重容量 ${volume == null ? '未知' : '${volume.toStringAsFixed(1)} kg'}'),
       if (session['plan'] != null) Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(targets == null ? '这份历史记录没有保存计划快照，不从现有计划重建目标。' : '计划与实际 · 目标取自开练时保存的快照。', style: Theme.of(context).textTheme.titleMedium)),
       for (final e in (session['exercises'] as List).cast<Json>()) ...[
         const Divider(), Text(e['exercise']['name'] as String, style: Theme.of(context).textTheme.titleMedium),
